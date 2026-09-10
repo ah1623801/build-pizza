@@ -446,18 +446,16 @@ export function initApp() {
     }
     return d;
   }
-  function dropPiece(st,el,p,cfg,speed,idx){
-     const a=(window.innerWidth<=980)?{dur:.62,bounce:true}:(cfg.anim||{});
+function dropPiece(st,el,p,cfg,speed,idx){
+    const a=(window.innerWidth<=980)?{dur:.5,bounce:true}:(cfg.anim||{});
     const H=st.el.clientHeight||420;
-    gsap.set(el,{xPercent:-50,yPercent:-50});
+    gsap.set(el,{xPercent:-50,yPercent:-50,force3D:true});
     if(speed<=0){gsap.set(el,{rotation:p.rot});return;}
-    const dur=(a.dur||.7)*(0.8+Math.random()*.6)*speed;
-    const tl=gsap.timeline({delay:((idx||0)*(a.rapid?.03:.055)+Math.random()*.12)*speed});
-    tl.fromTo(el,{y:-H*(0.75+Math.random()*.5),x:rand(-.1,.1)*H,rotation:p.rot+(a.spin||120)*(Math.random()<.5?-2:2),scale:1.06},
-      {y:0,x:0,rotation:p.rot,scale:1,duration:dur,ease:a.float?'sine.in':'power2.in'});
-    if(a.float)tl.to(el,{rotation:p.rot+rand(-14,14),duration:.4,ease:'sine.inOut'},0);
-    if(a.bounce)tl.to(el,{y:-H*.035,duration:.12,ease:'power1.out'}).to(el,{y:0,duration:.16,ease:'power2.in'});
-    if(a.roll)tl.to(el,{x:rand(-9,9),rotation:'+='+rand(-25,25),duration:.3,ease:'power2.out'},'>-0.02');
+    const dur=(a.dur||.6)*(0.8+Math.random()*.4)*speed;
+    const tl=gsap.timeline({delay:((idx||0)*(a.rapid?.02:.04)+Math.random()*.08)*speed});
+    tl.fromTo(el,{y:-H*0.7,x:rand(-.05,.05)*H,rotation:p.rot+(a.spin||90)*(Math.random()<.5?-1:1),scale:1.05},
+      {y:0,x:0,rotation:p.rot,scale:1,duration:dur,ease:'power2.out',force3D:true});
+    if(a.bounce)tl.to(el,{y:-H*.025,duration:.1,ease:'power1.out'}).to(el,{y:0,duration:.12,ease:'power2.in',force3D:true});
   }
   /* ================= PIZZA STAGE ================= */
   class PizzaStage{
@@ -1223,6 +1221,7 @@ export function initApp() {
     toastT=setTimeout(()=>t.classList.remove('show'),2300);
   }
   /* ================= SCROLL / REVEALS ================= */
+  /* ================= SCROLL / REVEALS ================= */
   function setupScroll(){
     ScrollTrigger.create({
       trigger:'#builder',
@@ -1231,17 +1230,30 @@ export function initApp() {
       pin:true,
       anticipatePin:1
     });
+
     function goBuilder(){
       const el=document.getElementById('builder');
       const st=ScrollTrigger.getAll().find(t=>t.trigger===el);
       const y=st?st.start:el.offsetTop;
-      if(lenis)lenis.scrollTo(y,{offset:0,duration:1.6});
+      if(lenis)lenis.scrollTo(y,{offset:0,duration:1.2});
       else window.scrollTo({top:y,behavior:'smooth'});
     }
-    lenis=new Lenis({lerp:.09});
-    lenis.on('scroll',ScrollTrigger.update);
-    gsap.ticker.add(t=>lenis.raf(t*1000));
-    gsap.ticker.lagSmoothing(0);
+
+    // إعداد Lenis بمرونة متوافقة مع المتصفحات الحديثة
+    lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      smoothWheel: true,
+      touchMultiplier: 1.5,
+    });
+
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+    gsap.ticker.lagSmoothing(500, 33);
+
     $$('.nav-links button').forEach(b=>b.addEventListener('click',()=>lenis.scrollTo(b.dataset.go,{offset:-40})));
     $('#ctaBuild').addEventListener('click',goBuilder);
     $('#ctaMenu').addEventListener('click',()=>lenis.scrollTo('#menu'));
@@ -1252,10 +1264,20 @@ export function initApp() {
       gsap.to(el,{opacity:1,y:0,duration:1,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
     });
     const track=$('#menuTrack');
-    gsap.to(track,{x:()=>-Math.max(0,track.scrollWidth-window.innerWidth+40),ease:'none',
-      scrollTrigger:{trigger:'#menu',start:'top top',end:()=>'+='+Math.max(600,track.scrollWidth-window.innerWidth+40),scrub:1,pin:true,invalidateOnRefresh:true,
-        onUpdate:self=>$('#menuBar').style.width=(self.progress*100)+'%'}});
+    if (track) {
+      gsap.to(track,{x:()=>-Math.max(0,track.scrollWidth-window.innerWidth+40),ease:'none',
+        scrollTrigger:{trigger:'#menu',start:'top top',end:()=>'+='+Math.max(600,track.scrollWidth-window.innerWidth+40),scrub:1,pin:true,invalidateOnRefresh:true,
+          onUpdate:self=>$('#menuBar').style.width=(self.progress*100)+'%'}});
+    }
+    
+    // تحديث الحسابات بعد تحميل الصفحة بالكامل
+    setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 500);
   }
+   
+    
+
   /* ================= HERO CINEMATICS ================= */
   function heroFX(){
     const dustH=$('#heroDust');

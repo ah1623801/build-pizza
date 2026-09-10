@@ -621,8 +621,32 @@ body.mm-open #burgerBtn{opacity:0;pointer-events:none}
   }
 }
 
-html{background:#0a0705;overscroll-behavior:none}
-body{overscroll-behavior:none}
+/* ---------- LENIS SCROLL FIX ---------- */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ---------- GPU ACCELERATION FOR PIZZA (60 FPS BOOST) ---------- */
+.pz-rot, .pz-scale, .stage-wrap, .top, .ly {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* تخفيف الفلاتر أثناء الحركة لتنعيم الإسقاط */
+.top svg {
+  contain: layout paint;
+}
 #toast{opacity:0}
 #toast.show{opacity:1;animation:toastHide .5s ease 2.3s forwards}
 @keyframes toastHide{to{transform:translate(-50%,90px);opacity:0}}
