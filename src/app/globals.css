@@ -736,7 +736,7 @@ html.lenis, html.lenis body {
 @media (max-width: 980px) {
   #mPrice {
     top: auto !important;
-    bottom: calc(74px + env(safe-area-inset-bottom)) !important;
+    bottom: calc(40px + env(safe-area-inset-bottom)) !important;
     left: 16px !important;
     z-index: 65 !important;
   }
@@ -751,23 +751,6 @@ html.lenis, html.lenis body {
 
 
 
-/* تثبيت الناف بار في الموبايل عشان ميروحش وقت التثبيت */
-@media (max-width: 980px) {
-  #nav {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    background: rgba(10, 7, 5, 0.92) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    z-index: 100 !important;
-  }
-  .b-head {
-    top: 0 !important;
-    margin-top: 10px !important;
-  }
-}
 
 
 /* تسريع وتنعيم سكشن المنيو والبانل في الموبايل */

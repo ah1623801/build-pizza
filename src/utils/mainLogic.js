@@ -1652,10 +1652,24 @@ export function initApp() {
   }
 
   gsap.registerPlugin(ScrollTrigger);
+  // منع متصفح الموبايل من إخفاء شريط العنوان (URL bar) ومنع القفزات
+ScrollTrigger.config({ ignoreMobileResize: true });
+ScrollTrigger.normalizeScroll(true);
 
+let lastWidth = window.innerWidth;
   function setAppHeight(){
-    document.documentElement.style.setProperty('--apph',window.innerHeight+'px');
+    document.documentElement.style.setProperty('--apph', window.innerHeight + 'px');
   }
+  setAppHeight();
+
+  // لا يعيد الحساب إلا لو قلبت الموبايل بالعرض (Orientation)، مش مع حركة شريط المتصفح
+  window.addEventListener('resize', () => {
+    if (window.innerWidth !== lastWidth) {
+      lastWidth = window.innerWidth;
+      setAppHeight();
+    }
+  });
+  window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 150));
   setAppHeight();
   window.addEventListener('resize',setAppHeight);
   window.addEventListener('orientationchange',()=>setTimeout(setAppHeight,150));
