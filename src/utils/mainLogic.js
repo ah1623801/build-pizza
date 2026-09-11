@@ -2895,23 +2895,16 @@ function sauceSVG(type){
   }
 
   /* ================= SCROLL / REVEALS (RESTORED & SMOOTH) ================= */
-const track=$('#menuTrack');
-    if (track) {
-      gsap.to(track, {
-        x: () => -Math.max(0, track.scrollWidth - window.innerWidth + 40),
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#menu',
-          start: 'top top',
-          end: () => '+=' + Math.max(500, track.scrollWidth - window.innerWidth),
-          scrub: 0.3, // حركة استجابة سريعة جداً بدون تأخير
-          pin: true,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onUpdate: self => $('#menuBar').style.width = (self.progress * 100) + '%'
-        }
-      });
-    }
+  function setupScroll(){
+    // تفعيل التثبيت لسكشن البيتزا للموبايل والديسكتوب
+    ScrollTrigger.create({
+      trigger: '#builder',
+      start: 'top top',
+      end: '+=110%',
+      pin: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true
+    });
 
     function goBuilder(){
       const el=document.getElementById('builder');
@@ -2946,11 +2939,22 @@ const track=$('#menuTrack');
       gsap.to(el,{opacity:1,y:0,duration:1,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
     });
 
-   
+const track=$('#menuTrack');
     if (track) {
-      gsap.to(track,{x:()=>-Math.max(0,track.scrollWidth-window.innerWidth+40),ease:'none',
-        scrollTrigger:{trigger:'#menu',start:'top top',end:()=>'+='+Math.max(600,track.scrollWidth-window.innerWidth+40),scrub:1,pin:true,invalidateOnRefresh:true,
-          onUpdate:self=>$('#menuBar').style.width=(self.progress*100)+'%'}});
+      gsap.to(track, {
+        x: () => -Math.max(0, track.scrollWidth - window.innerWidth + 40),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '#menu',
+          start: 'top top',
+          end: () => '+=' + Math.max(500, track.scrollWidth - window.innerWidth),
+          scrub: 0.3, // حركة استجابة سريعة جداً بدون تأخير
+          pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: self => $('#menuBar').style.width = (self.progress * 100) + '%'
+        }
+      });
     }
     
     setTimeout(() => {
