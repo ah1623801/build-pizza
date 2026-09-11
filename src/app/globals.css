@@ -88,7 +88,29 @@ em{font-style:normal;color:var(--ember)}
 .h-scroll{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.5em;color:var(--mut);animation:bob 2.2s ease-in-out infinite;z-index:3}
 @keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,8px)}}
 /* ---------- BUILDER ---------- */
-#builder{position:relative;height:100vh;height:var(--apph,100svh);padding:84px 4vw 24px;display:flex;flex-direction:column;background:linear-gradient(rgba(10,7,5,.88),rgba(10,7,5,.95)),url("https://image.qwenlm.ai/public_source/dc6c2b4d-a883-49e5-8fdc-ae104a79b739/110370452-bfec-426a-ab1a-a9bbc63881b3.png") center/cover fixed}
+/* في globals.css */
+
+/* تعديل خلفية الـ builder لتكون عادية وليست fixed على الموبايل */
+#builder {
+  position: relative;
+  height: 100vh;
+  height: var(--apph, 100svh);
+  padding: 84px 4vw 24px;
+  display: flex;
+  flex-direction: column;
+  /* استبدل fixed بـ scroll لكي لا ينهار كارت الشاشة */
+  background: linear-gradient(rgba(10,7,5,.88),rgba(10,7,5,.95)),
+              url("https://image.qwenlm.ai/public_source/dc6c2b4d-a883-49e5-8fdc-ae104a79b739/110370452-bfec-426a-ab1a-a9bbc63881b3.png") center/cover no-repeat;
+}
+
+@media(max-width: 980px) {
+  /* إلغاء الـ backdrop-filter بالكامل من البانل على الموبايل واستبدالها بلون داكن نقي */
+  .panel {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(18, 11, 7, 0.95) !important;
+  }
+}
 .b-head h2{font-size:clamp(38px,5.6vw,84px)}
 .b-grid{display:grid;grid-template-columns:170px 1fr 430px;gap:2.5vw;align-items:center;margin-top:20px;flex:1;min-height:0}
 #rail{display:flex;flex-direction:column;gap:6px}

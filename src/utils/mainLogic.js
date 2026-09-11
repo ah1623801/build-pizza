@@ -1232,64 +1232,89 @@ if (!this.mini && window.innerWidth > 980) {
   }
   /* ================= SCROLL / REVEALS ================= */
   /* ================= SCROLL / REVEALS ================= */
-  function setupScroll(){
-    ScrollTrigger.create({
-      trigger:'#builder',
-      start:'top top',
-      end:'+=115%',
-      pin:true,
-      anticipatePin:1
-    });
+function setupScroll(){
+    const isMobile = window.innerWidth <= 980;
+
+    // تفعيل التثبيت فقط على شاشات الكمبيوتر
+    if (!isMobile) {
+      ScrollTrigger.create({
+        trigger: '#builder',
+        start: 'top top',
+        end: '+=115%',
+        pin: true,
+        anticipatePin: 1
+      });
+
+      lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        smoothWheel: true,
+      });
+
+      lenis.on('scroll', ScrollTrigger.update);
+      gsap.ticker.add((time) => {
+        lenis.raf(time * 1000);
+      });
+      gsap.ticker.lagSmoothing(500, 33);
+    } else {
+      // تمرير طبيعي وخفيف وسلس 120Hz للموبايل
+      window.addEventListener('scroll', ScrollTrigger.update, { passive: true });
+    }
 
     function goBuilder(){
-      const el=document.getElementById('builder');
-      const st=ScrollTrigger.getAll().find(t=>t.trigger===el);
-      const y=st?st.start:el.offsetTop;
-      if(lenis)lenis.scrollTo(y,{offset:0,duration:1.2});
-      else window.scrollTo({top:y,behavior:'smooth'});
+      const el = document.getElementById('builder');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
 
-// تفعيل Lenis فقط للشاشات الكبيرة (Desktop)
-const isMobileDevice = window.innerWidth <= 980 || 'ontouchstart' in window;
+    $$('.nav-links button').forEach(b => b.addEventListener('click', () => {
+      const target = document.querySelector(b.dataset.go);
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    }));
 
-if (!isMobileDevice) {
-  lenis = new Lenis({
-    duration: 1.2,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    orientation: 'vertical',
-    smoothWheel: true,
-  });
-
-  lenis.on('scroll', ScrollTrigger.update);
-  gsap.ticker.add((time) => {
-    lenis.raf(time * 1000);
-  });
-  gsap.ticker.lagSmoothing(500, 33);
-} else {
-  // على الموبايل: تمرير المتصفح العتادي السريع
-  window.addEventListener('scroll', ScrollTrigger.update);
-}
-
-    $$('.nav-links button').forEach(b=>b.addEventListener('click',()=>lenis.scrollTo(b.dataset.go,{offset:-40})));
-    $('#ctaBuild').addEventListener('click',goBuilder);
-    $('#ctaMenu').addEventListener('click',()=>lenis.scrollTo('#menu'));
-    window.addEventListener('scroll',()=>$('#nav').classList.toggle('scrolled',window.scrollY>40),{passive:true});
-    gsap.to('#hero',{backgroundPosition:'0 0',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top'}});
-    gsap.to('.hero-grid',{y:-60,autoAlpha:.2,scrollTrigger:{trigger:'#hero',start:'40% top',end:'bottom top',scrub:true}});
-    gsap.utils.toArray('[data-rev]').forEach(el=>{
-      gsap.to(el,{opacity:1,y:0,duration:1,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
+    $('#ctaBuild').addEventListener('click', goBuilder);
+    $('#ctaMenu').addEventListener('click', () => {
+      const target = document.getElementById('menu');
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
     });
-    const track=$('#menuTrack');
-    if (track) {
-      gsap.to(track,{x:()=>-Math.max(0,track.scrollWidth-window.innerWidth+40),ease:'none',
-        scrollTrigger:{trigger:'#menu',start:'top top',end:()=>'+='+Math.max(600,track.scrollWidth-window.innerWidth+40),scrub:1,pin:true,invalidateOnRefresh:true,
-          onUpdate:self=>$('#menuBar').style.width=(self.progress*100)+'%'}});
+
+    window.addEventListener('scroll', () => {
+      $('#nav').classList.toggle('scrolled', window.scrollY > 40);
+    }, { passive: true });
+
+    // أنميشن خفيف فقط إن لم يكن موبايل
+    if (!isMobile) {
+      gsap.to('.hero-grid', {
+        y: -60,
+        autoAlpha: .2,
+        scrollTrigger: { trigger: '#hero', start: '40% top', end: 'bottom top', scrub: true }
+      });
     }
-    
-    // تحديث الحسابات بعد تحميل الصفحة بالكامل
+
+    gsap.utils.toArray('[data-rev]').forEach(el => {
+      gsap.to(el, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 90%' } });
+    });
+
+    const track = $('#menuTrack');
+    if (track && !isMobile) {
+      gsap.to(track, {
+        x: () => -Math.max(0, track.scrollWidth - window.innerWidth + 40),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '#menu',
+          start: 'top top',
+          end: () => '+=' + Math.max(600, track.scrollWidth - window.innerWidth + 40),
+          scrub: 1,
+          pin: true,
+          invalidateOnRefresh: true,
+          onUpdate: self => $('#menuBar').style.width = (self.progress * 100) + '%'
+        }
+      });
+    }
+
     setTimeout(() => {
       ScrollTrigger.refresh();
-    }, 500);
+    }, 400);
   }
    
     
@@ -1503,27 +1528,32 @@ if (!isMobileDevice) {
       gn.gain.setValueAtTime(.04,t);gn.gain.exponentialRampToValueAtTime(.0001,t+.05);
       o.connect(gn);gn.connect(AC.destination);o.start(t);o.stop(t+.06);
     }
-    let prevT=performance.now();
-function loop(t){
-  requestAnimationFrame(loop);
-  if(!MQ.matches) return;
-  
-  // لو المستخدم لا يسحب ومفيش سرعة متبقية، لا تعيد الرسم بدون داعي
-  if (!drag && Math.abs(vel) < 0.1) return;
+let prevT = performance.now();
+    function loop(t){
+      requestAnimationFrame(loop);
+      // إيقاف الـ loop فوراً إذا لم يكن سكشن البيلدر ظاهراً على شاشة المستخدم
+      if (!MQ.matches || !builderInView) return;
 
-  const dt = Math.min(.05, (t - prevT) / 1000);
-  prevT = t;
-  
-  if(!drag){
-    vel *= Math.pow(.0025, dt);
-    A += (AUTO + vel) * dt;
-  }
-  
-  rot.style.transform = 'rotate(' + A + 'deg)';
-  for(let i = 0; i < icons.length; i++) {
-    icons[i].firstChild.style.transform = 'rotate(' + (-A) + 'deg)';
-  }
-}
+      const dt = Math.min(.05, (t - prevT) / 1000);
+      prevT = t;
+
+      if (!drag) {
+        vel *= Math.pow(.0025, dt);
+        A += (AUTO + vel) * dt;
+      }
+
+      rot.style.transform = 'rotate(' + A + 'deg)';
+      for (let i = 0; i < icons.length; i++) {
+        icons[i].firstChild.style.transform = 'rotate(' + (-A) + 'deg)';
+      }
+
+      tickAcc += Math.abs(A - prevA);
+      prevA = A;
+      if (tickAcc > 5) {
+        tickAcc = 0;
+        tick();
+      }
+    }
     requestAnimationFrame(loop);
     function place(){
       const host=document.getElementById('stageHost');if(!host)return;
@@ -1586,14 +1616,18 @@ function loop(t){
       }
     });
 
-    const jobs = [
-      cutout(IMG.doughThin).then(u => { DOUGH_SRC.thin = u; }),
-      cutout(IMG.doughClassic).then(u => { DOUGH_SRC.classic = u; }),
-      cutout(IMG.doughThick).then(u => { DOUGH_SRC.thick = u; }),
-      cutout(IMG.doughCheese).then(u => { DOUGH_SRC.cheese = u; }),
-      loadImg(IMG.fire).catch(() => {}),
-      syncMenuFromServer()
-    ];
+// في boot():
+  const isMobile = window.innerWidth <= 980;
+
+  const jobs = [
+    // على الموبايل نأخذ الصورة مباشرة بدون تفريغ بكسلات يدوياً في الـ RAM
+    isMobile ? Promise.resolve() : cutout(IMG.doughThin).then(u => { DOUGH_SRC.thin = u; }),
+    isMobile ? Promise.resolve() : cutout(IMG.doughClassic).then(u => { DOUGH_SRC.classic = u; }),
+    isMobile ? Promise.resolve() : cutout(IMG.doughThick).then(u => { DOUGH_SRC.thick = u; }),
+    isMobile ? Promise.resolve() : cutout(IMG.doughCheese).then(u => { DOUGH_SRC.cheese = u; }),
+    loadImg(IMG.fire).catch(() => {}),
+    syncMenuFromServer()
+  ];
 
     await Promise.all(jobs);
 
