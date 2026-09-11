@@ -2950,25 +2950,8 @@ function buildTabs(){
   }
 
   /* ================= SCROLL / REVEALS (RESTORED & SMOOTH) ================= */
-  function setupScroll(){
-    // تفعيل التثبيت لسكشن البيتزا للموبايل والديسكتوب
-    ScrollTrigger.create({
-      trigger: '#builder',
-      start: 'top top',
-      end: '+=200%',
-      pin: true,
-      anticipatePin: 1,
-      invalidateOnRefresh: true
-    });
-
-    function goBuilder(){
-      const el=document.getElementById('builder');
-      const st=ScrollTrigger.getAll().find(t=>t.trigger===el);
-      const y=st?st.start:el.offsetTop;
-      if(lenis)lenis.scrollTo(y,{offset:0,duration:1.2});
-      else window.scrollTo({top:y,behavior:'smooth'});
-    }
-
+function setupScroll(){
+    // 1. تشغيل Lenis أولاً قبل أي سكرول تريجر
     lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -2981,20 +2964,70 @@ function buildTabs(){
     gsap.ticker.add((time) => {
       lenis.raf(time * 1000);
     });
-    gsap.ticker.lagSmoothing(500, 33);
+    gsap.ticker.lagSmoothing(0);
 
-    $$('.nav-links button').forEach(b=>b.addEventListener('click',()=>lenis.scrollTo(b.dataset.go,{offset:-40})));
-    $('#ctaBuild').addEventListener('click',goBuilder);
-    $('#ctaMenu').addEventListener('click',()=>lenis.scrollTo('#menu'));
-    window.addEventListener('scroll',()=>$('#nav').classList.toggle('scrolled',window.scrollY>40),{passive:true});
+    // 2. تفعيل التثبيت الفائق لسكشن البيتزا مع كبح السرعة الحقيقي
+    ScrollTrigger.create({
+      trigger: '#builder',
+      start: 'top top',
+      end: '+=12000', // مسافة تثبيت عملاقة
+      pin: true,
+      pinSpacing: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
 
-    gsap.to('#hero',{backgroundPosition:'0 0',scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top'}});
-    gsap.to('.hero-grid',{y:-60,autoAlpha:.2,scrollTrigger:{trigger:'#hero',start:'40% top',end:'bottom top',scrub:true}});
-    gsap.utils.toArray('[data-rev]').forEach(el=>{
-      gsap.to(el,{opacity:1,y:0,duration:1,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%'}});
+      // أول ما يدخل السكشن: كبح السرعة وإلغاء الزحلقة تماماً (ثقل حقيقي)
+      onEnter: () => {
+        if (lenis) {
+          lenis.touchMultiplier = 0.05;       // يقلل استجابة اللمس لـ 5% فقط!
+          lenis.wheelMultiplier = 0.1;        // يقلل بكرة الماوس لـ 10%
+          lenis.touchInertiaMultiplier = 0;   // يلغي الزحلقة التلقائية نهائياً
+        }
+      },
+      // أول ما يخرج من السكشن: ترجع السرعة الطبيعية
+      onLeave: () => {
+        if (lenis) {
+          lenis.touchMultiplier = 1.2;
+          lenis.wheelMultiplier = 1.0;
+          lenis.touchInertiaMultiplier = 35;  // استرجاع السلاسة الطبيعية
+        }
+      },
+      onEnterBack: () => {
+        if (lenis) {
+          lenis.touchMultiplier = 0.05;
+          lenis.wheelMultiplier = 0.1;
+          lenis.touchInertiaMultiplier = 0;
+        }
+      },
+      onLeaveBack: () => {
+        if (lenis) {
+          lenis.touchMultiplier = 1.2;
+          lenis.wheelMultiplier = 1.0;
+          lenis.touchInertiaMultiplier = 35;
+        }
+      }
     });
 
-const track=$('#menuTrack');
+    function goBuilder(){
+      const el = document.getElementById('builder');
+      const st = ScrollTrigger.getAll().find(t => t.trigger === el);
+      const y = st ? st.start : (el ? el.offsetTop : 0);
+      if (lenis) lenis.scrollTo(y, { offset: 0, duration: 1.2 });
+      else window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+
+    $$('.nav-links button').forEach(b => b.addEventListener('click', () => lenis.scrollTo(b.dataset.go, { offset: -40 })));
+    $('#ctaBuild').addEventListener('click', goBuilder);
+    $('#ctaMenu').addEventListener('click', () => lenis.scrollTo('#menu'));
+    window.addEventListener('scroll', () => $('#nav').classList.toggle('scrolled', window.scrollY > 40), { passive: true });
+
+    gsap.to('#hero', { backgroundPosition: '0 0', scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top' } });
+    gsap.to('.hero-grid', { y: -60, autoAlpha: .2, scrollTrigger: { trigger: '#hero', start: '40% top', end: 'bottom top', scrub: true } });
+    gsap.utils.toArray('[data-rev]').forEach(el => {
+      gsap.to(el, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 85%' } });
+    });
+
+    const track = $('#menuTrack');
     if (track) {
       gsap.to(track, {
         x: () => -Math.max(0, track.scrollWidth - window.innerWidth + 40),
@@ -3003,7 +3036,7 @@ const track=$('#menuTrack');
           trigger: '#menu',
           start: 'top top',
           end: () => '+=' + Math.max(500, track.scrollWidth - window.innerWidth),
-          scrub: 0.3, // حركة استجابة سريعة جداً بدون تأخير
+          scrub: 0.3,
           pin: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
@@ -3011,10 +3044,10 @@ const track=$('#menuTrack');
         }
       });
     }
-    
+
     setTimeout(() => {
       ScrollTrigger.refresh();
-    }, 400);
+    }, 500);
   }
    
   /* ================= HERO CINEMATICS ================= */
