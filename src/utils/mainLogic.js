@@ -1235,20 +1235,16 @@ if (!this.mini && window.innerWidth > 980) {
 function setupScroll(){
     const isMobile = window.innerWidth <= 980;
 
-    // 1. إعادة تثبيت سكشن البيتزا للموبايل والكمبيوتر ولكن بطريقة سريعة جداً
-    ScrollTrigger.create({
-      trigger: '#builder',
-      start: 'top top',
-      end: '+=110%', // المسافة التي يثبت فيها السكشن
-      pin: true,
-      anticipatePin: 1,
-      fastScrollEnd: true,
-      preventOverlaps: true,
-      invalidateOnRefresh: true
-    });
-
-    // 2. ضبط السكرول ليكون ناعماً بدون صراع مع اللمس
+    // تفعيل التثبيت فقط على شاشات الكمبيوتر
     if (!isMobile) {
+      ScrollTrigger.create({
+        trigger: '#builder',
+        start: 'top top',
+        end: '+=115%',
+        pin: true,
+        anticipatePin: 1
+      });
+
       lenis = new Lenis({
         duration: 1.2,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -1262,16 +1258,13 @@ function setupScroll(){
       });
       gsap.ticker.lagSmoothing(500, 33);
     } else {
-      // للموبايل: ربط الـ ScrollTrigger باللمس الطبيعي فورياً
+      // تمرير طبيعي وخفيف وسلس 120Hz للموبايل
       window.addEventListener('scroll', ScrollTrigger.update, { passive: true });
     }
 
     function goBuilder(){
       const el = document.getElementById('builder');
-      const st = ScrollTrigger.getAll().find(t => t.trigger === el);
-      const y = st ? st.start : (el ? el.offsetTop : 0);
-      if (lenis) lenis.scrollTo(y, { offset: 0, duration: 1.2 });
-      else window.scrollTo({ top: y, behavior: 'smooth' });
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
 
     $$('.nav-links button').forEach(b => b.addEventListener('click', () => {
@@ -1289,13 +1282,21 @@ function setupScroll(){
       $('#nav').classList.toggle('scrolled', window.scrollY > 40);
     }, { passive: true });
 
+    // أنميشن خفيف فقط إن لم يكن موبايل
+    if (!isMobile) {
+      gsap.to('.hero-grid', {
+        y: -60,
+        autoAlpha: .2,
+        scrollTrigger: { trigger: '#hero', start: '40% top', end: 'bottom top', scrub: true }
+      });
+    }
+
     gsap.utils.toArray('[data-rev]').forEach(el => {
       gsap.to(el, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 90%' } });
     });
 
-    // سكشن المينيو وتمريره العرضي
     const track = $('#menuTrack');
-    if (track) {
+    if (track && !isMobile) {
       gsap.to(track, {
         x: () => -Math.max(0, track.scrollWidth - window.innerWidth + 40),
         ease: 'none',
