@@ -1641,41 +1641,6 @@
 
 
 export function initApp() {
-  let deferredPrompt = null;
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-
-    if (!$('#pwaBanner')) {
-      const banner = document.createElement('div');
-      banner.id = 'pwaBanner';
-      banner.style.cssText = `
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        background: #1a0f08; border: 1px solid var(--ember); border-radius: 99px;
-        padding: 10px 20px; display: flex; align-items: center; gap: 14px;
-        z-index: 999; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-      `;
-      banner.innerHTML = `
-        <span style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--ink);">🍕 INSTALL FORNO APP</span>
-        <button id="btnPwaInstall" style="background: var(--ember); color: #000; font-size: 10px; font-weight: 800; padding: 6px 14px; border-radius: 99px;">INSTALL</button>
-        <button id="btnPwaClose" style="color: var(--mut); font-size: 14px;">✕</button>
-      `;
-      document.body.appendChild(banner);
-
-      $('#btnPwaInstall').addEventListener('click', async () => {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          deferredPrompt = null;
-          banner.remove();
-        }
-      });
-      $('#btnPwaClose').addEventListener('click', () => banner.remove());
-    }
-  });
-
-
-
   if (typeof window === 'undefined') return;
 
   const gsap = window.gsap;
@@ -3393,6 +3358,37 @@ const track=$('#menuTrack');
       }
     });
   }
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
 
+    if (!$('#pwaBanner')) {
+      const banner = document.createElement('div');
+      banner.id = 'pwaBanner';
+      banner.style.cssText = `
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: #1a0f08; border: 1px solid var(--ember); border-radius: 99px;
+        padding: 10px 20px; display: flex; align-items: center; gap: 14px;
+        z-index: 999; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      `;
+      banner.innerHTML = `
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--ink);">🍕 INSTALL FORNO APP</span>
+        <button id="btnPwaInstall" style="background: var(--ember); color: #000; font-size: 10px; font-weight: 800; padding: 6px 14px; border-radius: 99px;">INSTALL</button>
+        <button id="btnPwaClose" style="color: var(--mut); font-size: 14px;">✕</button>
+      `;
+      document.body.appendChild(banner);
+
+      $('#btnPwaInstall').addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          banner.remove();
+        }
+      });
+      $('#btnPwaClose').addEventListener('click', () => banner.remove());
+    }
+  });
 boot();
 }
