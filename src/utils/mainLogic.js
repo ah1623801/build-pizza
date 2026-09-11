@@ -2808,39 +2808,28 @@ function startBake(){
 
 async function syncMenuFromServer() {
     try {
+      // جلب أسعار المكونات المحدثة من الداشبورد
+      const ingRes = await fetch('/api/ingredients');
+      if (ingRes.ok) {
+        const ingData = await ingRes.json();
+        if (ingData.dough) DOUGH.forEach(d => { if (ingData.dough[d.id] !== undefined) d.price = Number(ingData.dough[d.id]); });
+        if (ingData.sauce) SAUCE.forEach(s => { if (ingData.sauce[s.id] !== undefined) s.price = Number(ingData.sauce[s.id]); });
+        if (ingData.cheese) CHEESE.forEach(c => { if (ingData.cheese[c.id] !== undefined) c.price = Number(ingData.cheese[c.id]); });
+        if (ingData.meat) MEAT.forEach(m => { if (ingData.meat[m.id] !== undefined) m.price = Number(ingData.meat[m.id]); });
+        if (ingData.veg) VEG.forEach(v => { if (ingData.veg[v.id] !== undefined) v.price = Number(ingData.veg[v.id]); });
+        if (ingData.extras) EXTRAS.forEach(e => { if (ingData.extras[e.id] !== undefined) e.price = Number(ingData.extras[e.id]); });
+      }
+
+      // جلب عناصر المنيو
       const res = await fetch('/api/menu');
       if (!res.ok) return;
       const data = await res.json();
 
-      // 1. تحديث أسعار المكونات ديناميكياً لو الداشبورد باعتها
-      if (data.ingredients) {
-        if (data.ingredients.dough) {
-          DOUGH.forEach(d => { if (data.ingredients.dough[d.id] !== undefined) d.price = Number(data.ingredients.dough[d.id]); });
-        }
-        if (data.ingredients.sauce) {
-          SAUCE.forEach(s => { if (data.ingredients.sauce[s.id] !== undefined) s.price = Number(data.ingredients.sauce[s.id]); });
-        }
-        if (data.ingredients.cheese) {
-          CHEESE.forEach(c => { if (data.ingredients.cheese[c.id] !== undefined) c.price = Number(data.ingredients.cheese[c.id]); });
-        }
-        if (data.ingredients.meat) {
-          MEAT.forEach(m => { if (data.ingredients.meat[m.id] !== undefined) m.price = Number(data.ingredients.meat[m.id]); });
-        }
-        if (data.ingredients.veg) {
-          VEG.forEach(v => { if (data.ingredients.veg[v.id] !== undefined) v.price = Number(data.ingredients.veg[v.id]); });
-        }
-        if (data.ingredients.extras) {
-          EXTRAS.forEach(e => { if (data.ingredients.extras[e.id] !== undefined) e.price = Number(data.ingredients.extras[e.id]); });
-        }
-      }
-
-      // 2. تحديث الكاتيجوري
       if (data.categories && data.categories.length > 0) {
         CATS = data.categories.map(c => c.id);
         if (!CATS.includes(menuCat)) menuCat = CATS[0];
       }
 
-      // 3. تحديث المنيو
       if (data.items && data.items.length > 0) {
         MENU_ITEMS = data.items.map(it => ({
           id: it.item_id || 'item-' + it.id,
@@ -2854,7 +2843,7 @@ async function syncMenuFromServer() {
         }));
       }
     } catch (err) {
-      console.warn('Menu fetch fallback:', err);
+      console.warn('Sync fallback:', err);
     }
   }
 
