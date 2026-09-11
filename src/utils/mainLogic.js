@@ -3392,3 +3392,41 @@ const track=$('#menuTrack');
   });
 boot();
 }
+
+
+/* ================= PWA INSTALL BANNER (تم النقل للخارج) ================= */
+if (typeof window !== 'undefined') {
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    if (!document.querySelector('#pwaBanner')) {
+      const banner = document.createElement('div');
+      banner.id = 'pwaBanner';
+      banner.style.cssText = `
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: #1a0f08; border: 1px solid var(--ember); border-radius: 99px;
+        padding: 10px 20px; display: flex; align-items: center; gap: 14px;
+        z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      `;
+      banner.innerHTML = `
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--ink);">🍕 تنزيل تطبيق FORNO</span>
+        <button id="btnPwaInstall" style="background: var(--ember); color: #000; font-size: 10px; font-weight: 800; padding: 6px 14px; border-radius: 99px; cursor: pointer; border: none;">تثبيت</button>
+        <button id="btnPwaClose" style="color: var(--mut); font-size: 14px; cursor: pointer; background: none; border: none;">✕</button>
+      `;
+      document.body.appendChild(banner);
+
+      document.getElementById('btnPwaInstall').addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          banner.remove();
+        }
+      });
+      
+      document.getElementById('btnPwaClose').addEventListener('click', () => banner.remove());
+    }
+  });
+}
