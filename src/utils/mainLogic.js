@@ -1639,7 +1639,6 @@
 
 /* ================= PWA INSTALL BANNER ================= */
 
-
 export function initApp() {
   if (typeof window === 'undefined') return;
 
@@ -2338,8 +2337,7 @@ function sauceSVG(type){
   }
 
   /* ================= STATE / PRICING ================= */
- let state = freshState();
-
+  let state={dough:'classic',sauce:null,cheese:null,meats:{},vegs:[],extras:[]};
   let orderQty=1,curStep=0,maxReached=0,stage=null,lenis=null;
 const freshState=()=>({
     dough: 'classic',
@@ -2807,6 +2805,7 @@ function startBake(){
   ];
   let CATS=['signature','classic','spicy','vegetarian','sides','drinks','desserts'];
   let menuCat='signature';
+
 async function syncMenuFromServer() {
     try {
       const res = await fetch('/api/menu');
@@ -3358,6 +3357,7 @@ const track=$('#menuTrack');
       }
     });
   }
+/* ================= PWA INSTALL BANNER ================= */
   let deferredPrompt = null;
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
