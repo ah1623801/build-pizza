@@ -178,7 +178,6 @@ export function initApp() {
     return mkSVG(100,'<g transform="rotate('+rot+' 50 50)">'+out+'</g>');
   }
   function meltSVG(){
-const filterAttr = isMobile ? '' : 'filter="url(#' + fid + ')"';
     const isMobile = typeof window !== 'undefined' && window.innerWidth <= 980;
 
     const gid=nid('ml'),spot=nid('sp'),gl=nid('mg'),fid=nid('mf');
