@@ -1637,7 +1637,39 @@
 //   boot();
 // }
 
+/* ================= PWA INSTALL BANNER ================= */
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
 
+    if (!$('#pwaBanner')) {
+      const banner = document.createElement('div');
+      banner.id = 'pwaBanner';
+      banner.style.cssText = `
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: #1a0f08; border: 1px solid var(--ember); border-radius: 99px;
+        padding: 10px 20px; display: flex; align-items: center; gap: 14px;
+        z-index: 999; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      `;
+      banner.innerHTML = `
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--ink);">🍕 INSTALL FORNO APP</span>
+        <button id="btnPwaInstall" style="background: var(--ember); color: #000; font-size: 10px; font-weight: 800; padding: 6px 14px; border-radius: 99px;">INSTALL</button>
+        <button id="btnPwaClose" style="color: var(--mut); font-size: 14px;">✕</button>
+      `;
+      document.body.appendChild(banner);
+
+      $('#btnPwaInstall').addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          banner.remove();
+        }
+      });
+      $('#btnPwaClose').addEventListener('click', () => banner.remove());
+    }
+  });
 
 export function initApp() {
   if (typeof window === 'undefined') return;
@@ -1654,8 +1686,8 @@ export function initApp() {
   gsap.registerPlugin(ScrollTrigger);
   // منع متصفح الموبايل من إخفاء شريط العنوان (URL bar) ومنع القفزات
 ScrollTrigger.config({ ignoreMobileResize: true });
-ScrollTrigger.normalizeScroll(true);
-
+// السماح للبارات الأفقية مثل الكاتيجوري بالتحرك بحرية مع اللمس
+ScrollTrigger.normalizeScroll({ allowNestedScroll: true });
 let lastWidth = window.innerWidth;
   function setAppHeight(){
     document.documentElement.style.setProperty('--apph', window.innerHeight + 'px');
@@ -2004,7 +2036,12 @@ function sauceSVG(type){
 
   /* ================= CONFIG ================= */
   const DOUGH=[{id:'thin',name:'THIN CRUST',desc:'Light and crispy',price:0},{id:'classic',name:'CLASSIC',desc:'Our signature dough',price:0},{id:'thick',name:'THICK CRUST',desc:'Soft and fluffy',price:20},{id:'cheese',name:'CHEESE CRUST',desc:'Stuffed with mozzarella',price:35}];
-  const SAUCE=[{id:'tomato',name:'TOMATO',desc:'Classic tomato sauce',price:0},{id:'spicy',name:'SPICY TOMATO',desc:'Tomato + chili',price:10},{id:'bbq',name:'BBQ',desc:'Smoky BBQ sauce',price:15},{id:'garlic',name:'GARLIC CREAM',desc:'Creamy garlic sauce',price:20}];
+ const SAUCE = [
+    { id: 'tomato', name: 'TOMATO', desc: 'Classic tomato sauce', price: 20 },
+    { id: 'spicy', name: 'SPICY TOMATO', desc: 'Tomato + chili', price: 30 },
+    { id: 'bbq', name: 'BBQ', desc: 'Smoky BBQ sauce', price: 35 },
+    { id: 'garlic', name: 'GARLIC CREAM', desc: 'Creamy garlic sauce', price: 40 }
+  ];
   const CHEESE=[{id:'mozzarella',name:'MOZZARELLA',desc:'Fresh slices, uncooked',price:25},{id:'extra',name:'EXTRA MOZZARELLA',desc:'Double the pull',price:40},{id:'four',name:'FOUR CHEESE',desc:'Mozz · cheddar · parm · gouda',price:55},{id:'smoked',name:'SMOKED CHEESE',desc:'Low & slow smoked',price:45}];
   const MEAT=[{id:'pepperoni',name:'PEPPERONI',price:45},{id:'beef',name:'BEEF',price:50},{id:'chicken',name:'CHICKEN',price:45},{id:'sausage',name:'SAUSAGE',price:40}];
   const VEG=[{id:'olives',name:'OLIVES',price:15},{id:'mushroom',name:'MUSHROOM',price:20},{id:'onion',name:'ONION',price:12},{id:'greenPepper',name:'GREEN PEPPER',price:15},{id:'jalapeno',name:'JALAPEÑO',price:18},{id:'corn',name:'CORN',price:12},{id:'basil',name:'BASIL',price:10}];
@@ -2332,10 +2369,18 @@ function sauceSVG(type){
   }
 
   /* ================= STATE / PRICING ================= */
-  let state={dough:null,sauce:null,cheese:null,meats:{},vegs:[],extras:[]};
+ let state = freshState();
+
   let orderQty=1,curStep=0,maxReached=0,stage=null,lenis=null;
-  const freshState=()=>({dough:null,sauce:null,cheese:null,meats:{},vegs:[],extras:[]});
-  
+const freshState=()=>({
+    dough: 'classic',
+    sauce: 'tomato',
+    cheese: 'mozzarella',
+    meats: {},
+    vegs: [],
+    extras: []
+  });
+ // البداية تكون كلاسيك فوراً  
   let combo=null;
   const QORDER=['less','normal','more'];
   function priceOf(arr,id){const o=arr.find(x=>x.id===id);return o?o.price:0;}
@@ -2533,7 +2578,7 @@ function sauceSVG(type){
         .to(b,{opacity:0,scale:.4,duration:.5,delay:.3});
     }
   }
-  function startBake(){
+function startBake(){
     try {
       if(!state.dough || !state.sauce || !state.cheese){
         toast('PLEASE SELECT DOUGH, SAUCE, AND CHEESE FIRST');
@@ -2542,85 +2587,82 @@ function sauceSVG(type){
       }
       document.body.classList.remove('drawer-open');
       const scene=$('#ovenScene');
-      const slot=$('#ovenSlot');slot.innerHTML='';
-      $('#boxPizzaHost').innerHTML='';
+      const slot=$('#ovenSlot');
+      slot.innerHTML = '';
+      $('#boxPizzaHost').innerHTML = '';
+      
+      // وضع طبق البيتزا داخل الفرن تحت البيتزا فوراً
+      const plate = document.createElement('div');
+      plate.className = 'oven-plate';
+      slot.appendChild(plate);
+
       gsap.killTweensOf('#boxPizzaHost');
       gsap.set('.oven',{autoAlpha:1});
       gsap.set('.oven-mouth',{overflow:'hidden'});
       gsap.set('#boxScene',{autoAlpha:0,scale:1,y:0});
       gsap.set('#boxPizzaHost',{scale:1,y:0,rotation:0});
       $('#boxScene').classList.remove('closed');
-      boxToggleReady=false;$('#boxScene').classList.remove('tapable');
-      ovenStage=new PizzaStage(slot,{mini:true});
+      boxToggleReady=false;
+      $('#boxScene').classList.remove('tapable');
+
+      ovenStage = new PizzaStage(slot,{mini:true});
       ovenStage.applySnapshot(state,0);
+
       $('#revealBox').classList.remove('show');
-      $('#ovenTimer').textContent='00:08';
+      $('#ovenTimer').textContent='00:06';
       $('#ovenTimer').style.display='';
       $('#ovenTimer').classList.remove('ready-msg');
-      scene.classList.add('on');document.body.classList.add('locked');
-      if(lenis)lenis.stop();
+      scene.classList.add('on');
+      document.body.classList.add('locked');
+      if(lenis) lenis.stop();
+
       gsap.set(slot,{xPercent:-50,yPercent:-50,scale:1,y:0,rotation:0,opacity:1});
-      gsap.fromTo(scene,{autoAlpha:0},{autoAlpha:1,duration:.6});
-      gsap.to('.oven-glow',{opacity:1,duration:1.2,yoyo:true,repeat:15,ease:'sine.inOut'});
-      const tl=ovenTL=gsap.timeline();
-      tl.fromTo(slot,{scale:1.2,y:-40,opacity:0},{scale:1,y:0,opacity:1,duration:1.1,ease:'power3.out'})
-        .fromTo('.oven-head',{y:-30,autoAlpha:0},{y:0,autoAlpha:1,duration:.5},'<')
+      gsap.fromTo(scene,{autoAlpha:0},{autoAlpha:1,duration:.4});
+      gsap.to('.oven-glow',{opacity:0.8,duration:1,yoyo:true,repeat:6,ease:'sine.inOut'});
+
+      const tl = ovenTL = gsap.timeline();
+      tl.fromTo(slot,{scale:1.1,y:-30,opacity:0},{scale:1,y:0,opacity:1,duration:.8,ease:'power2.out'})
         .call(()=>setStatus('SLIDING IN'))
-        .to(slot,{scale:.62,y:34,duration:1.4,ease:'power2.inOut'},'+=0.2')
-        .to('.oven-door',{y:'0%',duration:.9,ease:'power3.inOut'},'>-0.2')
+        .to(slot,{scale:.62,y:30,duration:1,ease:'power2.inOut'},'+=0.1')
+        .to('.oven-door',{y:'0%',duration:.7,ease:'power3.inOut'},'>-0.2')
         .call(()=>setStatus('BAKING'))
-        .call(()=>spawnSteamScene(false))
         .add('cook','+=0.1');
-      const t={v:8};
-      tl.to(t,{v:0,duration:6.4,ease:'none',onUpdate:()=>{$('#ovenTimer').textContent='00:0'+Math.max(0,Math.ceil(t.v));}},'cook');
-      tl.to(ovenStage.doughImgs,{filter:F_DOUGH_C,duration:2.4,ease:'sine.inOut'},'cook+=0.4')
-        .to(ovenStage.mask,{filter:F_SAUCE_C,duration:2,ease:'sine.inOut'},'cook+=0.4')
-        .call(()=>setStatus('MELTING'),null,'cook+=1.2')
+
+      const t={v:6};
+      tl.to(t,{v:0,duration:4.5,ease:'none',onUpdate:()=>{$('#ovenTimer').textContent='00:0'+Math.max(0,Math.ceil(t.v));}},'cook');
+
+      tl.to(ovenStage.doughImgs,{filter:F_DOUGH_C,duration:1.6,ease:'sine.inOut'},'cook+=0.3')
+        .to(ovenStage.mask,{filter:F_SAUCE_C,duration:1.6,ease:'sine.inOut'},'cook+=0.3')
+        .call(()=>setStatus('MELTING'),null,'cook+=0.8')
         .call(()=>ovenStage.el.classList.add('cooked'),null,'cook+=0.4')
-        .call(()=>{
-          ovenStage.cheeseL.querySelectorAll('.top').forEach(p=>{
-            gsap.to(p,{scale:rand(1.2,1.45),rotation:'+='+rand(-25,25),filter:'blur(3px) brightness(1.2)',duration:2.2,ease:'sine.in',delay:rand(0,.5)});
-            gsap.to(p,{opacity:0,duration:1,delay:rand(1.7,2.5),ease:'power1.in'});
-          });
-        },null,'cook+=0.9')
-        .fromTo(ovenStage.cookedWrap,{opacity:0,scale:.9},{opacity:.9,scale:.97,duration:2.4,ease:'sine.inOut'},'cook+=1.6')
-        .to(ovenStage.ring,{opacity:.65,duration:1.5},'cook+=2.2')
-        .call(()=>spawnBubbles(ovenStage),null,'cook+=2.2')
-        .call(()=>setStatus('BROWNING'),null,'cook+=2.6')
-        .to(ovenStage.topsL.querySelectorAll('svg'),{filter:(ix,el)=>el.dataset.kind==='veg'?F_VEG_C:F_TOP_C,duration:1.6,stagger:.015,ease:'sine.inOut'},'cook+=2.6')
-        .set(ovenStage.charSpots,{opacity:0},'cook+=3')
-        .call(()=>ovenStage.addOil(false),null,'cook+=3.2')
-        .call(()=>spawnSteamScene(false),null,'cook+=3.4')
-        .to(scene,{x:2,duration:.07,repeat:9,yoyo:true},'cook+=3.6')
-        .to(scene,{x:0,duration:.1},'cook+=4.4')
+        .fromTo(ovenStage.cookedWrap,{opacity:0},{opacity:.95,duration:1.5,ease:'sine.inOut'},'cook+=1.2')
+        .to(ovenStage.ring,{opacity:.65,duration:1},'cook+=1.5')
+        .call(()=>setStatus('BROWNING'),null,'cook+=2')
+        .to(ovenStage.topsL.querySelectorAll('svg'),{filter:(ix,el)=>el.dataset.kind==='veg'?F_VEG_C:F_TOP_C,duration:1.2,ease:'sine.inOut'},'cook+=2')
         .call(()=>{
           setStatus('READY.');
           const tm=$('#ovenTimer');
           if(window.innerWidth<=980){tm.textContent='YOUR PIZZA IS READY.';tm.classList.add('ready-msg');}
           else{tm.style.display='none';}
-        },null,'cook+=6.4')
-        .to('.oven-door',{y:'-112%',duration:1,ease:'power3.inOut'},'cook+=6.5')
-        .call(()=>gsap.set('.oven-mouth',{overflow:'visible'}),null,'cook+=6.5')
-        .to(slot,{scale:1.4,y:110,duration:1.3,ease:'power2.out'},'cook+=6.9')
-        .call(()=>setStatus('BOXING'),null,'cook+=7.8')
-        .call(()=>{$('#boxPizzaHost').appendChild(ovenStage.el);},null,'cook+=8.2')
-        .to('.oven',{autoAlpha:0,duration:.8,ease:'power2.in'},'cook+=8.2')
-        .fromTo('#boxScene',{autoAlpha:0,scale:.7,y:60},{autoAlpha:1,scale:1,y:0,duration:.9,ease:'back.out(1.2)'},'cook+=8.35')
-        .fromTo('#boxPizzaHost',{scale:1.45,y:-80,rotation:-8},{scale:1,y:0,rotation:0,duration:1.1,ease:'bounce.out'},'cook+=8.7')
-        .call(()=>spawnSteamScene(true),null,'cook+=9.5')
-        .call(()=>setStatus('CLOSING'),null,'cook+=10')
-        .call(()=>$('#boxScene').classList.add('closed'),null,'cook+=10.05')
-        .call(()=>{boxToggleReady=true;$('#boxScene').classList.add('tapable');},null,'cook+=11.2')
-        .call(()=>setStatus('BOXED.'),null,'cook+=11.1')
+        },null,'cook+=4.5')
+        .to('.oven-door',{y:'-112%',duration:.8,ease:'power3.inOut'},'cook+=4.6')
+        .call(()=>gsap.set('.oven-mouth',{overflow:'visible'}),null,'cook+=4.6')
+        .to(slot,{scale:1.3,y:90,duration:1,ease:'power2.out'},'cook+=5')
+        .call(()=>setStatus('BOXING'),null,'cook+=5.8')
+        .call(()=>{$('#boxPizzaHost').appendChild(ovenStage.el);},null,'cook+=6')
+        .to('.oven',{autoAlpha:0,duration:.5},'cook+=6')
+        .fromTo('#boxScene',{autoAlpha:0,scale:.8,y:40},{autoAlpha:1,scale:1,y:0,duration:.7,ease:'back.out(1.1)'},'cook+=6.1')
+        .call(()=>$('#boxScene').classList.add('closed'),null,'cook+=7')
+        .call(()=>{boxToggleReady=true;$('#boxScene').classList.add('tapable');},null,'cook+=7.5')
+        .call(()=>setStatus('BOXED.'),null,'cook+=7.3')
         .call(()=>{
           buildChips();
           $('#ovenPrice').textContent='EGP '+(effectiveUnit()*orderQty);
           $('#revealBox').classList.add('show');
-          gsap.fromTo('#revealBox > *',{y:44,autoAlpha:0},{y:0,autoAlpha:1,duration:.7,stagger:.1,ease:'power3.out'});
-        },null,'cook+=11.3');
+          gsap.fromTo('#revealBox > *',{y:30,autoAlpha:0},{y:0,autoAlpha:1,duration:.5,stagger:.08,ease:'power2.out'});
+        },null,'cook+=7.5');
     } catch (e) {
-      console.error('Bake error:', e);
-      toast('AN ERROR OCCURRED. PLEASE CHECK CONSOLE.');
+      console.error(e);
     }
   }
 
@@ -2796,18 +2838,41 @@ function sauceSVG(type){
   ];
   let CATS=['signature','classic','spicy','vegetarian','sides','drinks','desserts'];
   let menuCat='signature';
-
-  async function syncMenuFromServer() {
+async function syncMenuFromServer() {
     try {
       const res = await fetch('/api/menu');
       if (!res.ok) return;
       const data = await res.json();
 
+      // 1. تحديث أسعار المكونات ديناميكياً لو الداشبورد باعتها
+      if (data.ingredients) {
+        if (data.ingredients.dough) {
+          DOUGH.forEach(d => { if (data.ingredients.dough[d.id] !== undefined) d.price = Number(data.ingredients.dough[d.id]); });
+        }
+        if (data.ingredients.sauce) {
+          SAUCE.forEach(s => { if (data.ingredients.sauce[s.id] !== undefined) s.price = Number(data.ingredients.sauce[s.id]); });
+        }
+        if (data.ingredients.cheese) {
+          CHEESE.forEach(c => { if (data.ingredients.cheese[c.id] !== undefined) c.price = Number(data.ingredients.cheese[c.id]); });
+        }
+        if (data.ingredients.meat) {
+          MEAT.forEach(m => { if (data.ingredients.meat[m.id] !== undefined) m.price = Number(data.ingredients.meat[m.id]); });
+        }
+        if (data.ingredients.veg) {
+          VEG.forEach(v => { if (data.ingredients.veg[v.id] !== undefined) v.price = Number(data.ingredients.veg[v.id]); });
+        }
+        if (data.ingredients.extras) {
+          EXTRAS.forEach(e => { if (data.ingredients.extras[e.id] !== undefined) e.price = Number(data.ingredients.extras[e.id]); });
+        }
+      }
+
+      // 2. تحديث الكاتيجوري
       if (data.categories && data.categories.length > 0) {
         CATS = data.categories.map(c => c.id);
         if (!CATS.includes(menuCat)) menuCat = CATS[0];
       }
 
+      // 3. تحديث المنيو
       if (data.items && data.items.length > 0) {
         MENU_ITEMS = data.items.map(it => ({
           id: it.item_id || 'item-' + it.id,
@@ -3298,8 +3363,9 @@ const track=$('#menuTrack');
         if (loadPct) loadPct.textContent = Math.round(progress.v) + '%';
       },
       onComplete: () => {
-        stage = new PizzaStage($('#stageHost'));
-        buildRail(); goStep(0); buildTabs(); renderMenu(); renderCart(); persistSaved();
+     stage = new PizzaStage($('#stageHost'));
+  stage.applySnapshot(state, 0); // رسم البيتزا الكلاسيك فوراً
+  buildRail(); goStep(0); buildTabs(); renderMenu(); renderCart(); persistSaved();
         setupScroll(); heroFX();
 
         gsap.to('#loader', {
