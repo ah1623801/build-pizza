@@ -1638,6 +1638,9 @@
 // }
 
 /* ================= PWA INSTALL BANNER ================= */
+
+
+export function initApp() {
   let deferredPrompt = null;
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -1671,7 +1674,8 @@
     }
   });
 
-export function initApp() {
+
+
   if (typeof window === 'undefined') return;
 
   const gsap = window.gsap;
