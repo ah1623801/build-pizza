@@ -1655,7 +1655,7 @@ export function initApp() {
   // منع متصفح الموبايل من إخفاء شريط العنوان (URL bar) ومنع القفزات
 ScrollTrigger.config({ ignoreMobileResize: true });
 // السماح للبارات الأفقية مثل الكاتيجوري بالتحرك بحرية مع اللمس
-ScrollTrigger.normalizeScroll({ allowNestedScroll: true });
+
 let lastWidth = window.innerWidth;
   function setAppHeight(){
     document.documentElement.style.setProperty('--apph', window.innerHeight + 'px');
@@ -2901,14 +2901,33 @@ async function syncMenuFromServer() {
       const tg = +p.dataset.p, o = { v: 0 };
       gsap.to(o, { v: tg, duration: .9, delay: .15 + i * .06, ease: 'power2.out', onUpdate: () => p.textContent = 'EGP ' + Math.round(o.v) });
     });
+// حفظ مكان السكرول الحالي لشريط الأقسام
+    const tabs = $('#menuTabs');
+    const currentScroll = tabs ? tabs.scrollLeft : 0;
+
     if (window.ScrollTrigger) ScrollTrigger.refresh();
-  }
 
-  function buildTabs(){
-    $('#menuTabs').innerHTML=CATS.map(c=>'<button data-c="'+c+'" class="'+(c===menuCat?'on':'')+'">'+c.toUpperCase()+'</button>').join('');
-    $$('#menuTabs button').forEach(b=>b.addEventListener('click',()=>{menuCat=b.dataset.c;buildTabs();renderMenu();}));
-  }
+    // إرجاع السكرول لمكانه فوراً بعد تحديث GSAP
+    if (tabs) {
+      tabs.scrollLeft = currentScroll;
+    }  
+}
 
+function buildTabs(){
+    $('#menuTabs').setAttribute('data-lenis-prevent', 'true'); 
+    
+    // بناء الأزرار مرة واحدة
+    $('#menuTabs').innerHTML = CATS.map(c => '<button data-c="'+c+'" class="'+(c===menuCat?'on':'')+'">'+c.toUpperCase()+'</button>').join('');
+    
+    $$('#menuTabs button').forEach(b => {
+      b.addEventListener('click', () => {
+        menuCat = b.dataset.c;
+        // تلوين الزر النشط فقط
+        $$('#menuTabs button').forEach(btn => btn.classList.toggle('on', btn === b));
+        renderMenu();
+      });
+    });
+  }
   function applyPreset(it){
     const p=it.preset;
     state={dough:p.dough||'classic',sauce:p.sauce||'tomato',cheese:p.cheese||'mozzarella',meats:{...(p.meats||{})},vegs:[...(p.vegs||[])],extras:[...(p.extras||[])]};
