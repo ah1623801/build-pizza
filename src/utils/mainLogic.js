@@ -2955,7 +2955,7 @@ function buildTabs(){
     ScrollTrigger.create({
       trigger: '#builder',
       start: 'top top',
-      end: '+=110%',
+      end: '+=200%',
       pin: true,
       anticipatePin: 1,
       invalidateOnRefresh: true
