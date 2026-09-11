@@ -137,12 +137,14 @@ export function initApp() {
   }
   /* ================= SVG INGREDIENT FACTORIES ================= */
   function sauceSVG(type){
+    
     const conf={tomato:{c1:'#e6452a',c2:'#b02412',c3:'#8a180b',herb:1},spicy:{c1:'#e23018',c2:'#a81708',c3:'#7e1006',herb:1,flakes:1},bbq:{c1:'#7a3413',c2:'#4a1c07',c3:'#2f1006',gloss:1},garlic:{c1:'#f4e8ca',c2:'#e2cda0',c3:'#c9ad76',herb:1}}[type];
     const gid=nid('sg'),gl=nid('gl'),fid=nid('sf');
     let body='<defs><radialGradient id="'+gid+'" cx="45%" cy="42%" r="68%">'
       +'<stop offset="0%" stop-color="'+conf.c1+'"/><stop offset="68%" stop-color="'+conf.c2+'"/><stop offset="100%" stop-color="'+conf.c3+'"/></radialGradient>'
       +'<radialGradient id="'+gl+'"><stop offset="0%" stop-color="rgba(255,255,255,.32)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/></radialGradient>'
-      +'<filter id="'+fid+'" x="-12%" y="-12%" width="124%" height="124%"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="'+((Math.random()*100)|0)+'" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="7"/></filter></defs>'
+    +'<g ' + (isMobile ? '' : 'filter="url(#'+fid+')"') + '>'
+      +'<filter  id="'+fid+'" x="-12%" y="-12%" width="124%" height="124%"> <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="'+((Math.random()*100)|0)+'" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="7"/></filter></defs>'
       +'<g filter="url(#'+fid+')">'
       +'<path d="'+wobbleCircle(100,100,78,16,.05)+'" fill="url(#'+gid+')"/>'
       +'<path d="'+wobbleCircle(100,100,78,16,.05)+'" fill="none" stroke="rgba(40,8,2,.35)" stroke-width="2.5"/>'
@@ -176,6 +178,9 @@ export function initApp() {
     return mkSVG(100,'<g transform="rotate('+rot+' 50 50)">'+out+'</g>');
   }
   function meltSVG(){
+const filterAttr = isMobile ? '' : 'filter="url(#' + fid + ')"';
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 980;
+
     const gid=nid('ml'),spot=nid('sp'),gl=nid('mg'),fid=nid('mf');
     let spots='';
     for(let i=0;i<22;i++){
@@ -196,7 +201,8 @@ export function initApp() {
      '<defs>'
    +'<radialGradient id="'+gid+'" cx="46%" cy="42%" r="66%"><stop offset="0%" stop-color="#f9edbe"/><stop offset="45%" stop-color="#f0d795"/><stop offset="78%" stop-color="#e5c078"/><stop offset="100%" stop-color="#d3a355"/></radialGradient>'   +'<radialGradient id="'+spot+'"><stop offset="0%" stop-color="#8a3d12"/><stop offset="70%" stop-color="rgba(138,61,18,.5)"/><stop offset="100%" stop-color="rgba(138,61,18,0)"/></radialGradient>'
      +'<radialGradient id="'+gl+'"><stop offset="0%" stop-color="rgba(255,255,255,.34)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/></radialGradient>'
-     +'<filter id="'+fid+'" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="'+((Math.random()*100)|0)+'" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="8"/></filter>'
+    +'<g ' + (isMobile ? '' : 'filter="url(#'+fid+')"') + '>'
+     +'<filter id="'+fid+'" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="'+((Math.random()*100)|0)+'" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="8" /></filter> '
      +'</defs>'
      +'<g filter="url(#'+fid+')">'
      +'<path d="'+wobbleCircle(100,100,68,18,.06)+'" fill="url(#'+gid+')"/>'
@@ -493,7 +499,10 @@ function dropPiece(st,el,p,cfg,speed,idx){
       this.charL.appendChild(d);}
     this.charSpots=[...this.charL.children];
    // دوران ناعم وخفيف جداً ولا يستهلك طاقة المعالج
-if(!this.mini) gsap.to(this.q('.pz-rot'),{rotation: 360, duration: 90, repeat: -1, ease: 'none'});
+// الجديد:
+if (!this.mini && window.innerWidth > 980) {
+  gsap.to(this.q('.pz-rot'), { rotation: 360, duration: 90, repeat: -1, ease: 'none' });
+}
   }
   setDough(id,speed){
     speed=speed==null?1:speed;
@@ -1240,20 +1249,26 @@ if(!this.mini) gsap.to(this.q('.pz-rot'),{rotation: 360, duration: 90, repeat: -
       else window.scrollTo({top:y,behavior:'smooth'});
     }
 
-    // إعداد Lenis بمرونة متوافقة مع المتصفحات الحديثة
-    lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      smoothWheel: true,
-      touchMultiplier: 1.5,
-    });
+// تفعيل Lenis فقط للشاشات الكبيرة (Desktop)
+const isMobileDevice = window.innerWidth <= 980 || 'ontouchstart' in window;
 
-    lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add((time) => {
-      lenis.raf(time * 1000);
-    });
-    gsap.ticker.lagSmoothing(500, 33);
+if (!isMobileDevice) {
+  lenis = new Lenis({
+    duration: 1.2,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    orientation: 'vertical',
+    smoothWheel: true,
+  });
+
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add((time) => {
+    lenis.raf(time * 1000);
+  });
+  gsap.ticker.lagSmoothing(500, 33);
+} else {
+  // على الموبايل: تمرير المتصفح العتادي السريع
+  window.addEventListener('scroll', ScrollTrigger.update);
+}
 
     $$('.nav-links button').forEach(b=>b.addEventListener('click',()=>lenis.scrollTo(b.dataset.go,{offset:-40})));
     $('#ctaBuild').addEventListener('click',goBuilder);
@@ -1489,16 +1504,26 @@ if(!this.mini) gsap.to(this.q('.pz-rot'),{rotation: 360, duration: 90, repeat: -
       o.connect(gn);gn.connect(AC.destination);o.start(t);o.stop(t+.06);
     }
     let prevT=performance.now();
-    function loop(t){
-      requestAnimationFrame(loop);
-      if(!MQ.matches)return;
-      const dt=Math.min(.05,(t-prevT)/1000);prevT=t;
-      if(!drag){vel*=Math.pow(.0025,dt);A+=(AUTO+vel)*dt;}
-      rot.style.transform='rotate('+A+'deg)';
-      for(const el of icons)el.firstChild.style.transform='rotate('+(-A)+'deg)';
-      tickAcc+=Math.abs(A-prevA);prevA=A;
-      if(tickAcc>5){tickAcc=0;tick();}
-    }
+function loop(t){
+  requestAnimationFrame(loop);
+  if(!MQ.matches) return;
+  
+  // لو المستخدم لا يسحب ومفيش سرعة متبقية، لا تعيد الرسم بدون داعي
+  if (!drag && Math.abs(vel) < 0.1) return;
+
+  const dt = Math.min(.05, (t - prevT) / 1000);
+  prevT = t;
+  
+  if(!drag){
+    vel *= Math.pow(.0025, dt);
+    A += (AUTO + vel) * dt;
+  }
+  
+  rot.style.transform = 'rotate(' + A + 'deg)';
+  for(let i = 0; i < icons.length; i++) {
+    icons[i].firstChild.style.transform = 'rotate(' + (-A) + 'deg)';
+  }
+}
     requestAnimationFrame(loop);
     function place(){
       const host=document.getElementById('stageHost');if(!host)return;

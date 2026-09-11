@@ -679,3 +679,31 @@ html.lenis, html.lenis body {
 .top {
   contain: layout paint;
 }
+
+
+/* 1. إيقاف الـ Grain على الموبايل لتوفير رندر الشاشة كاملة */
+@media (max-width: 980px) {
+  #grain {
+    display: none !important;
+  }
+}
+
+/* 2. إلغاء drop-shadow المعقد للقطع على الموبايل واستبدالها بحجم خفيف */
+@media (max-width: 980px) {
+  .top:not(.ns) svg {
+    filter: none !important; /* يحذف 30 طبقة فلتر فوريّة */
+  }
+  
+  /* تقليل بلور البانل على الموبايل لراحة كارت الشاشة */
+  .panel {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+}
+
+/* 3. تسريع طبقات البيتزا عتادياً */
+.pz-rot, .stage-wrap, .pz-scale {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
