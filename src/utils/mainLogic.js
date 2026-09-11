@@ -492,7 +492,8 @@ function dropPiece(st,el,p,cfg,speed,idx){
       d.style.left=(50+Math.cos(a)*r*50-s/2)+'%';d.style.top=(50+Math.sin(a)*r*50-s/2)+'%';
       this.charL.appendChild(d);}
     this.charSpots=[...this.charL.children];
-   if(!this.mini)gsap.to(this.q('.pz-rot'),{rotation:360,duration:50,repeat:-1,ease:'none'});
+   // دوران ناعم وخفيف جداً ولا يستهلك طاقة المعالج
+if(!this.mini) gsap.to(this.q('.pz-rot'),{rotation: 360, duration: 90, repeat: -1, ease: 'none'});
   }
   setDough(id,speed){
     speed=speed==null?1:speed;
@@ -1277,34 +1278,70 @@ function dropPiece(st,el,p,cfg,speed,idx){
   }
    
     
-
-  /* ================= HERO CINEMATICS ================= */
+/* ================= HERO CINEMATICS (INFINITE VIDEO LOOP) ================= */
+/* ================= HERO CINEMATICS ================= */
   function heroFX(){
-    const dustH=$('#heroDust');
-    for(let i=0;i<26;i++){
-      const d=document.createElement('i');
-      d.style.left=rand(0,100)+'%';d.style.top=rand(0,100)+'%';
-      dustH.appendChild(d);
-      gsap.to(d,{y:rand(-110,-50),x:rand(-40,40),opacity:rand(.15,.7),duration:rand(3,7),repeat:-1,yoyo:true,ease:'sine.inOut',delay:rand(0,3)});
+    const dustH = $('#heroDust');
+    if (dustH) {
+      dustH.innerHTML = '';
+      for(let i=0; i<6; i++){
+        const d = document.createElement('i');
+        d.style.left = rand(0, 100) + '%';
+        d.style.top = rand(0, 100) + '%';
+        dustH.appendChild(d);
+        gsap.to(d, {
+          y: rand(-80, -30),
+          opacity: rand(0.2, 0.6),
+          duration: rand(4, 6),
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut',
+          delay: i * 0.5
+        });
+      }
     }
-    gsap.to('#heroPizza img',{rotation:360,duration:30,repeat:-1,ease:'none'});
-    gsap.to('#heroPizza',{scale:1.06,duration:6,repeat:-1,yoyo:true,ease:'sine.inOut'});
-    $$('#heroSteam i').forEach((s,i)=>{
-      gsap.timeline({repeat:-1,delay:i*1.1})
-        .fromTo(s,{y:0,x:rand(-30,30),opacity:0,scale:.6},{opacity:.5,scale:1.2,duration:1.2,ease:'power1.out'})
-        .to(s,{y:-160,opacity:0,x:'+='+rand(-30,30),duration:2,ease:'power1.inOut'});
-    });
-    const v=$('#heroVideo');
-    let playing=false;
-    v.addEventListener('playing',()=>{
-      playing=true;
-      document.getElementById('hero').classList.add('video-on');
-      gsap.to(v,{opacity:1,duration:1.4,ease:'power2.out'});
-    });
-    const tryPlay=()=>{const p=v.play();if(p&&p.catch)p.catch(()=>{});};
-    tryPlay();
-    setTimeout(()=>{if(!playing)tryPlay();},1200);
-    setTimeout(()=>{if(!playing){v.style.display='none';}},6000);
+
+    const hp = $('#heroPizza img');
+    if (hp) gsap.to(hp, { rotation: 360, duration: 40, repeat: -1, ease: 'none' });
+
+    // تشغيل الفيديو وإعادته عند الثانية 11
+    const v = $('#heroVideo');
+    if (v) {
+      v.muted = true;
+      v.playsInline = true;
+
+      const playVideo = () => {
+        const p = v.play();
+        if (p && p.catch) {
+          p.catch(() => {
+            document.addEventListener('touchstart', () => v.play(), { once: true });
+            document.addEventListener('click', () => v.play(), { once: true });
+          });
+        }
+      };
+
+      playVideo();
+
+      // إعادة التشغيل أول ما يوصل للثانية 11 فوراً
+      v.addEventListener('timeupdate', () => {
+        if (v.currentTime >= 11) {
+          v.currentTime = 0;
+          v.play();
+        }
+      });
+
+      // أمان إضافي لو الفيديو خلص قبل 11 ثانية
+      v.addEventListener('ended', () => {
+        v.currentTime = 0;
+        v.play();
+      });
+
+      const hero = document.getElementById('hero');
+      if (hero) hero.classList.add('video-on');
+
+      // الشفافية الهادئة (0.4)
+      gsap.to(v, { opacity: 0.4, duration: 1, ease: 'power2.out' });
+    }
   }
   /* ================= DRAWER (mobile) ================= */
   function updateBadge(){
@@ -1347,7 +1384,10 @@ function dropPiece(st,el,p,cfg,speed,idx){
     function icoPepper(){const[g,d]=GR('#7cc46a','#3f8f2f','#1e5c17');return mkSVG(100,'<defs>'+d+'</defs><path d="M50 30c14 0 24 12 24 28 0 16-10 26-24 26S26 74 26 58c0-16 10-28 24-28z" fill="url(#'+g+')"/><path d="M38 34q-4 22 0 44M62 34q4 22 0 44" fill="none" stroke="rgba(20,70,10,.35)" stroke-width="4"/><path d="M50 30q2-10 10-12" fill="none" stroke="#4c8f36" stroke-width="6" stroke-linecap="round"/><ellipse cx="40" cy="44" rx="7" ry="12" fill="rgba(255,255,255,.25)"/>');}
     function icoBasil(){let s='';for(let i=0;i<4;i++){s+='<g transform="rotate('+(i*90+45)+' 50 50)"><path d="M50 12 C64 20 70 36 66 48 C62 58 54 62 50 62 C46 62 38 58 34 48 C30 36 36 20 50 12 Z" fill="url(#bg'+i+')"/></g>';s='<defs><linearGradient id="bg'+i+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4aa44e"/><stop offset="100%" stop-color="#1e5c28"/></linearGradient></defs>'+s;}return mkSVG(100,s+'<circle cx="50" cy="50" r="5" fill="#2c7a34"/>');}
     function icoFlakes(){let s='<circle cx="50" cy="52" r="32" fill="#f2efe6"/><circle cx="50" cy="52" r="25" fill="#8c1a0c"/>';for(let i=0;i<14;i++){s+='<rect x="'+rand(30,66).toFixed(1)+'" y="'+rand(32,68).toFixed(1)+'" width="5" height="4" rx="1" fill="'+pick(['#d84326','#e8632f','#b02210'])+'" transform="rotate('+rand(0,90).toFixed(0)+' 50 50)"/>';}return mkSVG(100,s+speckles(50,52,18,8,.8,1.6,'#f6d5a0',.9));}
-    function icoBulb(){const[g,d]=GR('#f6efe2','#dcc9ae','#a98d68');return mkSVG(100,'<defs>'+d+'</defs><path d="M50 22c4 8 2 12 8 16 10 7 16 16 26 0 14-11 22-24 22S26 78 26 64c0-10 6-19 16-26 6-4 4-8 8-16z" fill="url(#'+g+')"/><path d="M40 44q-4 18 0 34M50 42v38M60 44q4 18 0 34" fill="none" stroke="rgba(150,120,80,.4)" stroke-width="2.5"/><path d="M46 22h8l-2-8h-4z" fill="#b49b72"/>');}
+   function icoBulb(){
+      const[g,d]=GR('#f6efe2','#dcc9ae','#a98d68');
+      return mkSVG(100,'<defs>'+d+'</defs><path d="M 50 22 C 54 30 52 34 58 38 C 68 45 74 54 74 64 C 74 78 64 88 50 88 C 36 88 26 78 26 64 C 26 54 32 45 42 38 C 48 34 46 30 50 22 Z" fill="url(#'+g+')"/><path d="M 40 44 Q 36 62 40 78 M 50 42 V 80 M 60 44 Q 64 62 60 78" fill="none" stroke="rgba(150,120,80,.4)" stroke-width="2.5"/><path d="M 46 22 H 54 L 52 14 H 48 Z" fill="#b49b72"/>');
+    }
     function icoKetchup(){const[g,d]=GR('#ff6a4d','#c2180b','#7a0d04');return mkSVG(100,'<defs>'+d+'</defs><path d="M50 20c8 14 20 22 20 38a20 20 0 1 1-40 0c0-16 12-24 20-38z" fill="url(#'+g+')"/><path d="M22 44l-8-4M78 44l8-4M30 30l-6-8M70 30l6-8M50 12V4" stroke="#d92c14" stroke-width="4" stroke-linecap="round"/><ellipse cx="42" cy="52" rx="7" ry="11" fill="rgba(255,255,255,.3)"/>');}
     function icoTruffle(){let s='';[[40,44,14],[58,40,12],[52,58,15],[66,56,10],[34,58,10]].forEach(p=>{s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+p[2]+'" fill="#191110"/>'+speckles(p[0],p[1],p[2]-2,8,.8,1.8,'#4a382b',.9);});return mkSVG(100,s);}
     const ICON={
@@ -1504,28 +1544,71 @@ function dropPiece(st,el,p,cfg,speed,idx){
   })();
   
   /* ================= LOADER / INIT ================= */
+/* ================= LOADER / INIT (SMOOTH & ULTRA FAST) ================= */
   async function boot(){
-    let done=0;const tot=5;
-    const tick=()=>{done++;const p=Math.round(done/tot*100);$('#loadBar').style.width=p+'%';$('#loadPct').textContent=p+'%';};
-    const jobs=[
-      cutout(IMG.doughThin).then(u=>{DOUGH_SRC.thin=u;tick();}),
-      cutout(IMG.doughClassic).then(u=>{DOUGH_SRC.classic=u;tick();}),
-      cutout(IMG.doughThick).then(u=>{DOUGH_SRC.thick=u;tick();}),
-      cutout(IMG.doughCheese).then(u=>{DOUGH_SRC.cheese=u;tick();}),
-      loadImg(IMG.fire).then(tick).catch(tick)
+    const loadBar = $('#loadBar');
+    const loadPct = $('#loadPct');
+    
+    // أنميشن ناعم وسلس للعداد بدون تقطيع
+    const progress = { v: 0 };
+    const loadAnim = gsap.to(progress, {
+      v: 90,
+      duration: 1.2,
+      ease: 'power2.out',
+      onUpdate: () => {
+        if (loadBar) loadBar.style.width = Math.round(progress.v) + '%';
+        if (loadPct) loadPct.textContent = Math.round(progress.v) + '%';
+      }
+    });
+
+    const jobs = [
+      cutout(IMG.doughThin).then(u => { DOUGH_SRC.thin = u; }),
+      cutout(IMG.doughClassic).then(u => { DOUGH_SRC.classic = u; }),
+      cutout(IMG.doughThick).then(u => { DOUGH_SRC.thick = u; }),
+      cutout(IMG.doughCheese).then(u => { DOUGH_SRC.cheese = u; }),
+      loadImg(IMG.fire).catch(() => {}),
+      syncMenuFromServer()
     ];
+
     await Promise.all(jobs);
-    await syncMenuFromServer(); // ← جلب المنيو من السيرفر
-    stage=new PizzaStage($('#stageHost'));
-    buildRail();goStep(0);buildTabs();renderMenu();renderCart();persistSaved();
-    setupScroll();heroFX();
-    gsap.to('#loader',{autoAlpha:0,duration:.7,delay:.2,onComplete:()=>$('#loader').remove()});
-    gsap.timeline({delay:.5})
-      .fromTo('#heroPizza',{scale:.7,autoAlpha:0,rotation:-25},{scale:1,autoAlpha:1,rotation:0,duration:1.5,ease:'power3.out'})
-      .fromTo('.h-line span',{yPercent:110},{yPercent:0,duration:1,stagger:.14,ease:'power4.out'},'-=.9')
-      .fromTo('.h-sub,.h-cta',{y:26,autoAlpha:0},{y:0,autoAlpha:1,duration:.7,stagger:.1},'-=.4')
-      .fromTo('.h-scroll',{autoAlpha:0},{autoAlpha:1,duration:.6},'-=.2');
-    ScrollTrigger.refresh();
+
+    // إنهاء العداد لـ 100% بنعومة
+    loadAnim.kill();
+    gsap.to(progress, {
+      v: 100,
+      duration: 0.3,
+      ease: 'power1.inOut',
+      onUpdate: () => {
+        if (loadBar) loadBar.style.width = Math.round(progress.v) + '%';
+        if (loadPct) loadPct.textContent = Math.round(progress.v) + '%';
+      },
+      onComplete: () => {
+        stage = new PizzaStage($('#stageHost'));
+        buildRail(); goStep(0); buildTabs(); renderMenu(); renderCart(); persistSaved();
+        setupScroll(); heroFX();
+
+        // اختفاء ناعم جداً لشاشة اللودينج
+        gsap.to('#loader', {
+          autoAlpha: 0,
+          scale: 1.05,
+          duration: 0.6,
+          ease: 'power3.inOut',
+          onComplete: () => {
+            const l = $('#loader');
+            if (l) l.remove();
+          }
+        });
+
+        // تشغيل أنميشن الهيرو
+        if ($('#heroPizza')) {
+          gsap.timeline({ delay: 0.2 })
+            .fromTo('#heroPizza', { scale: 0.7, autoAlpha: 0, rotation: -20 }, { scale: 1, autoAlpha: 1, rotation: 0, duration: 1.2, ease: 'power3.out' })
+            .fromTo('.h-line span', { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.12, ease: 'power4.out' }, '-=0.7')
+            .fromTo('.h-sub, .h-cta', { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.6, stagger: 0.1 }, '-=0.3')
+            .fromTo('.h-scroll', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, '-=0.2');
+        }
+      }
+    });
   }
   boot();
 }
