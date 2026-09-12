@@ -8,10 +8,14 @@
 
 
 
-html{overflow-x:hidden}
-#builder{overflow:hidden}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+html { overflow-x: clip; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); overflow-x: clip; -webkit-font-smoothing: antialiased; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* إلغاء أي overflow hidden عن سكشن البيتزا وحاوية التثبيت */
+#builder, .pin-spacer {
+  overflow: visible !important;
+}
 body.locked{overflow:hidden}
 img{user-select:none;-webkit-user-drag:none}
 button{font-family:var(--body);cursor:pointer;background:none;border:none;color:inherit}
@@ -805,4 +809,23 @@ html.lenis, html.lenis body {
 }
 #menuTabs button {
   flex-shrink: 0 !important;
+}
+
+
+
+/* تخفيف الرندر على شاشات الهواتف */
+@media (max-width: 980px) {
+  .top svg, .top:not(.ns) svg {
+    filter: none !important;
+  }
+  .stage-wrap {
+    touch-action: pan-y !important;
+  }
+}
+
+/* منع سكرول الصفحة نهائياً عند لمس أو سحب أيقونات العجلة */
+.wi, .wi-in {
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }

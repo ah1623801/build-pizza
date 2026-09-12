@@ -21,17 +21,12 @@ export default function Home() {
     if (isInitialized.current) return;
     isInitialized.current = true;
 
+    // تشغيل التطبيق بأمان
     setTimeout(() => {
       if (typeof initApp === 'function') {
         initApp();
       }
-    }, 100);
-
-    return () => {
-      if (typeof window !== 'undefined' && window.ScrollTrigger) {
-        window.ScrollTrigger.getAll().forEach(t => t.kill());
-      }
-    };
+    }, 150);
   }, []);
 
   return (
@@ -45,7 +40,6 @@ export default function Home() {
       <Contact />
       <Footer />
       
-      {/* Modals & Drawers */}
       <CartDrawer />
       <SavedDrawer />
       <OvenModal />

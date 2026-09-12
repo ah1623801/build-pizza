@@ -1712,58 +1712,47 @@ let lastWidth = window.innerWidth;
   $('#mMenuClose').addEventListener('click',()=>document.body.classList.remove('mm-open'));
 
   let DOUGH_SRC={thin:IMG.doughThin,classic:IMG.doughClassic,thick:IMG.doughThick,cheese:IMG.doughCheese};
-
-  /* تفريغ خلفية الصور */
+/* تفريغ خلفية الصور بتسريع وخفة فائقة للموبايل */
   async function cutout(url){
     try{
-      const img=await loadImg(url);
-      const W=img.naturalWidth,H=img.naturalHeight,N=W*H;
-      const cv=document.createElement('canvas');cv.width=W;cv.height=H;
-      const cx=cv.getContext('2d',{willReadFrequently:true});
-      cx.drawImage(img,0,0);
-      const d=cx.getImageData(0,0,W,H),px=d.data;
-      const L=new Float32Array(N);
-      for(let i=0,p=0;p<N;i+=4,p++)L[p]=.299*px[i]+.587*px[i+1]+.114*px[i+2];
-      const Tbg=70,Tfr=115;
-      const bg=new Uint8Array(N),st=[];
-      const push=p=>{if(!bg[p]&&L[p]<Tbg){bg[p]=1;st.push(p);}};
-      for(let x=0;x<W;x++){push(x);push((H-1)*W+x);}
-      for(let y=0;y<H;y++){push(y*W);push(y*W+W-1);}
+      const img = await loadImg(url);
+      // تقليل الحسابات للموبايل ليرتاح المعالج
+      const mob = isMobile();
+      const scale = mob ? 0.35 : 1;
+      const W = Math.round(img.naturalWidth * scale);
+      const H = Math.round(img.naturalHeight * scale);
+      const N = W * H;
+
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const cx = cv.getContext('2d', { willReadFrequently: true });
+      cx.drawImage(img, 0, 0, W, H);
+      const d = cx.getImageData(0, 0, W, H), px = d.data;
+      const L = new Float32Array(N);
+      for(let i=0, p=0; p<N; i+=4, p++) L[p] = .299*px[i] + .587*px[i+1] + .114*px[i+2];
+
+      const Tbg = 70, Tfr = 115;
+      const bg = new Uint8Array(N), st = [];
+      const push = p => { if(!bg[p] && L[p]<Tbg){ bg[p]=1; st.push(p); } };
+      for(let x=0; x<W; x++){ push(x); push((H-1)*W+x); }
+      for(let y=0; y<H; y++){ push(y*W); push(y*W+W-1); }
+
       while(st.length){
-        const p=st.pop(),x=p%W;
-        if(x>0){const q=p-1;if(!bg[q]&&L[q]<Tbg){bg[q]=1;st.push(q);}}
-        if(x<W-1){const q=p+1;if(!bg[q]&&L[q]<Tbg){bg[q]=1;st.push(q);}}
-        if(p>=W){const q=p-W;if(!bg[q]&&L[q]<Tbg){bg[q]=1;st.push(q);}}
-        if(p<N-W){const q=p+W;if(!bg[q]&&L[q]<Tbg){bg[q]=1;st.push(q);}}
+        const p = st.pop(), x = p%W;
+        if(x>0){ const q=p-1; if(!bg[q] && L[q]<Tbg){ bg[q]=1; st.push(q); } }
+        if(x<W-1){ const q=p+1; if(!bg[q] && L[q]<Tbg){ bg[q]=1; st.push(q); } }
+        if(p>=W){ const q=p-W; if(!bg[q] && L[q]<Tbg){ bg[q]=1; st.push(q); } }
+        if(p<N-W){ const q=p+W; if(!bg[q] && L[q]<Tbg){ bg[q]=1; st.push(q); } }
       }
-      for(let pass=0;pass<3;pass++){
-        const add=[];
-        for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-          const p=y*W+x;
-          if(bg[p]||L[p]>=Tfr)continue;
-          if((x>0&&bg[p-1])||(x<W-1&&bg[p+1])||(y>0&&bg[p-W])||(y<H-1&&bg[p+W]))add.push(p);
-        }
-        if(!add.length)break;
-        for(const p of add)bg[p]=1;
+
+      for(let i=0, p=0; p<N; i+=4, p++) {
+        px[i+3] = bg[p] ? 0 : 255;
       }
-      let al=new Float32Array(N);
-      for(let p=0;p<N;p++)al[p]=bg[p]?0:1;
-      const blur=src=>{
-        const out=new Float32Array(N);
-        for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
-          const p=y*W+x;let s=0;
-          for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)s+=src[p+dy*W+dx];
-          out[p]=s/9;
-        }
-        for(let x=0;x<W;x++){out[x]=src[x];out[(H-1)*W+x]=src[(H-1)*W+x];}
-        for(let y=0;y<H;y++){out[y*W]=src[y*W];out[y*W+W-1]=src[y*W+W-1];}
-        return out;
-      };
-      al=blur(blur(al));
-      for(let i=0,p=0;p<N;i+=4,p++)px[i+3]=Math.round(px[i+3]*al[p]);
-      cx.putImageData(d,0,0);
+      cx.putImageData(d, 0, 0);
       return cv.toDataURL('image/png');
-    }catch(e){return url;}
+    } catch(e) { 
+      return url; 
+    }
   }
 
   /* ================= SVG GEOMETRY ================= */
@@ -2951,61 +2940,15 @@ function buildTabs(){
 
   /* ================= SCROLL / REVEALS (RESTORED & SMOOTH) ================= */
 function setupScroll(){
-    // 1. تشغيل Lenis أولاً قبل أي سكرول تريجر
-    lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      smoothWheel: true,
-      touchMultiplier: 1.2,
-    });
-
-    lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add((time) => {
-      lenis.raf(time * 1000);
-    });
-    gsap.ticker.lagSmoothing(0);
-
-    // 2. تفعيل التثبيت الفائق لسكشن البيتزا مع كبح السرعة الحقيقي
+ // تفعيل التثبيت الصريح
     ScrollTrigger.create({
       trigger: '#builder',
       start: 'top top',
-      end: '+=12000', // مسافة تثبيت عملاقة
+      end: '+=10000', // مسافة التثبيت (التقل) - كل ما تكبر الرقم السكشن يثبت أكتر
       pin: true,
       pinSpacing: true,
       anticipatePin: 1,
       invalidateOnRefresh: true,
-
-      // أول ما يدخل السكشن: كبح السرعة وإلغاء الزحلقة تماماً (ثقل حقيقي)
-      onEnter: () => {
-        if (lenis) {
-          lenis.touchMultiplier = 0.05;       // يقلل استجابة اللمس لـ 5% فقط!
-          lenis.wheelMultiplier = 0.1;        // يقلل بكرة الماوس لـ 10%
-          lenis.touchInertiaMultiplier = 0;   // يلغي الزحلقة التلقائية نهائياً
-        }
-      },
-      // أول ما يخرج من السكشن: ترجع السرعة الطبيعية
-      onLeave: () => {
-        if (lenis) {
-          lenis.touchMultiplier = 1.2;
-          lenis.wheelMultiplier = 1.0;
-          lenis.touchInertiaMultiplier = 35;  // استرجاع السلاسة الطبيعية
-        }
-      },
-      onEnterBack: () => {
-        if (lenis) {
-          lenis.touchMultiplier = 0.05;
-          lenis.wheelMultiplier = 0.1;
-          lenis.touchInertiaMultiplier = 0;
-        }
-      },
-      onLeaveBack: () => {
-        if (lenis) {
-          lenis.touchMultiplier = 1.2;
-          lenis.wheelMultiplier = 1.0;
-          lenis.touchInertiaMultiplier = 35;
-        }
-      }
     });
 
     function goBuilder(){
@@ -3050,47 +2993,13 @@ function setupScroll(){
     }, 500);
   }
    
-  /* ================= HERO CINEMATICS ================= */
+/* ================= HERO CINEMATICS (مع إيقاف الفيديو الذكي) ================= */
   function heroFX(){
-    const dustH = $('#heroDust');
-    if (dustH) {
-      dustH.innerHTML = '';
-      for(let i=0; i<6; i++){
-        const d = document.createElement('i');
-        d.style.left = rand(0, 100) + '%';
-        d.style.top = rand(0, 100) + '%';
-        dustH.appendChild(d);
-        gsap.to(d, {
-          y: rand(-80, -30),
-          opacity: rand(0.2, 0.6),
-          duration: rand(4, 6),
-          repeat: -1,
-          yoyo: true,
-          ease: 'sine.inOut',
-          delay: i * 0.5
-        });
-      }
-    }
-
-    const hp = $('#heroPizza img');
-    if (hp) gsap.to(hp, { rotation: 360, duration: 40, repeat: -1, ease: 'none' });
-
     const v = $('#heroVideo');
     if (v) {
       v.muted = true;
       v.playsInline = true;
-
-      const playVideo = () => {
-        const p = v.play();
-        if (p && p.catch) {
-          p.catch(() => {
-            document.addEventListener('touchstart', () => v.play(), { once: true });
-            document.addEventListener('click', () => v.play(), { once: true });
-          });
-        }
-      };
-
-      playVideo();
+      v.play().catch(() => {});
 
       v.addEventListener('timeupdate', () => {
         if (v.currentTime >= 11) {
@@ -3099,15 +3008,17 @@ function setupScroll(){
         }
       });
 
-      v.addEventListener('ended', () => {
-        v.currentTime = 0;
-        v.play();
-      });
+      // إيقاف تشغيل الفيديو عند النزول لسكشن البيتزا لتبريد الموبايل تماماً
+      const heroObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          v.play().catch(() => {});
+        } else {
+          v.pause(); // إيقاف فوري لتوفير المعالج
+        }
+      }, { threshold: 0.1 });
 
-      const hero = document.getElementById('hero');
-      if (hero) hero.classList.add('video-on');
-
-      gsap.to(v, { opacity: 0.4, duration: 1, ease: 'power2.out' });
+      const heroEl = document.getElementById('hero');
+      if (heroEl) heroObserver.observe(heroEl);
     }
   }
 
@@ -3224,7 +3135,28 @@ function setupScroll(){
     function center(){const r=wheel.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};}
     function angOf(e){const c=center();return Math.atan2(e.clientY-c.y,e.clientX-c.x)*180/Math.PI;}
     let axis=null,lastX=0,lastY=0;
-    wrap.addEventListener('touchmove',e=>{if(axis==='x')e.preventDefault();},{passive:false});
+    // لو المستخدم ماسك أيقونة، امنع سكرول الصفحة وخليها تلف
+    wrap.addEventListener('touchmove', e => {
+      if (drag && downEl) {
+        e.preventDefault(); // يمنع سكرول الصفحة وقت مسك الأيقونة
+      }
+    }, { passive: false });
+
+    wrap.addEventListener('pointermove', e => {
+      if (!drag) return;
+      
+      const a = angOf(e);
+      let d = a - lastA;
+      if (d > 180) d -= 360;
+      if (d < -180) d += 360;
+      
+      moved += Math.abs(d);
+      const t = performance.now(), dt = Math.max(8, t - lastT);
+      vel = d / dt * 1000;
+      A += d;
+      lastA = a;
+      lastT = t;
+    });
     wrap.addEventListener('pointerdown',e=>{
       if(!MQ.matches)return;
       if($('#ovenScene').classList.contains('on'))return;
@@ -3232,15 +3164,7 @@ function setupScroll(){
       axis=null;lastX=e.clientX;lastY=e.clientY;
       lastA=angOf(e);lastT=performance.now();
     });
-    wrap.addEventListener('pointermove',e=>{
-      if(!drag)return;
-      if(axis===null&&moved>6)axis=Math.abs(e.clientX-lastX)>Math.abs(e.clientY-lastY)?'x':'y';
-      lastX=e.clientX;lastY=e.clientY;
-      const a=angOf(e);let d=a-lastA;if(d>180)d-=360;if(d<-180)d+=360;
-      moved+=Math.abs(d);
-      const t=performance.now(),dt=Math.max(8,t-lastT);
-      vel=d/dt*1000;A+=d;lastA=a;lastT=t;
-    });
+
     wrap.addEventListener('pointerup',()=>{
       if(!drag)return;drag=false;
       if(moved<7&&downEl)toggle(downEl.dataset.cat,downEl.dataset.id);
@@ -3264,10 +3188,14 @@ function setupScroll(){
       o.connect(gn);gn.connect(AC.destination);o.start(t);o.stop(t+.06);
     }
 
-    let prevT = performance.now();
+let prevT = performance.now();
     function loop(t){
       requestAnimationFrame(loop);
+      // لو مش على الموبايل أو السكشن مش في الشاشة = لا تستهلك أي معالجة
       if (!MQ.matches || !builderInView) return;
+
+      // لو المستخدم مش بيلمس ومفيش سرعة = قف مكانك ولا تعد رسم الأيقونات
+      if (!drag && Math.abs(vel) < 0.05) return;
 
       const dt = Math.min(.05, (t - prevT) / 1000);
       prevT = t;
@@ -3280,13 +3208,6 @@ function setupScroll(){
       rot.style.transform = 'rotate(' + A + 'deg)';
       for (let i = 0; i < icons.length; i++) {
         icons[i].firstChild.style.transform = 'rotate(' + (-A) + 'deg)';
-      }
-
-      tickAcc += Math.abs(A - prevA);
-      prevA = A;
-      if (tickAcc > 5) {
-        tickAcc = 0;
-        tick();
       }
     }
     requestAnimationFrame(loop);
