@@ -1713,48 +1713,53 @@ let lastWidth = window.innerWidth;
 
   let DOUGH_SRC={thin:IMG.doughThin,classic:IMG.doughClassic,thick:IMG.doughThick,cheese:IMG.doughCheese};
 /* تفريغ خلفية الصور بتسريع وخفة فائقة للموبايل */
-  async function cutout(url){
+async function cutout(url){
     try{
       const img = await loadImg(url);
-      // تقليل الحسابات للموبايل ليرتاح المعالج
-      const mob = isMobile();
-      const scale = mob ? 0.35 : 1;
-      const W = Math.round(img.naturalWidth * scale);
-      const H = Math.round(img.naturalHeight * scale);
-      const N = W * H;
-
-      const cv = document.createElement('canvas');
-      cv.width = W; cv.height = H;
+      const W = img.naturalWidth, H = img.naturalHeight, N = W * H;
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
       const cx = cv.getContext('2d', { willReadFrequently: true });
-      cx.drawImage(img, 0, 0, W, H);
+      cx.drawImage(img, 0, 0);
       const d = cx.getImageData(0, 0, W, H), px = d.data;
       const L = new Float32Array(N);
       for(let i=0, p=0; p<N; i+=4, p++) L[p] = .299*px[i] + .587*px[i+1] + .114*px[i+2];
 
       const Tbg = 70, Tfr = 115;
       const bg = new Uint8Array(N), st = [];
-      const push = p => { if(!bg[p] && L[p]<Tbg){ bg[p]=1; st.push(p); } };
+      const push = p => { if(!bg[p] && L[p] < Tbg){ bg[p] = 1; st.push(p); } };
       for(let x=0; x<W; x++){ push(x); push((H-1)*W+x); }
       for(let y=0; y<H; y++){ push(y*W); push(y*W+W-1); }
 
       while(st.length){
-        const p = st.pop(), x = p%W;
-        if(x>0){ const q=p-1; if(!bg[q] && L[q]<Tbg){ bg[q]=1; st.push(q); } }
-        if(x<W-1){ const q=p+1; if(!bg[q] && L[q]<Tbg){ bg[q]=1; st.push(q); } }
-        if(p>=W){ const q=p-W; if(!bg[q] && L[q]<Tbg){ bg[q]=1; st.push(q); } }
-        if(p<N-W){ const q=p+W; if(!bg[q] && L[q]<Tbg){ bg[q]=1; st.push(q); } }
+        const p = st.pop(), x = p % W;
+        if(x > 0){ const q = p - 1; if(!bg[q] && L[q] < Tbg){ bg[q] = 1; st.push(q); } }
+        if(x < W - 1){ const q = p + 1; if(!bg[q] && L[q] < Tbg){ bg[q] = 1; st.push(q); } }
+        if(p >= W){ const q = p - W; if(!bg[q] && L[q] < Tbg){ bg[q] = 1; st.push(q); } }
+        if(p < N - W){ const q = p + W; if(!bg[q] && L[q] < Tbg){ bg[q] = 1; st.push(q); } }
       }
 
-      for(let i=0, p=0; p<N; i+=4, p++) {
-        px[i+3] = bg[p] ? 0 : 255;
-      }
+      let al = new Float32Array(N);
+      for(let p=0; p<N; p++) al[p] = bg[p] ? 0 : 1;
+
+      const blur = src => {
+        const out = new Float32Array(N);
+        for(let y=1; y<H-1; y++) for(let x=1; x<W-1; x++){
+          const p = y*W + x; let s = 0;
+          for(let dy=-1; dy<=1; dy++) for(let dx=-1; dx<=1; dx++) s += src[p + dy*W + dx];
+          out[p] = s / 9;
+        }
+        for(let x=0; x<W; x++){ out[x] = src[x]; out[(H-1)*W+x] = src[(H-1)*W+x]; }
+        for(let y=0; y<H; y++){ out[y*W] = src[y*W]; out[y*W+W-1] = src[y*W+W-1]; }
+        return out;
+      };
+      al = blur(blur(al));
+      for(let i=0, p=0; p<N; i+=4, p++) px[i+3] = Math.round(px[i+3] * al[p]);
       cx.putImageData(d, 0, 0);
       return cv.toDataURL('image/png');
-    } catch(e) { 
-      return url; 
+    } catch(e){
+      return url;
     }
   }
-
   /* ================= SVG GEOMETRY ================= */
   function wobbleCircle(cx,cy,r,pts,jag){
     pts=pts||14;jag=jag==null?.06:jag;
@@ -2730,15 +2735,220 @@ function startBake(){
   function popBadge(){const b=$('#cartCount');b.textContent=cart.reduce((a,c)=>a+c.qty,0);gsap.fromTo(b,{scale:1.6},{scale:1,duration:.5,ease:'elastic.out(1,.4)'});}
   function openCart(){document.body.classList.add('cart-open');}
   function closeCart(){document.body.classList.remove('cart-open');}
-  $('#cartBtn').addEventListener('click',openCart);
-  $('#cartClose').addEventListener('click',closeCart);
-  $('#cartOverlay').addEventListener('click',()=>{closeCart();closeSaved();});
-  $('#continueBtn').addEventListener('click',()=>{closeCart();if(lenis)lenis.scrollTo('#builder',{offset:-40});});
-  $('#doneClose').addEventListener('click',()=>{$('#cartDone').style.display='none';closeCart();});
-  $('#checkoutBtn').addEventListener('click',()=>{
-    if(!cart.length){toast('CART IS EMPTY');return;}
-    $('#cartDone').style.display='flex';
-    cart=[];popBadge();renderCart();
+ $('#cartBtn')?.addEventListener('click', openCart);
+  $('#cartClose')?.addEventListener('click', closeCart);
+  $('#cartOverlay')?.addEventListener('click', () => { closeCart(); closeSaved(); });
+  $('#continueBtn')?.addEventListener('click', () => { closeCart(); if (lenis) lenis.scrollTo('#builder', { offset: -40 }); });
+  $('#doneClose')?.addEventListener('click', () => { closeCart(); });
+/* ================= CHECKOUT & REAL-TIME ORDERING ================= */
+  let selectedPayment = 'cash';
+  let receiptFileBlob = null;
+  let activeCustomerOrder = null;
+  let customerPollInterval = null;
+
+  $('#checkoutBtn').addEventListener('click', () => {
+    if (!cart.length) { toast('CART IS EMPTY'); return; }
+    $('#cartViewStep').style.display = 'none';
+    $('#checkoutStep').style.display = 'flex';
+    $('#cartDrawerTitle').textContent = 'CHECKOUT';
+    $('#checkoutTotalVal').textContent = 'EGP ' + cart.reduce((a, c) => a + c.unit * c.qty, 0);
+  });
+
+  $('#backToCartBtn').addEventListener('click', () => {
+    $('#checkoutStep').style.display = 'none';
+    $('#cartViewStep').style.display = 'flex';
+    $('#cartDrawerTitle').textContent = 'YOUR CART';
+  });
+
+  $('#payCashBtn').addEventListener('click', () => {
+    selectedPayment = 'cash';
+    $('#payCashBtn').classList.add('active');
+    $('#payVisaBtn').classList.remove('active');
+    $('#visaBox').style.display = 'none';
+    $('#placeOrderBtn').textContent = 'PLACE ORDER';
+  });
+
+  $('#payVisaBtn').addEventListener('click', () => {
+    selectedPayment = 'visa';
+    $('#payVisaBtn').classList.add('active');
+    $('#payCashBtn').classList.remove('active');
+    $('#visaBox').style.display = 'block';
+    $('#placeOrderBtn').textContent = 'SUBMIT PAYMENT';
+  });
+
+  // معالجة اختيار الإيصال
+  $('#btnSelectReceipt').addEventListener('click', () => $('#receiptInput').click());
+  $('#receiptInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      receiptFileBlob = file;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        $('#receiptPreviewImg').src = ev.target.result;
+        $('#receiptPreviewWrap').style.display = 'block';
+        $('#btnSelectReceipt').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  $('#btnRemoveReceipt').addEventListener('click', () => {
+    receiptFileBlob = null;
+    $('#receiptInput').value = '';
+    $('#receiptPreviewWrap').style.display = 'none';
+    $('#btnSelectReceipt').style.display = 'block';
+  });
+
+  // إرسال الطلب
+  $('#placeOrderBtn').addEventListener('click', async () => {
+    const name = $('#ckName').value.trim();
+    const phone = $('#ckPhone').value.trim();
+    const address = $('#ckAddress').value.trim();
+
+    if (!name || !phone || !address) {
+      toast('PLEASE FILL ALL DELIVERY DETAILS');
+      return;
+    }
+
+    if (selectedPayment === 'visa' && !receiptFileBlob) {
+      toast('PLEASE UPLOAD PAYMENT RECEIPT FIRST');
+      return;
+    }
+
+    $('#placeOrderBtn').disabled = true;
+    $('#placeOrderBtn').textContent = 'SENDING ORDER...';
+
+    try {
+      const orderItems = JSON.parse(JSON.stringify(cart));
+      const totalAmount = cart.reduce((a, c) => a + c.unit * c.qty, 0);
+
+      const fd = new FormData();
+      fd.append('customer_name', name);
+      fd.append('customer_phone', phone);
+      fd.append('customer_address', address);
+      fd.append('payment_method', selectedPayment);
+      fd.append('total', totalAmount);
+      fd.append('items', JSON.stringify(orderItems));
+      if (receiptFileBlob) fd.append('receipt', receiptFileBlob);
+
+      const res = await fetch('/api/orders', { method: 'POST', body: fd });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // تفريغ السلة بعد نجاح الطلب فقط
+        cart = [];
+        popBadge();
+        renderCart();
+
+        // بدء شاشة تتبع الطلب
+        activeCustomerOrder = data.order;
+        showCustomerTracking(data.order);
+      } else {
+        toast(data.error || 'FAILED TO PLACE ORDER');
+      }
+    } catch (err) {
+      toast('NETWORK ERROR, PLEASE TRY AGAIN');
+    } finally {
+      $('#placeOrderBtn').disabled = false;
+      $('#placeOrderBtn').textContent = selectedPayment === 'visa' ? 'SUBMIT PAYMENT' : 'PLACE ORDER';
+    }
+  });
+
+  function showCustomerTracking(order) {
+    $('#checkoutStep').style.display = 'none';
+    $('#orderTrackerStep').style.display = 'flex';
+    $('#cartDrawerTitle').textContent = 'ORDER TRACKER';
+    $('#trackOrderNum').textContent = '#' + order.order_number;
+
+    updateTrackerUI(order);
+
+    if (customerPollInterval) clearInterval(customerPollInterval);
+    customerPollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders?id=${order.order_number}`);
+        if (res.ok) {
+          const fresh = await res.json();
+          updateTrackerUI(fresh);
+        }
+      } catch (e) {}
+    }, 3000);
+  }
+
+  function updateTrackerUI(ord) {
+    const badge = $('#trackStatusBadge');
+    const desc = $('#trackDesc');
+    const timerBox = $('#trackTimerBox');
+
+    // حساب عداد الـ 15 دقيقة
+    const elapsed = Math.floor((Date.now() - new Date(ord.created_at).getTime()) / 1000);
+    const remain = Math.max(0, 900 - elapsed);
+    const m = String(Math.floor(remain / 60)).padStart(2, '0');
+    const s = String(remain % 60).padStart(2, '0');
+    $('#trackTimerVal').textContent = `${m}:${s}`;
+
+    if (remain <= 0 && ord.payment_status === 'pending') {
+      ord.payment_status = 'expired';
+    }
+
+    if (ord.payment_status === 'expired') {
+      badge.textContent = 'PAYMENT EXPIRED';
+      badge.style.background = 'rgba(154,139,122,0.2)';
+      badge.style.color = 'var(--mut)';
+      badge.style.borderColor = 'var(--mut)';
+      timerBox.style.display = 'none';
+      desc.textContent = 'Order expired after 15 minutes without payment verification.';
+      return;
+    }
+
+    if (ord.payment_status === 'rejected') {
+      badge.textContent = 'PAYMENT REJECTED';
+      badge.style.background = 'rgba(194,43,26,0.2)';
+      badge.style.color = '#ff8b7a';
+      badge.style.borderColor = 'var(--red)';
+      timerBox.style.display = 'none';
+      desc.textContent = 'Your payment receipt was rejected by the cashier. Please contact us.';
+      return;
+    }
+
+    if (ord.payment_status === 'pending') {
+      badge.textContent = 'PAYMENT PENDING';
+      badge.style.background = 'rgba(255,122,46,0.15)';
+      badge.style.color = 'var(--ember2)';
+      badge.style.borderColor = 'var(--ember)';
+      timerBox.style.display = 'block';
+      desc.textContent = 'Waiting for cashier verification. Do not close this page.';
+      return;
+    }
+
+    // إذا تم الدفع
+    timerBox.style.display = 'none';
+    if (ord.order_status === 'preparing') {
+      badge.textContent = 'PAID — PREPARING';
+      badge.style.background = 'rgba(232,176,75,0.2)';
+      badge.style.color = 'var(--gold)';
+      badge.style.borderColor = 'var(--gold)';
+      desc.textContent = 'Payment verified! Your pizza is in the oven right now.';
+    } else if (ord.order_status === 'ready') {
+      badge.textContent = 'READY';
+      badge.style.background = 'rgba(87,168,79,0.2)';
+      badge.style.color = '#7cc46a';
+      badge.style.borderColor = '#57a84f';
+      desc.textContent = 'Your order is ready for pickup or out for delivery!';
+    } else if (ord.order_status === 'completed') {
+      badge.textContent = 'COMPLETED';
+      badge.style.background = 'rgba(255,255,255,0.1)';
+      badge.style.color = 'var(--ink)';
+      badge.style.borderColor = 'var(--line)';
+      desc.textContent = 'Order fulfilled. Thank you for choosing FORNO!';
+    }
+  }
+
+  $('#trackDoneBtn').addEventListener('click', () => {
+    if (customerPollInterval) clearInterval(customerPollInterval);
+    $('#orderTrackerStep').style.display = 'none';
+    $('#cartViewStep').style.display = 'flex';
+    $('#cartDrawerTitle').textContent = 'YOUR CART';
+    closeCart();
   });
   function renderCart(){
     const host=$('#cartItems');host.innerHTML='';
@@ -2958,10 +3168,22 @@ function setupScroll(){
       if (lenis) lenis.scrollTo(y, { offset: 0, duration: 1.2 });
       else window.scrollTo({ top: y, behavior: 'smooth' });
     }
-
-    $$('.nav-links button').forEach(b => b.addEventListener('click', () => lenis.scrollTo(b.dataset.go, { offset: -40 })));
+    
     $('#ctaBuild').addEventListener('click', goBuilder);
-    $('#ctaMenu').addEventListener('click', () => lenis.scrollTo('#menu'));
+
+   if (typeof Lenis !== 'undefined') {
+      lenis = new Lenis({ duration: 1.2, smoothWheel: true });
+      lenis.on('scroll', ScrollTrigger.update);
+      gsap.ticker.add((time) => lenis.raf(time * 1000));
+    }
+
+    const scrollToTarget = (target, offset = 0) => {
+      if (lenis) lenis.scrollTo(target, { offset });
+      else document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    $$('.nav-links button').forEach(b => b.addEventListener('click', () => scrollToTarget(b.dataset.go, -40)));
+    $('#ctaMenu').addEventListener('click', () => scrollToTarget('#menu'));
     window.addEventListener('scroll', () => $('#nav').classList.toggle('scrolled', window.scrollY > 40), { passive: true });
 
     gsap.to('#hero', { backgroundPosition: '0 0', scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top' } });
@@ -2971,6 +3193,9 @@ function setupScroll(){
     });
 
     const track = $('#menuTrack');
+    let sx = 0;
+track.addEventListener('touchstart', e => sx = e.touches[0].clientX, { passive: true });
+track.addEventListener('touchmove', e => { window.scrollBy(0, -(e.touches[0].clientX - sx) * 1.5); sx = e.touches[0].clientX; }, { passive: true });
     if (track) {
       gsap.to(track, {
         x: () => -Math.max(0, track.scrollWidth - window.innerWidth + 40),
@@ -3191,23 +3416,26 @@ function setupScroll(){
 let prevT = performance.now();
     function loop(t){
       requestAnimationFrame(loop);
-      // لو مش على الموبايل أو السكشن مش في الشاشة = لا تستهلك أي معالجة
-      if (!MQ.matches || !builderInView) return;
-
-      // لو المستخدم مش بيلمس ومفيش سرعة = قف مكانك ولا تعد رسم الأيقونات
-      if (!drag && Math.abs(vel) < 0.05) return;
+      if(!MQ.matches || !builderInView) return;
 
       const dt = Math.min(.05, (t - prevT) / 1000);
       prevT = t;
 
-      if (!drag) {
+      if(!drag){
         vel *= Math.pow(.0025, dt);
         A += (AUTO + vel) * dt;
       }
 
+      // دوران عجلة المكونات
       rot.style.transform = 'rotate(' + A + 'deg)';
-      for (let i = 0; i < icons.length; i++) {
+      for(let i = 0; i < icons.length; i++) {
         icons[i].firstChild.style.transform = 'rotate(' + (-A) + 'deg)';
+      }
+
+      // دوران البيتزا في الاتجاه المعاكس تماماً للسبينر (سواء تلقائي أو عند السحب باللمس)
+      const pzRot = document.querySelector('#stageHost .pz-rot');
+      if(pzRot) {
+        pzRot.style.transform = 'rotate(' + (-A) + 'deg)';
       }
     }
     requestAnimationFrame(loop);

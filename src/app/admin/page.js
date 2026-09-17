@@ -13,8 +13,15 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
 
+  // Navigation Tabs: orders | items | categories | ingredients
+  const [activeTab, setActiveTab] = useState("orders");
+
+  // Orders State (Cashier)
+  const [orders, setOrders] = useState([]);
+  const [selectedReceiptModal, setSelectedReceiptModal] = useState(null);
+  const [now, setNow] = useState(Date.now());
+
   // Dashboard Data
-  const [activeTab, setActiveTab] = useState("items"); // items | categories | ingredients
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
 
@@ -52,6 +59,24 @@ export default function AdminPage() {
     checkSession();
   }, []);
 
+  // تحديث عداد الثواني محلياً كل ثانية ومزامنة الطلبات مع السيرفر كل 3 ثوانٍ
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const secondTimer = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    const syncTimer = setInterval(() => {
+      loadOrders();
+    }, 3000);
+
+    return () => {
+      clearInterval(secondTimer);
+      clearInterval(syncTimer);
+    };
+  }, [isAuthenticated]);
+
   const checkSession = async () => {
     try {
       const res = await fetch("/api/auth");
@@ -59,6 +84,7 @@ export default function AdminPage() {
       if (data.authenticated) {
         setIsAuthenticated(true);
         setUserEmail(data.email);
+        loadOrders();
         loadMenuData();
         loadIngredientPrices();
       }
@@ -66,6 +92,18 @@ export default function AdminPage() {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOrders = async () => {
+    try {
+      const res = await fetch("/api/orders");
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data || []);
+      }
+    } catch (e) {
+      console.error("Orders sync error:", e);
     }
   };
 
@@ -107,6 +145,7 @@ export default function AdminPage() {
       if (res.ok && data.success) {
         setIsAuthenticated(true);
         setUserEmail(data.email);
+        loadOrders();
         loadMenuData();
         loadIngredientPrices();
       } else {
@@ -121,6 +160,22 @@ export default function AdminPage() {
     await fetch("/api/auth", { method: "DELETE" });
     setIsAuthenticated(false);
     setUserEmail("");
+  };
+
+  // ================= إدارة دورة الطلبات (الكاشير) =================
+  const handleUpdateOrderStatus = async (id, payment_status, order_status) => {
+    try {
+      const res = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, payment_status, order_status })
+      });
+      if (res.ok) {
+        loadOrders();
+      }
+    } catch (e) {
+      alert("خطأ أثناء تحديث حالة الطلب");
+    }
   };
 
   // ================= إدارة المنتجات =================
@@ -181,7 +236,7 @@ export default function AdminPage() {
     setImageFile(null);
   };
 
-  // ================= إدارة وتعديل الكاتيجوريز =================
+  // ================= إدارة التصنيفات =================
   const handleSaveCategory = async (e) => {
     e.preventDefault();
     try {
@@ -242,7 +297,7 @@ export default function AdminPage() {
         setIngMsg("تم حفظ وتحديث جميع أسعار المكونات بنجاح! ✓");
         setTimeout(() => setIngMsg(""), 3500);
       } else {
-        setIngMsg("فشل الحفظ، تأكد من ملف API الخاص بالمكونات");
+        setIngMsg("فشل الحفظ، تأكد من إعدادات قاعدة البيانات");
       }
     } catch (e) {
       setIngMsg("خطأ في الاتصال أثناء حفظ الأسعار");
@@ -259,7 +314,7 @@ export default function AdminPage() {
     );
   }
 
-  // ================= تسجيل الدخول =================
+  // ================= شاشة تسجيل الدخول =================
   if (!isAuthenticated) {
     return (
       <div style={{
@@ -287,7 +342,7 @@ export default function AdminPage() {
             FORNO <span style={{ color: "#ff7a2e" }}>ADMIN</span>
           </h2>
           <p style={{ color: "#9a8b7a", fontSize: "10px", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "28px" }}>
-            RESTAURANT PORTAL
+            CASHIER & RESTAURANT PORTAL
           </p>
 
           {authError && (
@@ -386,6 +441,10 @@ export default function AdminPage() {
     { key: "extras", title: "✨ الإضافات (Extras)" },
   ];
 
+  const pendingOrders = orders.filter(o => o.payment_status === "pending");
+  const paidActiveOrders = orders.filter(o => o.payment_status === "paid" && o.order_status !== "completed");
+  const archivedOrders = orders.filter(o => o.order_status === "completed" || o.payment_status === "expired" || o.payment_status === "rejected");
+
   return (
     <div style={{ minHeight: "100vh", background: "#0a0705", color: "#f3e9dc", fontFamily: "'Inter', sans-serif", paddingBottom: "80px" }}>
       {/* Header */}
@@ -404,7 +463,7 @@ export default function AdminPage() {
             FORNO<span style={{ color: "#ff7a2e" }}>.</span>
           </span>
           <span style={{ background: "#ff7a2e", color: "#140d08", fontSize: "9px", fontWeight: "900", padding: "4px 8px", borderRadius: "99px", letterSpacing: "2px" }}>
-            PORTAL
+            CASHIER PORTAL
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -442,6 +501,24 @@ export default function AdminPage() {
           paddingBottom: "10px",
           scrollbarWidth: "none"
         }}>
+          <button
+            onClick={() => setActiveTab("orders")}
+            style={{
+              flexShrink: 0,
+              padding: "10px 20px",
+              borderRadius: "99px",
+              border: "1px solid " + (activeTab === "orders" ? "#ff7a2e" : "rgba(243,233,220,0.15)"),
+              background: activeTab === "orders" ? "#ff7a2e" : "transparent",
+              color: activeTab === "orders" ? "#140d08" : "#9a8b7a",
+              fontWeight: "900",
+              fontSize: "10px",
+              letterSpacing: "2px",
+              cursor: "pointer"
+            }}
+          >
+            ORDERS ({pendingOrders.length} PENDING)
+          </button>
+
           <button
             onClick={() => setActiveTab("items")}
             style={{
@@ -496,6 +573,206 @@ export default function AdminPage() {
             INGREDIENT PRICES 🍕
           </button>
         </div>
+
+        {/* ================= TAB 0: CASHIER ORDERS ================= */}
+        {activeTab === "orders" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+            
+            {/* قسم الطلبات قيد الدفع مع العداد */}
+            <div>
+              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "22px", color: "#ff7a2e", letterSpacing: "1px", marginBottom: "14px" }}>
+                🔥 PENDING PAYMENT ORDERS
+              </h3>
+              {pendingOrders.length === 0 ? (
+                <div style={{ padding: "30px", background: "#140d08", borderRadius: "16px", color: "#9a8b7a", textAlign: "center", fontSize: "12px", border: "1px solid rgba(243,233,220,0.08)" }}>
+                  NO ORDERS AWAITING PAYMENT.
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "18px" }}>
+                  {pendingOrders.map((ord) => {
+                    const elapsed = Math.floor((now - new Date(ord.created_at).getTime()) / 1000);
+                    const remain = Math.max(0, 900 - elapsed);
+                    const m = String(Math.floor(remain / 60)).padStart(2, "0");
+                    const s = String(remain % 60).padStart(2, "0");
+
+                    // انتهاء المهلة (15 دقيقة) وتحويل الحالة تلقائياً لـ EXPIRED
+                    if (remain === 0 && ord.payment_status === "pending") {
+                      handleUpdateOrderStatus(ord.id, "expired", "pending");
+                    }
+
+                    return (
+                      <div key={ord.id} style={{ background: "#140d08", border: "1px solid #ff7a2e", borderRadius: "20px", padding: "20px", boxShadow: "0 10px 30px rgba(0,0,0,0.7)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(243,233,220,0.1)", paddingBottom: "10px", marginBottom: "12px" }}>
+                          <div>
+                            <span style={{ fontFamily: "Impact", fontSize: "20px", color: "#ffb347" }}>#{ord.order_number}</span>
+                            <span style={{ marginLeft: "8px", fontSize: "10px", color: "#9a8b7a" }}>{new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <span style={{ fontFamily: "Impact", fontSize: "18px", color: remain < 180 ? "#c22b1a" : "#e8b04b", background: "rgba(255,255,255,0.04)", padding: "4px 10px", borderRadius: "8px" }}>
+                            ⏱ {m}:{s}
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: "12px", marginBottom: "12px", lineHeight: "1.6" }}>
+                          <b style={{ color: "#fff" }}>{ord.customer_name}</b> ({ord.customer_phone})<br />
+                          <span style={{ color: "#9a8b7a" }}>📍 {ord.customer_address}</span><br />
+                          <span style={{ color: "#e8b04b" }}>Method: <b>{ord.payment_method?.toUpperCase()}</b></span>
+                        </div>
+
+                        {/* تفاصيل المنتجات والبيتزا المخصصة */}
+                        <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "10px", padding: "10px", marginBottom: "12px", maxHeight: "140px", overflowY: "auto", fontSize: "11px" }}>
+                          {ord.items?.map((it, idx) => (
+                            <div key={idx} style={{ marginBottom: "6px", borderBottom: "1px dashed rgba(255,255,255,0.05)", paddingBottom: "4px" }}>
+                              <b style={{ color: "#fff" }}>{it.name}</b> × {it.qty} = <span style={{ color: "#e8b04b" }}>EGP {it.unit * it.qty}</span>
+                              {it.snap && (
+                                <div style={{ fontSize: "9px", color: "#9a8b7a", marginTop: "2px", lineHeight: "1.4" }}>
+                                  Crust: {it.snap.dough} | Sauce: {it.snap.sauce} | Cheese: {it.snap.cheese}
+                                  {Object.keys(it.snap.meats || {}).length > 0 && ` | Meats: ${Object.entries(it.snap.meats).map(([k,v]) => `${k} (${v})`).join(', ')}`}
+                                  {it.snap.vegs?.length > 0 && ` | Vegs: ${it.snap.vegs.join(', ')}`}
+                                  {it.snap.extras?.length > 0 && ` | Extras: ${it.snap.extras.join(', ')}`}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          <div style={{ textAlign: "right", fontWeight: "900", color: "#ffb347", fontSize: "13px", marginTop: "6px" }}>
+                            TOTAL: EGP {ord.total}
+                          </div>
+                        </div>
+
+                        {ord.receipt_url && (
+                          <button
+                            onClick={() => setSelectedReceiptModal(ord.receipt_url)}
+                            style={{ width: "100%", padding: "8px", background: "rgba(255,122,46,0.15)", border: "1px solid #ff7a2e", color: "#ffb347", borderRadius: "8px", fontSize: "10px", fontWeight: "800", marginBottom: "12px", cursor: "pointer" }}
+                          >
+                            📄 VIEW PAYMENT RECEIPT
+                          </button>
+                        )}
+
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            onClick={() => handleUpdateOrderStatus(ord.id, "paid", "preparing")}
+                            style={{ flex: 1, padding: "12px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
+                          >
+                            CONFIRM PAYMENT
+                          </button>
+                          <button
+                            onClick={() => handleUpdateOrderStatus(ord.id, "rejected", "pending")}
+                            style={{ padding: "12px 16px", background: "rgba(194,43,26,0.2)", border: "1px solid #c22b1a", color: "#ff8b7a", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
+                          >
+                            REJECT
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* قسم الطلبات المدفوعة ومتابعة المطبخ */}
+            <div>
+              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "22px", color: "#e8b04b", letterSpacing: "1px", marginBottom: "14px" }}>
+                🍕 ACTIVE KITCHEN ORDERS (PAID)
+              </h3>
+              {paidActiveOrders.length === 0 ? (
+                <div style={{ padding: "20px", background: "#140d08", borderRadius: "16px", color: "#9a8b7a", textAlign: "center", fontSize: "12px", border: "1px solid rgba(243,233,220,0.06)" }}>
+                  NO ACTIVE KITCHEN ORDERS.
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "16px" }}>
+                  {paidActiveOrders.map((ord) => (
+                    <div key={ord.id} style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "18px", padding: "18px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                        <b style={{ fontFamily: "Impact", fontSize: "18px", color: "#fff" }}>#{ord.order_number}</b>
+                        <span style={{ fontSize: "10px", padding: "4px 8px", borderRadius: "99px", background: ord.order_status === "ready" ? "#57a84f" : "#ff7a2e", color: "#140d08", fontWeight: "900" }}>
+                          {ord.order_status?.toUpperCase()}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#9a8b7a", marginBottom: "10px", lineHeight: "1.5" }}>
+                        Customer: <b style={{ color: "#fff" }}>{ord.customer_name}</b> | Phone: {ord.customer_phone}<br />
+                        Address: {ord.customer_address}<br />
+                        Total: <b style={{ color: "#ffb347" }}>EGP {ord.total}</b>
+                      </div>
+
+                      <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "8px", padding: "8px", marginBottom: "12px", fontSize: "11px" }}>
+                        {ord.items?.map((it, idx) => (
+                          <div key={idx} style={{ color: "#c5b7a7" }}>
+                            • {it.name} × {it.qty}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        {ord.order_status === "preparing" && (
+                          <button
+                            onClick={() => handleUpdateOrderStatus(ord.id, "paid", "ready")}
+                            style={{ flex: 1, padding: "10px", background: "#e8b04b", color: "#140d08", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
+                          >
+                            MARK READY
+                          </button>
+                        )}
+                        {ord.order_status === "ready" && (
+                          <button
+                            onClick={() => handleUpdateOrderStatus(ord.id, "paid", "completed")}
+                            style={{ flex: 1, padding: "10px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
+                          >
+                            COMPLETE ORDER ✓
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* أرشيف الطلبات المكتملة، المرفوضة، والمنتهية */}
+            <div>
+              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "18px", color: "#9a8b7a", letterSpacing: "1px", marginBottom: "12px" }}>
+                ARCHIVED / COMPLETED / EXPIRED ORDERS
+              </h3>
+              <div style={{ background: "#140d08", borderRadius: "16px", border: "1px solid rgba(243,233,220,0.06)", overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px", textAlign: "left" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#9a8b7a" }}>
+                      <th style={{ padding: "10px" }}>ORDER</th>
+                      <th style={{ padding: "10px" }}>CUSTOMER</th>
+                      <th style={{ padding: "10px" }}>TOTAL</th>
+                      <th style={{ padding: "10px" }}>PAYMENT</th>
+                      <th style={{ padding: "10px" }}>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {archivedOrders.map(o => (
+                      <tr key={o.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                        <td style={{ padding: "10px", fontWeight: "bold" }}>#{o.order_number}</td>
+                        <td style={{ padding: "10px" }}>{o.customer_name}</td>
+                        <td style={{ padding: "10px", color: "#e8b04b" }}>EGP {o.total}</td>
+                        <td style={{ padding: "10px", textTransform: "uppercase" }}>
+                          <span style={{ color: o.payment_status === 'paid' ? '#57a84f' : o.payment_status === 'rejected' ? '#ff8b7a' : '#9a8b7a' }}>
+                            {o.payment_status}
+                          </span>
+                        </td>
+                        <td style={{ padding: "10px", textTransform: "uppercase" }}>{o.order_status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Modal معاينة صورة الإيصال */}
+            {selectedReceiptModal && (
+              <div onClick={() => setSelectedReceiptModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+                <div onClick={e => e.stopPropagation()} style={{ background: "#140d08", padding: "16px", borderRadius: "16px", maxWidth: "500px", width: "100%", textAlign: "center", border: "1px solid #ff7a2e" }}>
+                  <img src={selectedReceiptModal} alt="Receipt" style={{ maxWidth: "100%", maxHeight: "70vh", borderRadius: "10px", objectFit: "contain" }} />
+                  <button onClick={() => setSelectedReceiptModal(null)} className="btn ghost" style={{ marginTop: "12px", width: "100%", padding: "10px", border: "1px solid rgba(243,233,220,0.2)" }}>
+                    CLOSE
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ================= TAB 1: PRODUCTS ================= */}
         {activeTab === "items" && (
@@ -689,7 +966,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 2: CATEGORIES (مع إمكانية التعديل) ================= */}
+        {/* ================= TAB 2: CATEGORIES ================= */}
         {activeTab === "categories" && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px", alignItems: "start" }}>
             
@@ -777,7 +1054,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ================= TAB 3: INGREDIENT PRICES (تعديل أسعار المكونات) ================= */}
+        {/* ================= TAB 3: INGREDIENT PRICES ================= */}
         {activeTab === "ingredients" && (
           <div style={{ background: "#140d08", border: "1px solid rgba(243, 233, 220, 0.1)", borderRadius: "20px", padding: "26px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "14px" }}>

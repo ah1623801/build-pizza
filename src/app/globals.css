@@ -622,13 +622,31 @@ body.mm-open #burgerBtn{opacity:0;pointer-events:none}
   #menuTabs button{padding:9px 16px;font-size:9px}
   .menu-view{padding-left:5vw}
   #menuTrack{gap:16px;padding:8px 5vw 22px 0}
-  .mcard{width:min(340px,84vw);padding:18px}
-  .mimg{width:64%;margin:4px auto 14px}
+ /* جعل الكروت تطول بمرونة حسب طول الشاشة مع تثبيت الأزرار بالأسفل */
+  .mcard {
+    width: min(340px, 82vw);
+    height: clamp(400px, 58svh, 600px); /* يطول تلقائياً كل ما الشاشة تطول */
+    padding: clamp(16px, 2.4svh, 24px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mimg {
+    width: clamp(130px, 22svh, 210px); /* حجم البيتزا يكبر بنعومة مع طول الشاشة */
+    aspect-ratio: 1;
+    margin: 4px auto clamp(10px, 2svh, 18px);
+    flex-shrink: 0;
+  }
+
+  .mrow {
+    margin-top: auto !important; /* تثبيت السعر والزر في قاع الكارت دائماً */
+    padding-top: 10px;
+  }
   .mnum{font-size:70px;padding:24px 0}
   .mcard h3{font-size:22px;margin:6px 0 8px}
   .mings{min-height:22px;margin-bottom:12px;gap:5px}
   .mings li{opacity:1;transform:none;font-size:9px;padding:4px 8px}
-  .mrow{margin-top:4px}
+  
   .mprice{font-size:20px}
   .mbtn{opacity:1;transform:none;padding:10px 16px;font-size:9px}
   .menu-bar{margin:0 5vw}
@@ -828,4 +846,50 @@ html.lenis, html.lenis body {
   touch-action: none !important;
   user-select: none !important;
   -webkit-user-select: none !important;
+}
+@media (min-width: 600px) and (max-width: 980px) {
+    .mcard {
+      width: clamp(300px, 42vw, 380px);
+      height: clamp(480px, 60svh, 660px);
+    }
+    .mimg {
+      width: clamp(160px, 26svh, 240px);
+    }
+  }
+
+
+  /* ---------- CHECKOUT UI ENHANCEMENTS ---------- */
+.ck-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+.ck-input:focus {
+  border-color: var(--ember);
+}
+
+.pay-method-btn {
+  padding: 12px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  color: var(--mut);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  transition: 0.3s;
+  background: rgba(255, 255, 255, 0.02);
+}
+.pay-method-btn.active {
+  border-color: var(--ember);
+  background: rgba(255, 122, 46, 0.12);
+  color: var(--ember2);
+  box-shadow: 0 0 20px rgba(255, 122, 46, 0.2);
 }
