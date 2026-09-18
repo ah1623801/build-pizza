@@ -893,3 +893,64 @@ html.lenis, html.lenis body {
   color: var(--ember2);
   box-shadow: 0 0 20px rgba(255, 122, 46, 0.2);
 }
+
+
+
+/* ---------- COPY BADGES & ORDER TYPE ---------- */
+.copy-badge {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 122, 46, 0.3);
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.copy-badge:hover {
+  background: rgba(255, 122, 46, 0.15);
+  border-color: var(--ember);
+  transform: translateY(-2px);
+}
+.cb-label {
+  display: block;
+  font-size: 9px;
+  color: var(--mut);
+  letter-spacing: 1px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+.cb-val-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cb-val {
+  font-size: 18px; /* تكبير الرقم والإيميل */
+  color: #fff;
+  letter-spacing: 1px;
+  font-family: var(--disp);
+}
+.cb-icon {
+  font-size: 9px;
+  color: var(--ember2);
+  font-weight: 800;
+  background: rgba(255, 122, 46, 0.12);
+  padding: 4px 8px;
+  border-radius: 99px;
+}
+
+.del-type-btn {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  color: var(--mut);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  transition: 0.25s;
+}
+.del-type-btn.active {
+  border-color: var(--ember);
+  background: rgba(255, 122, 46, 0.14);
+  color: var(--ember2);
+}

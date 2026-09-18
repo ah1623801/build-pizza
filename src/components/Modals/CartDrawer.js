@@ -23,25 +23,59 @@ export const CartDrawer = () => (
       <div id="checkoutStep" style={{ display: 'none', flex: 1, flexDirection: 'column', overflowY: 'auto', padding: '20px 24px' }}>
         <button id="backToCartBtn" className="btn ghost" style={{ padding: '8px 14px', fontSize: '10px', alignSelf: 'flex-start', marginBottom: '16px' }}>← BACK TO CART</button>
         
-        <h4 style={{ fontFamily: 'var(--disp)', fontSize: '20px', color: 'var(--gold)', marginBottom: '14px' }}>DELIVERY DETAILS</h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-          <input id="ckName" placeholder="FULL NAME" required className="ck-input" />
-          <input id="ckPhone" placeholder="PHONE NUMBER" type="tel" required className="ck-input" />
-          <textarea id="ckAddress" placeholder="DELIVERY ADDRESS (STREET, BUILDING, APT)" required className="ck-input" style={{ minHeight: '60px', resize: 'none' }}></textarea>
+        {/* بيانات العميل الأساسية */}
+        <h4 style={{ fontFamily: 'var(--disp)', fontSize: '18px', color: 'var(--gold)', marginBottom: '12px' }}>CUSTOMER INFO</h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
+          <input id="ckName" placeholder="FULL NAME (الاسم بالكامل)" required className="ck-input" />
+          <input id="ckPhone" placeholder="PHONE NUMBER (رقم الهاتف)" type="tel" required className="ck-input" />
         </div>
 
-        <h4 style={{ fontFamily: 'var(--disp)', fontSize: '20px', color: 'var(--gold)', marginBottom: '10px' }}>PAYMENT METHOD</h4>
+        {/* طريقة الدفع */}
+        <h4 style={{ fontFamily: 'var(--disp)', fontSize: '18px', color: 'var(--gold)', marginBottom: '10px' }}>PAYMENT METHOD</h4>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
           <button type="button" id="payCashBtn" className="pay-method-btn active">💵 CASH</button>
           <button type="button" id="payVisaBtn" className="pay-method-btn">💳 VISA / INSTAPAY</button>
         </div>
 
-        {/* تعليمات فيزا ورفع الإيصال */}
-        <div id="visaBox" style={{ display: 'none', background: 'rgba(255,122,46,0.06)', border: '1px dashed var(--ember)', borderRadius: '14px', padding: '14px', marginBottom: '18px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--ink)', lineHeight: '1.6', marginBottom: '12px' }}>
-            <b style={{ color: 'var(--ember2)' }}>INSTAPAY / WALLET TRANSFER:</b><br />
-            Send exact amount to: <b style={{ color: '#fff' }}>01001234567</b> or <b style={{ color: '#fff' }}>forno@instapay</b><br />
-            <span style={{ color: 'var(--mut)', fontSize: '10px' }}>* Upload receipt screenshot below for confirmation.</span>
+        {/* خيار نوع الطلب (توصيل / في المحل) - يظهر فقط في حالة الفيزا */}
+        <div id="orderTypeBox" style={{ display: 'none', marginBottom: '16px' }}>
+          <h4 style={{ fontFamily: 'var(--disp)', fontSize: '16px', color: 'var(--gold)', marginBottom: '8px' }}>ORDER TYPE</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <button type="button" id="typeDeliveryBtn" className="del-type-btn active">🛵 DELIVERY (توصيل)</button>
+            <button type="button" id="typePickupBtn" className="del-type-btn">🏪 IN STORE (في المحل)</button>
+          </div>
+        </div>
+
+        {/* حقل العنوان: يظهر فقط إذا كان فيزا + توصيل */}
+        <div id="ckAddressWrap" style={{ display: 'none', marginBottom: '18px' }}>
+          <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: 'var(--mut)', letterSpacing: '1px', marginBottom: '6px' }}>DELIVERY ADDRESS *</label>
+          <textarea id="ckAddress" placeholder="STREET, BUILDING, APARTMENT NUMBER (عنوان التوصيل بالتفصيل)" className="ck-input" style={{ minHeight: '65px', resize: 'none' }}></textarea>
+        </div>
+
+        {/* تفاصيل التحويل والإيصال (تكبير الأرقام مع خاصية النسخ) */}
+        <div id="visaBox" style={{ display: 'none', background: 'rgba(255,122,46,0.06)', border: '1px dashed var(--ember)', borderRadius: '16px', padding: '16px', marginBottom: '18px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--ink)', marginBottom: '14px' }}>
+            <span style={{ color: 'var(--ember2)', fontWeight: '800', letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>
+              ⚡ TAP NUMBER OR ID TO COPY:
+            </span>
+
+            {/* رقم التحويل بحجم كبير وقابل للنسخ */}
+            <div className="copy-badge" id="copyPhoneBtn" data-copy="01001234567" title="Click to copy">
+              <span className="cb-label">VODAFONE CASH / PHONE</span>
+              <div className="cb-val-row">
+                <b className="cb-val">01001234567</b>
+                <span className="cb-icon">📋 TAP TO COPY</span>
+              </div>
+            </div>
+
+            {/* الايميل / معرف انستاباي بحجم كبير وقابل للنسخ */}
+            <div className="copy-badge" id="copyInstaBtn" data-copy="forno@instapay" title="Click to copy" style={{ marginTop: '8px' }}>
+              <span className="cb-label">INSTAPAY USERNAME</span>
+              <div className="cb-val-row">
+                <b className="cb-val">forno@instapay</b>
+                <span className="cb-icon">📋 TAP TO COPY</span>
+              </div>
+            </div>
           </div>
           
           <label style={{ display: 'block', fontSize: '10px', letterSpacing: '1px', fontWeight: '800', color: 'var(--gold)', marginBottom: '6px' }}>UPLOAD PAYMENT RECEIPT *</label>
@@ -49,8 +83,8 @@ export const CartDrawer = () => (
           <button type="button" id="btnSelectReceipt" className="btn ghost" style={{ width: '100%', padding: '10px', fontSize: '10px' }}>SELECT RECEIPT IMAGE</button>
 
           <div id="receiptPreviewWrap" style={{ display: 'none', position: 'relative', marginTop: '10px', textAlign: 'center' }}>
-           <img id="receiptPreviewImg" alt="Receipt" style={{ maxWidth: '100%', maxHeight: '140px', borderRadius: '8px', border: '1px solid var(--line)' }} />
-            <button type="button" id="btnRemoveReceipt" style={{ position: 'absolute', top: '4px', right: '4px', background: 'var(--red)', color: '#fff', borderRadius: '50%', width: '22px', height: '22px', fontSize: '11px' }}>✕</button>
+            <img id="receiptPreviewImg" alt="Receipt" style={{ maxWidth: '100%', maxHeight: '140px', borderRadius: '8px', border: '1px solid var(--line)' }} />
+            <button type="button" id="btnRemoveReceipt" style={{ position: 'absolute', top: '4px', right: '4px', background: 'var(--red)', color: '#fff', borderRadius: '50%', width: '22px', height: '22px', fontSize: '11px', border: 'none', cursor: 'pointer' }}>✕</button>
           </div>
         </div>
 

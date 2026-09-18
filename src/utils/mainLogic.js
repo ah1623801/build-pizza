@@ -2331,6 +2331,37 @@ function sauceSVG(type){
   }
 
   /* ================= STATE / PRICING ================= */
+
+  /* ================= BUILDER PERSISTENCE ================= */
+  function saveBuilderProgress() {
+    const data = {
+      state,
+      curStep,
+      maxReached,
+      orderQty,
+      combo
+    };
+    try {
+      localStorage.setItem('forno_builder_progress', JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function loadBuilderProgress() {
+    try {
+      const raw = localStorage.getItem('forno_builder_progress');
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      if (data && data.state) {
+        state = data.state;
+        curStep = data.curStep || 0;
+        maxReached = data.maxReached || 0;
+        orderQty = data.orderQty || 1;
+        combo = data.combo || null;
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
   let state={dough:'classic',sauce:null,cheese:null,meats:{},vegs:[],extras:[]};
   let orderQty=1,curStep=0,maxReached=0,stage=null,lenis=null;
 const freshState=()=>({
@@ -2401,8 +2432,9 @@ const freshState=()=>({
   function paintRail(){
     $$('#rail button').forEach((b,i)=>{b.classList.toggle('cur',i===curStep);b.classList.toggle('done',i<curStep||(i<=maxReached&&i!==curStep));});
   }
-  function goStep(i){
+function goStep(i){
     curStep=i;maxReached=Math.max(maxReached,i);
+    saveBuilderProgress(); // ⬅️ حفظ الخطوة الحالية والحد الأقصى
     paintRail();
     const s=STEPS[i];
     $('#pStepNo').textContent='0'+(i+1)+' / 07';
@@ -2654,12 +2686,12 @@ function startBake(){
     $('#ovenChips').innerHTML=parts.map(p=>'<span>'+p+'</span>').join('');
   }
 
-  function resetBuilder(){
+function resetBuilder(){
+    localStorage.removeItem('forno_builder_progress'); // ⬅️ مسح الكاش عند طلب بيتزا جديدة
     state=freshState();orderQty=1;maxReached=0;combo=null;
     stage.applySnapshot(state,0);
     goStep(0);
   }
-
   $('#boxScene').addEventListener('click',()=>{
     if(!boxToggleReady)return;
     $('#boxScene').classList.toggle('closed');
@@ -2670,11 +2702,26 @@ function startBake(){
     closeOven(()=>{resetBuilder();openSaved();});
   });
   $('#btnAnother').addEventListener('click',()=>closeOven(()=>{resetBuilder();if(lenis)lenis.scrollTo('#builder',{offset:-40});}));
-  $('#btnCartAdd').addEventListener('click',()=>{
-    cart.push({uid:Date.now(),kind:'pizza',name:'CUSTOM PIZZA',snap:JSON.parse(JSON.stringify(state)),unit:effectiveUnit(),qty:orderQty});
-    renderCart();popBadge();
-    closeOven(()=>{resetBuilder();openCart();});
-    toast('ADDED TO CART');
+$('#btnCartAdd')?.addEventListener('click', () => {
+    // تحديد أفضل صورة تعبر عن البيتزا الحالية
+    let pizzaImg = IMG.pOriginal;
+    if (state.sauce === 'bbq') pizzaImg = IMG.pBBQ;
+    else if (state.sauce === 'garlic') pizzaImg = IMG.pTruffle;
+    else if (state.vegs?.length > 2) pizzaImg = IMG.pGreen;
+    else if (state.meats?.pepperoni) pizzaImg = IMG.fire;
+
+    cart.push({
+      uid: Date.now(),
+      kind: 'pizza',
+      name: combo ? combo.name : 'CUSTOM WOOD-FIRED PIZZA',
+      img: combo?.snap ? (MENU_ITEMS.find(x => x.name === combo.name)?.img || pizzaImg) : pizzaImg,
+      snap: JSON.parse(JSON.stringify(state)),
+      unit: effectiveUnit(),
+      qty: orderQty
+    });
+    persistCart();
+    closeOven(() => { resetBuilder(); openCart(); });
+    toast('ADDED TO CART 🍕');
   });
 
   /* ================= SAVED PIZZAS ================= */
@@ -2731,7 +2778,19 @@ function startBake(){
   $('#savedBuild').addEventListener('click',()=>{closeSaved();if(lenis)lenis.scrollTo('#builder',{offset:-40});});
 
   /* ================= CART ================= */
-  let cart=[];
+/* ================= CART ================= */
+  let cart = [];
+  try {
+    cart = JSON.parse(localStorage.getItem('forno_cart') || '[]');
+  } catch (e) {
+    cart = [];
+  }
+
+  function persistCart() {
+    localStorage.setItem('forno_cart', JSON.stringify(cart));
+    renderCart();
+    popBadge();
+  }
   function popBadge(){const b=$('#cartCount');b.textContent=cart.reduce((a,c)=>a+c.qty,0);gsap.fromTo(b,{scale:1.6},{scale:1,duration:.5,ease:'elastic.out(1,.4)'});}
   function openCart(){document.body.classList.add('cart-open');}
   function closeCart(){document.body.classList.remove('cart-open');}
@@ -2741,72 +2800,118 @@ function startBake(){
   $('#continueBtn')?.addEventListener('click', () => { closeCart(); if (lenis) lenis.scrollTo('#builder', { offset: -40 }); });
   $('#doneClose')?.addEventListener('click', () => { closeCart(); });
 /* ================= CHECKOUT & REAL-TIME ORDERING ================= */
+  /* ================= CHECKOUT & REAL-TIME ORDERING ================= */
   let selectedPayment = 'cash';
+  let deliveryType = 'pickup'; // 'pickup' | 'delivery'
   let receiptFileBlob = null;
   let activeCustomerOrder = null;
   let customerPollInterval = null;
 
-  $('#checkoutBtn').addEventListener('click', () => {
+  // تفعيل النسخ عند الضغط على رقم الهاتف أو حساب انستاباي
+  document.querySelectorAll('.copy-badge').forEach(el => {
+    el.addEventListener('click', () => {
+      const val = el.getAttribute('data-copy');
+      if (val) {
+        navigator.clipboard.writeText(val).then(() => {
+          toast(`COPIED TO CLIPBOARD: ${val} 📋`);
+        }).catch(() => {
+          toast(`COPIED: ${val}`);
+        });
+      }
+    });
+  });
+
+  $('#checkoutBtn')?.addEventListener('click', () => {
     if (!cart.length) { toast('CART IS EMPTY'); return; }
-    $('#cartViewStep').style.display = 'none';
-    $('#checkoutStep').style.display = 'flex';
-    $('#cartDrawerTitle').textContent = 'CHECKOUT';
-    $('#checkoutTotalVal').textContent = 'EGP ' + cart.reduce((a, c) => a + c.unit * c.qty, 0);
+    if ($('#cartViewStep')) $('#cartViewStep').style.display = 'none';
+    if ($('#checkoutStep')) $('#checkoutStep').style.display = 'flex';
+    if ($('#cartDrawerTitle')) $('#cartDrawerTitle').textContent = 'CHECKOUT';
+    if ($('#checkoutTotalVal')) $('#checkoutTotalVal').textContent = 'EGP ' + cart.reduce((a, c) => a + c.unit * c.qty, 0);
+    
+    // ضبط الوضع الافتراضي كاش (في المحل وبدون عنوان)
+    setPaymentMode('cash');
   });
 
-  $('#backToCartBtn').addEventListener('click', () => {
-    $('#checkoutStep').style.display = 'none';
-    $('#cartViewStep').style.display = 'flex';
-    $('#cartDrawerTitle').textContent = 'YOUR CART';
+  function setPaymentMode(mode) {
+    selectedPayment = mode;
+    if (mode === 'cash') {
+      $('#payCashBtn')?.classList.add('active');
+      $('#payVisaBtn')?.classList.remove('active');
+      if ($('#visaBox')) $('#visaBox').style.display = 'none';
+      if ($('#orderTypeBox')) $('#orderTypeBox').style.display = 'none';
+      if ($('#ckAddressWrap')) $('#ckAddressWrap').style.display = 'none';
+      if ($('#placeOrderBtn')) $('#placeOrderBtn').textContent = 'PLACE ORDER (CASH)';
+      deliveryType = 'pickup';
+    } else {
+      $('#payVisaBtn')?.classList.add('active');
+      $('#payCashBtn')?.classList.remove('active');
+      if ($('#visaBox')) $('#visaBox').style.display = 'block';
+      if ($('#orderTypeBox')) $('#orderTypeBox').style.display = 'block';
+      if ($('#placeOrderBtn')) $('#placeOrderBtn').textContent = 'SUBMIT PAYMENT (VISA)';
+      setDeliveryMode('delivery'); // الافتراضي في الفيزا توصيل
+    }
+  }
+
+  function setDeliveryMode(type) {
+    deliveryType = type;
+    if (type === 'delivery') {
+      $('#typeDeliveryBtn')?.classList.add('active');
+      $('#typePickupBtn')?.classList.remove('active');
+      if ($('#ckAddressWrap')) $('#ckAddressWrap').style.display = 'block';
+    } else {
+      $('#typePickupBtn')?.classList.add('active');
+      $('#typeDeliveryBtn')?.classList.remove('active');
+      if ($('#ckAddressWrap')) $('#ckAddressWrap').style.display = 'none';
+    }
+  }
+
+  $('#payCashBtn')?.addEventListener('click', () => setPaymentMode('cash'));
+  $('#payVisaBtn')?.addEventListener('click', () => setPaymentMode('visa'));
+  $('#typeDeliveryBtn')?.addEventListener('click', () => setDeliveryMode('delivery'));
+  $('#typePickupBtn')?.addEventListener('click', () => setDeliveryMode('pickup'));
+
+  $('#backToCartBtn')?.addEventListener('click', () => {
+    if ($('#checkoutStep')) $('#checkoutStep').style.display = 'none';
+    if ($('#cartViewStep')) $('#cartViewStep').style.display = 'flex';
+    if ($('#cartDrawerTitle')) $('#cartDrawerTitle').textContent = 'YOUR CART';
   });
 
-  $('#payCashBtn').addEventListener('click', () => {
-    selectedPayment = 'cash';
-    $('#payCashBtn').classList.add('active');
-    $('#payVisaBtn').classList.remove('active');
-    $('#visaBox').style.display = 'none';
-    $('#placeOrderBtn').textContent = 'PLACE ORDER';
-  });
-
-  $('#payVisaBtn').addEventListener('click', () => {
-    selectedPayment = 'visa';
-    $('#payVisaBtn').classList.add('active');
-    $('#payCashBtn').classList.remove('active');
-    $('#visaBox').style.display = 'block';
-    $('#placeOrderBtn').textContent = 'SUBMIT PAYMENT';
-  });
-
-  // معالجة اختيار الإيصال
-  $('#btnSelectReceipt').addEventListener('click', () => $('#receiptInput').click());
-  $('#receiptInput').addEventListener('change', (e) => {
+  // اختيار وحذف الإيصال
+  $('#btnSelectReceipt')?.addEventListener('click', () => $('#receiptInput')?.click());
+  $('#receiptInput')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
       receiptFileBlob = file;
       const reader = new FileReader();
       reader.onload = (ev) => {
-        $('#receiptPreviewImg').src = ev.target.result;
-        $('#receiptPreviewWrap').style.display = 'block';
-        $('#btnSelectReceipt').style.display = 'none';
+        if ($('#receiptPreviewImg')) $('#receiptPreviewImg').src = ev.target.result;
+        if ($('#receiptPreviewWrap')) $('#receiptPreviewWrap').style.display = 'block';
+        if ($('#btnSelectReceipt')) $('#btnSelectReceipt').style.display = 'none';
       };
       reader.readAsDataURL(file);
     }
   });
 
-  $('#btnRemoveReceipt').addEventListener('click', () => {
+  $('#btnRemoveReceipt')?.addEventListener('click', () => {
     receiptFileBlob = null;
-    $('#receiptInput').value = '';
-    $('#receiptPreviewWrap').style.display = 'none';
-    $('#btnSelectReceipt').style.display = 'block';
+    if ($('#receiptInput')) $('#receiptInput').value = '';
+    if ($('#receiptPreviewWrap')) $('#receiptPreviewWrap').style.display = 'none';
+    if ($('#btnSelectReceipt')) $('#btnSelectReceipt').style.display = 'block';
   });
 
-  // إرسال الطلب
-  $('#placeOrderBtn').addEventListener('click', async () => {
-    const name = $('#ckName').value.trim();
-    const phone = $('#ckPhone').value.trim();
-    const address = $('#ckAddress').value.trim();
+  // تنفيذ وإرسال الطلب
+  $('#placeOrderBtn')?.addEventListener('click', async () => {
+    const name = $('#ckName')?.value.trim();
+    const phone = $('#ckPhone')?.value.trim();
+    const address = $('#ckAddress')?.value.trim();
 
-    if (!name || !phone || !address) {
-      toast('PLEASE FILL ALL DELIVERY DETAILS');
+    if (!name || !phone) {
+      toast('PLEASE ENTER NAME & PHONE NUMBER');
+      return;
+    }
+
+    if (selectedPayment === 'visa' && deliveryType === 'delivery' && !address) {
+      toast('PLEASE ENTER DELIVERY ADDRESS');
       return;
     }
 
@@ -2815,8 +2920,15 @@ function startBake(){
       return;
     }
 
-    $('#placeOrderBtn').disabled = true;
-    $('#placeOrderBtn').textContent = 'SENDING ORDER...';
+    const finalAddress = (selectedPayment === 'cash' || deliveryType === 'pickup')
+      ? 'IN STORE / PICKUP (استلام من داخل المحل)'
+      : address;
+
+    const btn = $('#placeOrderBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'SENDING ORDER...';
+    }
 
     try {
       const orderItems = JSON.parse(JSON.stringify(cart));
@@ -2825,7 +2937,7 @@ function startBake(){
       const fd = new FormData();
       fd.append('customer_name', name);
       fd.append('customer_phone', phone);
-      fd.append('customer_address', address);
+      fd.append('customer_address', finalAddress);
       fd.append('payment_method', selectedPayment);
       fd.append('total', totalAmount);
       fd.append('items', JSON.stringify(orderItems));
@@ -2835,13 +2947,10 @@ function startBake(){
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // تفريغ السلة بعد نجاح الطلب فقط
         cart = [];
-        popBadge();
-        renderCart();
-
-        // بدء شاشة تتبع الطلب
+        persistCart();
         activeCustomerOrder = data.order;
+        try { localStorage.setItem('forno_active_order', JSON.stringify(data.order)); } catch (e) {}
         showCustomerTracking(data.order);
       } else {
         toast(data.error || 'FAILED TO PLACE ORDER');
@@ -2849,8 +2958,10 @@ function startBake(){
     } catch (err) {
       toast('NETWORK ERROR, PLEASE TRY AGAIN');
     } finally {
-      $('#placeOrderBtn').disabled = false;
-      $('#placeOrderBtn').textContent = selectedPayment === 'visa' ? 'SUBMIT PAYMENT' : 'PLACE ORDER';
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = selectedPayment === 'visa' ? 'SUBMIT PAYMENT (VISA)' : 'PLACE ORDER (CASH)';
+      }
     }
   });
 
@@ -2944,6 +3055,7 @@ function startBake(){
   }
 
   $('#trackDoneBtn').addEventListener('click', () => {
+    localStorage.removeItem('forno_active_order'); // ⬅️ مسح كاش الطلب بعد الانتهاء
     if (customerPollInterval) clearInterval(customerPollInterval);
     $('#orderTrackerStep').style.display = 'none';
     $('#cartViewStep').style.display = 'flex';
@@ -3076,7 +3188,7 @@ async function syncMenuFromServer() {
       card.querySelector('.mbtn').addEventListener('click', () => {
         if (it.simple) {
           cart.push({ uid: Date.now(), kind: 'simple', name: it.name, img: it.img, meta: (it.ing || []).join(' · '), unit: it.price, qty: 1 });
-          renderCart(); popBadge(); openCart(); toast('ADDED TO CART');
+         persistCart(); openCart(); toast('ADDED TO CART');
         } else {
           applyPreset(it);
         }
@@ -3520,12 +3632,33 @@ let prevT = performance.now();
         if (loadBar) loadBar.style.width = Math.round(progress.v) + '%';
         if (loadPct) loadPct.textContent = Math.round(progress.v) + '%';
       },
-      onComplete: () => {
-     stage = new PizzaStage($('#stageHost'));
-  stage.applySnapshot(state, 0); // رسم البيتزا الكلاسيك فوراً
-  buildRail(); goStep(0); buildTabs(); renderMenu(); renderCart(); persistSaved();
-        setupScroll(); heroFX();
+     onComplete: () => {
+    stage = new PizzaStage($('#stageHost'));
 
+    // استرجاع المكونات والخطوة السابقة إن وجدت، وإلا كلاسيك
+    const hasCachedProgress = loadBuilderProgress();
+    stage.applySnapshot(state, 0);
+    buildRail();
+    goStep(hasCachedProgress ? curStep : 0);
+
+    buildTabs();
+    renderMenu();
+    renderCart();
+    popBadge();
+    persistSaved();
+    setupScroll();
+    heroFX();
+
+    // فحص ما إذا كان هناك طلب نشط يتم تتبعه قبل الريفريش
+    try {
+      const cachedActiveOrder = JSON.parse(localStorage.getItem('forno_active_order') || 'null');
+      if (cachedActiveOrder) {
+        openCart();
+        showCustomerTracking(cachedActiveOrder);
+      }
+    } catch (e) {}
+
+    // ... باقي كود إخفاء اللودر والأنيميشن
         gsap.to('#loader', {
           autoAlpha: 0,
           scale: 1.05,

@@ -589,81 +589,124 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "18px" }}>
-                  {pendingOrders.map((ord) => {
-                    const elapsed = Math.floor((now - new Date(ord.created_at).getTime()) / 1000);
-                    const remain = Math.max(0, 900 - elapsed);
-                    const m = String(Math.floor(remain / 60)).padStart(2, "0");
-                    const s = String(remain % 60).padStart(2, "0");
+           {pendingOrders.map((ord) => {
+  const elapsed = Math.floor((now - new Date(ord.created_at).getTime()) / 1000);
+  const remain = Math.max(0, 900 - elapsed);
+  const m = String(Math.floor(remain / 60)).padStart(2, "0");
+  const s = String(remain % 60).padStart(2, "0");
 
-                    // انتهاء المهلة (15 دقيقة) وتحويل الحالة تلقائياً لـ EXPIRED
-                    if (remain === 0 && ord.payment_status === "pending") {
-                      handleUpdateOrderStatus(ord.id, "expired", "pending");
-                    }
+  if (remain === 0 && ord.payment_status === "pending") {
+    handleUpdateOrderStatus(ord.id, "expired", "pending");
+  }
 
-                    return (
-                      <div key={ord.id} style={{ background: "#140d08", border: "1px solid #ff7a2e", borderRadius: "20px", padding: "20px", boxShadow: "0 10px 30px rgba(0,0,0,0.7)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(243,233,220,0.1)", paddingBottom: "10px", marginBottom: "12px" }}>
-                          <div>
-                            <span style={{ fontFamily: "Impact", fontSize: "20px", color: "#ffb347" }}>#{ord.order_number}</span>
-                            <span style={{ marginLeft: "8px", fontSize: "10px", color: "#9a8b7a" }}>{new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                          <span style={{ fontFamily: "Impact", fontSize: "18px", color: remain < 180 ? "#c22b1a" : "#e8b04b", background: "rgba(255,255,255,0.04)", padding: "4px 10px", borderRadius: "8px" }}>
-                            ⏱ {m}:{s}
-                          </span>
-                        </div>
+  const isPickup = ord.customer_address?.includes("IN STORE") || ord.customer_address?.includes("PICKUP");
 
-                        <div style={{ fontSize: "12px", marginBottom: "12px", lineHeight: "1.6" }}>
-                          <b style={{ color: "#fff" }}>{ord.customer_name}</b> ({ord.customer_phone})<br />
-                          <span style={{ color: "#9a8b7a" }}>📍 {ord.customer_address}</span><br />
-                          <span style={{ color: "#e8b04b" }}>Method: <b>{ord.payment_method?.toUpperCase()}</b></span>
-                        </div>
+  return (
+    <div key={ord.id} style={{ background: "#140d08", border: "1px solid #ff7a2e", borderRadius: "20px", padding: "20px", boxShadow: "0 12px 36px rgba(0,0,0,0.8)" }}>
+      {/* Header الكارت */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(243,233,220,0.1)", paddingBottom: "10px", marginBottom: "12px" }}>
+        <div>
+          <span style={{ fontFamily: "Impact", fontSize: "22px", color: "#ffb347" }}>#{ord.order_number}</span>
+          <span style={{ marginLeft: "8px", fontSize: "10px", color: "#9a8b7a" }}>{new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+        <span style={{ fontFamily: "Impact", fontSize: "18px", color: remain < 180 ? "#c22b1a" : "#e8b04b", background: "rgba(255,255,255,0.04)", padding: "4px 10px", borderRadius: "8px" }}>
+          ⏱ {m}:{s}
+        </span>
+      </div>
 
-                        {/* تفاصيل المنتجات والبيتزا المخصصة */}
-                        <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "10px", padding: "10px", marginBottom: "12px", maxHeight: "140px", overflowY: "auto", fontSize: "11px" }}>
-                          {ord.items?.map((it, idx) => (
-                            <div key={idx} style={{ marginBottom: "6px", borderBottom: "1px dashed rgba(255,255,255,0.05)", paddingBottom: "4px" }}>
-                              <b style={{ color: "#fff" }}>{it.name}</b> × {it.qty} = <span style={{ color: "#e8b04b" }}>EGP {it.unit * it.qty}</span>
-                              {it.snap && (
-                                <div style={{ fontSize: "9px", color: "#9a8b7a", marginTop: "2px", lineHeight: "1.4" }}>
-                                  Crust: {it.snap.dough} | Sauce: {it.snap.sauce} | Cheese: {it.snap.cheese}
-                                  {Object.keys(it.snap.meats || {}).length > 0 && ` | Meats: ${Object.entries(it.snap.meats).map(([k,v]) => `${k} (${v})`).join(', ')}`}
-                                  {it.snap.vegs?.length > 0 && ` | Vegs: ${it.snap.vegs.join(', ')}`}
-                                  {it.snap.extras?.length > 0 && ` | Extras: ${it.snap.extras.join(', ')}`}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          <div style={{ textAlign: "right", fontWeight: "900", color: "#ffb347", fontSize: "13px", marginTop: "6px" }}>
-                            TOTAL: EGP {ord.total}
-                          </div>
-                        </div>
+      {/* بيانات العميل والتوصيل */}
+      <div style={{ fontSize: "12px", marginBottom: "14px", lineHeight: "1.6" }}>
+        <b style={{ color: "#fff", fontSize: "14px" }}>{ord.customer_name}</b> <span style={{ color: "#e8b04b" }}>({ord.customer_phone})</span><br />
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+          <span style={{ padding: "2px 8px", borderRadius: "99px", fontSize: "10px", fontWeight: "900", background: isPickup ? "rgba(232,176,75,0.15)" : "rgba(87,168,79,0.15)", color: isPickup ? "#e8b04b" : "#7cc46a", border: `1px solid ${isPickup ? '#e8b04b' : '#57a84f'}` }}>
+            {isPickup ? "🏪 IN STORE / PICKUP (في المحل)" : "🛵 DELIVERY (توصيل)"}
+          </span>
+        </div>
+        {!isPickup && (
+          <div style={{ color: "#9a8b7a", fontSize: "11px", marginTop: "4px" }}>📍 {ord.customer_address}</div>
+        )}
+        <div style={{ marginTop: "4px" }}>
+          Payment: <b style={{ color: ord.payment_method === 'cash' ? '#7cc46a' : '#ffb347' }}>{ord.payment_method?.toUpperCase()}</b>
+        </div>
+      </div>
 
-                        {ord.receipt_url && (
-                          <button
-                            onClick={() => setSelectedReceiptModal(ord.receipt_url)}
-                            style={{ width: "100%", padding: "8px", background: "rgba(255,122,46,0.15)", border: "1px solid #ff7a2e", color: "#ffb347", borderRadius: "8px", fontSize: "10px", fontWeight: "800", marginBottom: "12px", cursor: "pointer" }}
-                          >
-                            📄 VIEW PAYMENT RECEIPT
-                          </button>
-                        )}
+      {/* قائمة المنتجات مع صور البيتزا وتفاصيل المكونات كاملة */}
+      <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "14px", padding: "12px", marginBottom: "14px", maxHeight: "240px", overflowY: "auto" }}>
+        {ord.items?.map((it, idx) => (
+          <div key={idx} style={{ display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "12px", paddingBottom: "10px", borderBottom: "1px dashed rgba(255,255,255,0.08)" }}>
+            {/* صورة البيتزا */}
+            <div style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", border: "1px solid var(--line)", flexShrink: 0, background: "#1b110a" }}>
+              <img 
+                src={it.img || "https://image.qwenlm.ai/public_source/dc6c2b4d-a883-49e5-8fdc-ae104a79b739/1dc5fbcdf-abfc-4041-af24-57397c1bd986.png"} 
+                alt="" 
+                style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+              />
+            </div>
+            
+            {/* تفاصيل المكونات بالتفصيل */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <b style={{ color: "#fff", fontSize: "12px" }}>{it.name}</b>
+                <span style={{ color: "#e8b04b", fontWeight: "bold", fontSize: "11px" }}>EGP {it.unit * it.qty}</span>
+              </div>
+              <div style={{ color: "var(--mut)", fontSize: "10px", marginTop: "1px" }}>Qty: {it.qty} × EGP {it.unit}</div>
 
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <button
-                            onClick={() => handleUpdateOrderStatus(ord.id, "paid", "preparing")}
-                            style={{ flex: 1, padding: "12px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
-                          >
-                            CONFIRM PAYMENT
-                          </button>
-                          <button
-                            onClick={() => handleUpdateOrderStatus(ord.id, "rejected", "pending")}
-                            style={{ padding: "12px 16px", background: "rgba(194,43,26,0.2)", border: "1px solid #c22b1a", color: "#ff8b7a", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
-                          >
-                            REJECT
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {it.snap ? (
+                <div style={{ fontSize: "10px", color: "#c5b7a7", marginTop: "4px", lineHeight: "1.4", background: "rgba(0,0,0,0.2)", padding: "6px", borderRadius: "6px" }}>
+                  <div>🍕 <b>Crust:</b> {it.snap.dough?.toUpperCase()}</div>
+                  <div>🥫 <b>Sauce:</b> {it.snap.sauce?.toUpperCase()}</div>
+                  <div>🧀 <b>Cheese:</b> {it.snap.cheese?.toUpperCase()}</div>
+                  {Object.keys(it.snap.meats || {}).length > 0 && (
+                    <div>🥩 <b>Meats:</b> {Object.entries(it.snap.meats).map(([k,v]) => `${k.toUpperCase()} (${v})`).join(', ')}</div>
+                  )}
+                  {it.snap.vegs?.length > 0 && (
+                    <div>🥦 <b>Vegs:</b> {it.snap.vegs.map(v => v.toUpperCase()).join(', ')}</div>
+                  )}
+                  {it.snap.extras?.length > 0 && (
+                    <div>✨ <b>Extras:</b> {it.snap.extras.map(e => e.toUpperCase()).join(', ')}</div>
+                  )}
+                </div>
+              ) : (
+                it.meta && <div style={{ fontSize: "10px", color: "#9a8b7a", marginTop: "2px" }}>{it.meta}</div>
+              )}
+            </div>
+          </div>
+        ))}
+        
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
+          <span style={{ fontSize: "11px", letterSpacing: "1px", color: "#9a8b7a" }}>TOTAL AMOUNT:</span>
+          <b style={{ color: "#ffb347", fontFamily: "Impact", fontSize: "20px" }}>EGP {ord.total}</b>
+        </div>
+      </div>
+
+      {/* زر عرض إيصال التحويل */}
+      {ord.receipt_url && (
+        <button
+          onClick={() => setSelectedReceiptModal(ord.receipt_url)}
+          style={{ width: "100%", padding: "10px", background: "rgba(255,122,46,0.15)", border: "1px solid #ff7a2e", color: "#ffb347", borderRadius: "10px", fontSize: "11px", fontWeight: "800", marginBottom: "12px", cursor: "pointer" }}
+        >
+          📄 VIEW PAYMENT RECEIPT (معاينة إيصال التحويل)
+        </button>
+      )}
+
+      {/* أزرار الكاشير */}
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button
+          onClick={() => handleUpdateOrderStatus(ord.id, "paid", "preparing")}
+          style={{ flex: 1, padding: "12px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}
+        >
+          CONFIRM PAYMENT
+        </button>
+        <button
+          onClick={() => handleUpdateOrderStatus(ord.id, "rejected", "pending")}
+          style={{ padding: "12px 18px", background: "rgba(194,43,26,0.2)", border: "1px solid #c22b1a", color: "#ff8b7a", borderRadius: "99px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}
+        >
+          REJECT
+        </button>
+      </div>
+    </div>
+  );
+})}
                 </div>
               )}
             </div>
