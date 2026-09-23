@@ -48,8 +48,53 @@ em{font-style:normal;color:var(--ember)}
 #loadPct{font-size:12px;letter-spacing:.3em;color:var(--mut)}
 .ld-note{margin-top:14px;font-size:10px;letter-spacing:.4em;color:var(--ember)}
 /* ---------- NAV ---------- */
-#nav{position:absolute;top:0;left:0;right:0;z-index:90;display:flex;align-items:center;justify-content:space-between;padding:20px 4vw;transition:background .4s;border-bottom:1px solid transparent}
-#nav.scrolled{background:transparent;border-color:transparent}
+/* ---------- FIXED MODERN GLASS NAVBAR ---------- */
+#nav {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 5vw;
+  border-bottom: 1px solid transparent;
+  transition: padding 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.35s ease,
+              border-color 0.35s ease,
+              box-shadow 0.35s ease;
+}
+
+/* شكل النافبار الفخم أول ما تسكرول لتحت */
+#nav.scrolled {
+  padding: 12px 5vw !important;
+  background: rgba(14, 9, 6, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 122, 46, 0.22) !important;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+/* تحسين أزرار النافبار */
+.nav-links button {
+  position: relative;
+  padding: 6px 4px;
+}
+.nav-links button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--ember);
+  transition: all 0.25s ease;
+  transform: translateX(-50%);
+}
+.nav-links button:hover::after {
+  width: 100%;
+}
 .logo{font-family:var(--disp);font-size:26px;letter-spacing:.05em}
 .logo span{color:var(--ember)}
 .nav-links{display:flex;gap:34px}
@@ -94,7 +139,6 @@ em{font-style:normal;color:var(--ember)}
 /* ---------- BUILDER ---------- */
 /* في globals.css */
 
-/* تعديل خلفية الـ builder لتكون عادية وليست fixed على الموبايل */
 #builder {
   position: relative;
   height: 100vh;
@@ -102,9 +146,8 @@ em{font-style:normal;color:var(--ember)}
   padding: 84px 4vw 24px;
   display: flex;
   flex-direction: column;
-  /* استبدل fixed بـ scroll لكي لا ينهار كارت الشاشة */
-  background: linear-gradient(rgba(10,7,5,.88),rgba(10,7,5,.95)),
-              url("https://image.qwenlm.ai/public_source/dc6c2b4d-a883-49e5-8fdc-ae104a79b739/110370452-bfec-426a-ab1a-a9bbc63881b3.png") center/cover no-repeat;
+  background: radial-gradient(circle at 50% 40%, rgba(45, 26, 14, 0.45) 0%, rgba(10, 7, 5, 0.95) 75%),
+              linear-gradient(rgba(10,7,5,.88),rgba(10,7,5,.95));
 }
 
 @media(max-width: 980px) {
@@ -230,9 +273,9 @@ em{font-style:normal;color:var(--ember)}
 .c-info a{display:block;color:var(--ink);text-decoration:none;font-family:var(--disp);font-size:clamp(18px,2vw,28px);margin-top:26px;letter-spacing:.05em;transition:color .3s}
 .c-info a:hover{color:var(--ember2)}
 .c-loc{display:block;margin-top:26px;color:var(--mut);letter-spacing:.3em;font-size:11px;font-weight:800}
-#cForm{display:flex;flex-direction:column;gap:16px}
+#cForm{ display:flex;flex-direction:column;gap:16px}
 .f-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-#cForm input,#cForm textarea{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:16px;color:var(--ink);font-family:var(--body);font-size:13px;letter-spacing:.05em;outline:none;transition:border .3s}
+#cForm input,#cForm textarea{ border-color:var(--ember) width:100%;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:16px;color:var(--ink);font-family:var(--body);font-size:13px;letter-spacing:.05em;outline:none;transition:border .3s}
 #cForm input:focus,#cForm textarea:focus{border-color:var(--ember)}
 #cForm textarea{min-height:120px;resize:vertical}
 .topics{display:flex;gap:8px;flex-wrap:wrap}
@@ -604,9 +647,6 @@ body.mm-open #burgerBtn{opacity:0;pointer-events:none}
   #wheelBake{padding:9px 14px}
 }
 
-@media(min-width:600px) and (max-width:980px){
-  #stageHost{left:50%;transform:translate(-50%,0) translateX(28vw)}
-}
 
 .wi-in svg{width:78%;height:78%;margin:auto;display:block}
 
@@ -953,4 +993,526 @@ html.lenis, html.lenis body {
   border-color: var(--ember);
   background: rgba(255, 122, 46, 0.14);
   color: var(--ember2);
+}
+
+/* ================= UNIFIED SIZE GATEWAY (DESKTOP & MOBILE) ================= */
+#mobileSizeSelector {
+  display: none !important;
+  flex-direction: column;
+  align-items: center;
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  z-index: 95;
+}
+
+/* لما نكون بنختار الحجم: إخفاء كل العناصر المشوشة (عجلة الأيقونات، البانل، القوائم، والسعر) */
+#builder.picking-size #mobileSizeSelector {
+  display: flex !important;
+}
+
+#builder.picking-size #rail,
+#builder.picking-size .panel,
+#builder.picking-size #ingWheel,
+#builder.picking-size #wheelBake,
+#builder.picking-size #mPrice {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: opacity 0.4s ease;
+}
+
+@media(min-width: 981px) {
+  #builder.picking-size #mobileSizeSelector {
+    display: flex !important;
+    position: absolute;
+    top: 55vh;
+    left: 25%;
+    transform: translateX(-50%);
+    z-index: 95;
+  }
+}
+
+.ms-title {
+  font-family: var(--disp);
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 10px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.ms-circles {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+/* الأزرار الدائرية الفخمة المطابقة للموبايل */
+.ms-circle-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #29180d, #120b07);
+  border: 1.5px solid rgba(255, 122, 46, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ms-circle-btn b {
+  font-family: var(--disp);
+  font-size: 24px;
+  color: var(--ember2);
+  line-height: 1;
+}
+
+.ms-circle-btn span {
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--mut);
+  margin-top: 2px;
+}
+
+.ms-circle-btn:hover {
+  transform: translateY(-4px) scale(1.08);
+  border-color: var(--ember);
+  box-shadow: 0 12px 30px rgba(255, 122, 46, 0.35);
+}
+
+.ms-circle-btn.active {
+  border-color: var(--ember);
+  background: radial-gradient(circle at 35% 30%, #3d1b09, #170a03);
+  box-shadow: 0 0 25px rgba(255, 122, 46, 0.55), inset 0 0 12px rgba(255, 122, 46, 0.3);
+  transform: scale(1.08);
+}
+.ms-circle-btn.active b {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 122, 46, 0.8);
+}
+
+/* تخصيصات الموبايل للشاشة الابتدائية */
+@media (max-width: 980px) {
+  #mobileSizeSelector {
+    display: none !important;
+  }
+  #builder.picking-size #mobileSizeSelector {
+    display: flex !important;
+  }
+  #builder.picking-size #stageHost {
+    left: 50% !important;
+    top: 7vh !important;
+    transform: translate(-50%, 0) translateX(0) scale(0.72) !important;
+  }
+  #builder.picking-size #ingWheel,
+  #builder.picking-size #wheelBake,
+  #builder.picking-size #mPrice,
+  #builder.picking-size #drawerBtn {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+/* ---------- CART BUTTON UNDER INTERACTIVE KITCHEN (MOBILE ONLY) ---------- */
+.b-cart-btn {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .b-head {
+    position: relative;
+  }
+
+  /* تموضع الزر تحت كلمة INTERACTIVE KITCHEN في المساحة الفارغة على اليمين */
+  .b-cart-btn {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    position: absolute;
+    right: 75vw;
+    bottom: -5vh;
+    background: rgba(22, 13, 7, 0.92);
+    border: 1.5px solid var(--ember);
+    color: var(--ember2);
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7), 0 0 14px rgba(255, 122, 46, 0.35);
+    z-index: 60;
+    cursor: pointer;
+  }
+
+  .b-cart-btn:active {
+    transform: scale(0.93);
+  }
+
+  .bc-txt {
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .bc-badge {
+    background: var(--ember);
+    color: #1a0c04;
+    font-size: 10px;
+    font-weight: 900;
+    border-radius: 99px;
+    padding: 2px 7px;
+    min-width: 18px;
+    text-align: center;
+  }
+}
+
+
+/* ---------- FLOATING CART BUTTON (MOBILE) ---------- */
+.mob-floating-cart {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .mob-floating-cart {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #1a0f08;
+    border: 1.5px solid var(--ember);
+    color: var(--ember2);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(255,122,46,0.3);
+    z-index: 70;
+    cursor: pointer;
+  }
+  .mob-floating-cart:active {
+    transform: scale(0.92);
+  }
+  .mfc-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--ember);
+    color: #1a0c04;
+    font-size: 10px;
+    font-weight: 900;
+    border-radius: 99px;
+    padding: 2px 6px;
+    min-width: 18px;
+    text-align: center;
+  }
+}
+
+/* ---------- MODERN INPUTS & KILL WHITE AUTOFILL ---------- */
+input, textarea {
+  color-scheme: dark !important;
+}
+
+/* قتل الخلفية البيضاء الإجبارية من كروم وسفاري وقت الكتابة والـ Autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--ink) !important;
+  -webkit-box-shadow: 0 0 0 1000px #140d08 inset !important;
+  box-shadow: 0 0 0 1000px #140d08 inset !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: var(--ember) !important;
+}
+
+/* تثبيت المظهر المودرن لحقول الكونتاكت والتشيك آوت */
+#cForm input, #cForm textarea, .ck-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--ink) !important;
+}
+
+#cForm input:focus, #cForm textarea:focus, .ck-input:focus {
+  background: rgba(255, 122, 46, 0.04) !important;
+  border-color: var(--ember) !important;
+  box-shadow: 0 0 20px rgba(255, 122, 46, 0.15) !important;
+}
+
+
+/* ---------- DESKTOP PIZZA SIZE SELECTOR ---------- */
+.desktop-size-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  top: 15px;
+  z-index: 40;
+  background: rgba(20, 13, 8, 0.75);
+  border: 1px solid rgba(255, 122, 46, 0.3);
+  padding: 5px;
+  border-radius: 99px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.ds-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 99px;
+  border: 1px solid transparent;
+  color: var(--mut);
+  background: transparent;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.ds-btn b {
+  font-family: var(--disp);
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+.ds-btn span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.ds-btn:hover {
+  color: var(--ink);
+  border-color: rgba(255, 179, 71, 0.3);
+}
+
+.ds-btn.active {
+  background: linear-gradient(135deg, var(--ember), #e05a12);
+  color: #1a0c04;
+  border-color: var(--ember);
+  box-shadow: 0 6px 20px rgba(255, 110, 40, 0.4);
+}
+.ds-btn.active b, .ds-btn.active span {
+  color: #1a0c04;
+}
+
+/* إخفاؤها التام على الموبايل عشان كارت الموبايل الأصلي يشتغل براحته */
+@media (max-width: 980px) {
+  .desktop-size-bar {
+    display: none !important;
+  }
+}
+
+
+@media (max-width: 980px) and (orientation: landscape) and (max-height: 520px) {
+  #builder {
+    padding: 10px 4vw !important;
+    overflow: hidden !important;
+  }
+  #rail, .panel {
+    display: none !important;
+  }
+  #ingWheel {
+    display: block !important;
+  }
+  .b-head {
+    position: absolute !important;
+    top: 6px !important;
+    left: 0;
+    right: 0;
+    transform: scale(0.72) !important;
+    z-index: 50;
+  }
+
+  .stage-wrap {
+    height: 100vh !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* البيتزا عملاقة: سنترها على خط قاع الشاشة فيظهر 50% والنص التاني مدفون تحت */
+  #stageHost {
+    position: absolute !important;
+    left: 50% !important;
+    top: 100% !important;
+    bottom: auto !important;
+    width: min(150vh, 115vw) !important; /* تكبير البيتزا أكتر */
+    transform: translate(-50%, -50%) !important;
+    z-index: 2;
+  }
+
+  #mPrice {
+    bottom: 12px !important;
+    left: 16px !important;
+    display: flex !important;
+  }
+  #wheelBake {
+    bottom: 12px !important;
+    right: 16px !important;
+    left: auto !important;
+    display: inline-flex !important;
+  }
+}
+
+/* ================= 2. التابلت بالعرض يشمل IPAD PRO 13 حتى 1400px ================= */
+@media (min-width: 650px) and (max-width: 1400px) and (orientation: landscape) and (min-height: 521px) {
+  #rail, .panel, .desktop-size-bar {
+    display: none !important;
+  }
+  #ingWheel {
+    display: block;
+  }
+
+  #builder {
+    padding: 20px 4vw !important;
+    overflow: hidden !important;
+  }
+
+  /* كسر تقسيم الأعمدة الثلاثي وجعل الحاوية في قلب الشاشة 100% */
+  .b-grid {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .stage-wrap {
+    width: 100% !important;
+    height: 85vh !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+/* تنزيل سنتر البيتزا لتحت بنسبة 56% لإعطاء مساحة مريحة في الأعلى */
+  #stageHost {
+    position: absolute !important;
+    left: 50% !important;
+    top: 56% !important;
+    bottom: auto !important;
+    width: min(72vh, 65vw) !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 2;
+  }
+
+  /* سحب الإضاءة البرتقالية وتثبيتها في ضهر البيتزا مباشرة في الموضع الجديد */
+  .stage-light {
+    display: block !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 56% !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(76vh, 70vw) !important;
+    z-index: 1;
+    pointer-events: none !important;
+  }
+
+  .b-head {
+    position: absolute !important;
+    top: 8px !important;
+    left: 0;
+    right: 0;
+    text-align: center !important;
+  }
+
+  #mPrice {
+    display: flex !important;
+    bottom: 16px !important;
+    left: 24px !important;
+  }
+  #wheelBake {
+    display: inline-flex !important;
+    bottom: 16px !important;
+    right: 24px !important;
+    left: auto !important;
+  }
+}
+
+/* النافبار ظاهر عادي في أول الصفحة بس غير ثابت على الموبايل والتابلت */
+@media (max-width: 1024px), (max-width: 1400px) and (pointer: coarse) {
+  #nav {
+    display: flex !important;
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* ================= 3. التابلت بالطول (TABLET PORTRAIT: من 650px لحد 1150px) ================= */
+@media (min-width: 650px) and (max-width: 1150px) and (orientation: portrait) {
+  #nav, #rail, .panel, .desktop-size-bar {
+    display: none !important;
+  }
+/* توسيع مدار عجلة الأيقونات لبرة بنسبة 18% */
+  #ingWheel {
+    display: block !important;
+    transform: translate(-50%, -50%) scale(1.18) !important;
+  }
+
+  /* كسر شبكة الأعمدة الثلاثية للديسكتوب وفرد الحاوية بعرض الشاشة كاملاً */
+  .b-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .stage-wrap {
+    height: 85vh !important;
+    width: 100% !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    position: relative !important;
+  }
+
+/* رفع البيتزا لفوق عند 2vh لتسحب المكونات معاها لأعلى الشاشة */
+  #stageHost {
+    position: absolute !important;
+    top: 2vh !important;
+    right: 0 !important;
+    left: auto !important;
+    width: min(88vh, 105vw) !important;
+    transform: translateX(35%) !important; /* 65% ظاهر جوة الشاشة */
+    z-index: 2;
+  }
+
+/* تصغير مقاس أيقونات العجلة في التابلت بالطول */
+  .wi {
+    --ws: 68px !important; /* مقاس ملموم وأشيك */
+  }
+  .wi-in svg {
+    width: 80% !important;
+    height: 80% !important;
+  }
+  .wg-label {
+    font-size: 11px !important;
+  }
+
+  #mPrice {
+    display: flex !important;
+    bottom: 24px !important;
+    left: 24px !important;
+  }
+  #wheelBake {
+    display: inline-flex !important;
+    bottom: 84px !important;
+    left: 24px !important;
+  }
 }

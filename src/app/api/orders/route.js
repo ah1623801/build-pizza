@@ -19,6 +19,12 @@ export async function GET(request) {
       return NextResponse.json(data);
     }
 
+// حماية الخصوصية: لا يمكن سحب جميع الطلبات إلا إذا كان هناك جلسة أدمن صالحة
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized to view all orders' }, { status: 401 });
+    }
+
     const { data, error } = await supabaseServer
       .from('orders')
       .select('*')
@@ -57,25 +63,40 @@ export async function POST(request) {
       }
     }
 
-    const order_number = 'FN-' + Math.floor(100000 + Math.random() * 900000);
+// توليد رقم طلب فريد مع تكرار المحاولة في حالة التصادم النادر
+    let order_number = '';
+    let inserted = false;
+    let data = null;
+    let insertError = null;
 
-    const { data, error } = await supabaseServer
-      .from('orders')
-      .insert([{
-        order_number,
-        customer_name,
-        customer_phone,
-        customer_address,
-        items,
-        total,
-        payment_method,
-        payment_status: 'pending',
-        order_status: 'pending',
-        receipt_url
-      }])
-      .select()
-      .single();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      order_number = 'FN-' + Math.floor(100000 + Math.random() * 900000);
+      const res = await supabaseServer
+        .from('orders')
+        .insert([{
+          order_number,
+          customer_name: customer_name.trim(),
+          customer_phone: customer_phone.trim(),
+          customer_address: customer_address.trim(),
+          items,
+          total,
+          payment_method,
+          payment_status: 'pending',
+          order_status: 'pending',
+          receipt_url
+        }])
+        .select()
+        .single();
 
+      if (!res.error) {
+        data = res.data;
+        inserted = true;
+        break;
+      }
+      insertError = res.error;
+    }
+
+    if (!inserted) return NextResponse.json({ error: insertError?.message || 'Failed to generate order' }, { status: 500 });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true, order: data });
   } catch (err) {

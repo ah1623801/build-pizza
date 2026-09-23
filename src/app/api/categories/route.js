@@ -2,28 +2,30 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 
-// 1. إضافة تصنيف جديد
+// 1. إضافة أو تعديل تصنيف
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { id, name, sort_order } = body;
+    const { id, name, sort_order, original_id } = body;
 
     if (!id || !name) {
       return NextResponse.json({ error: 'ID and Name are required' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseServer
-      .from('categories')
-      .insert([
-        {
-          id: id.toLowerCase().trim().replace(/\s+/g, '-'),
-          name: name.toUpperCase().trim(),
-          sort_order: parseInt(sort_order) || 10,
-        },
-      ])
-      .select();
+    const payload = {
+      id: id.toLowerCase().trim().replace(/\s+/g, '-'),
+      name: name.toUpperCase().trim(),
+      sort_order: parseInt(sort_order) || 10,
+    };
 
-    if (error) throw error;
+    let result;
+    if (original_id) {
+      result = await supabaseServer.from('categories').update(payload).eq('id', original_id).select();
+    } else {
+      result = await supabaseServer.from('categories').insert([payload]).select();
+    }
+
+    if (result.error) throw result.error;
 
     return NextResponse.json({ success: true, category: data[0] });
   } catch (error) {

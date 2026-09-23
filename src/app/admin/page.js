@@ -19,7 +19,6 @@ export default function AdminPage() {
   // Orders State (Cashier)
   const [orders, setOrders] = useState([]);
   const [selectedReceiptModal, setSelectedReceiptModal] = useState(null);
-  const [now, setNow] = useState(Date.now());
 
   // Dashboard Data
   const [categories, setCategories] = useState([]);
@@ -43,14 +42,47 @@ export default function AdminPage() {
   const [newCat, setNewCat] = useState({ id: "", name: "", sort_order: 10 });
   const [editingCat, setEditingCat] = useState(null);
 
-  // Ingredient Pricing State
+// Ingredient Pricing State
   const [ingredientPrices, setIngredientPrices] = useState({
-    dough: { thin: 0, classic: 0, thick: 20, cheese: 35 },
-    sauce: { tomato: 20, spicy: 30, bbq: 35, garlic: 40 },
-    cheese: { mozzarella: 25, extra: 40, four: 55, smoked: 45 },
-    meat: { pepperoni: 45, beef: 50, chicken: 45, sausage: 40 },
-    veg: { olives: 15, mushroom: 20, onion: 12, greenPepper: 15, jalapeno: 18, corn: 12, basil: 10 },
-    extras: { extraCheese: 30, chili: 10, garlic: 10, truffle: 35 }
+    dough: {
+      thin: { small: 0, med: 0, large: 0 },
+      classic: { small: 0, med: 0, large: 0 },
+      thick: { small: 15, med: 20, large: 25 },
+      cheese: { small: 25, med: 35, large: 45 }
+    },
+    sauce: {
+      tomato: { small: 15, med: 20, large: 25 },
+      spicy: { small: 20, med: 30, large: 35 },
+      bbq: { small: 25, med: 35, large: 40 },
+      garlic: { small: 30, med: 40, large: 45 }
+    },
+    cheese: {
+      mozzarella: { small: 20, med: 25, large: 35 },
+      extra: { small: 30, med: 40, large: 50 },
+      four: { small: 45, med: 55, large: 65 },
+      smoked: { small: 35, med: 45, large: 55 }
+    },
+    meat: {
+      pepperoni: { small: 35, med: 45, large: 55 },
+      beef: { small: 40, med: 50, large: 60 },
+      chicken: { small: 35, med: 45, large: 55 },
+      sausage: { small: 30, med: 40, large: 50 }
+    },
+    veg: {
+      olives: { small: 10, med: 15, large: 20 },
+      mushroom: { small: 15, med: 20, large: 25 },
+      onion: { small: 8, med: 12, large: 15 },
+      greenPepper: { small: 10, med: 15, large: 20 },
+      jalapeno: { small: 12, med: 18, large: 22 },
+      corn: { small: 10, med: 12, large: 15 },
+      basil: { small: 8, med: 10, large: 12 }
+    },
+    extras: {
+      extraCheese: { small: 25, med: 30, large: 40 },
+      chili: { small: 8, med: 10, large: 12 },
+      garlic: { small: 8, med: 10, large: 12 },
+      truffle: { small: 25, med: 35, large: 45 }
+    }
   });
   const [savingIngredients, setSavingIngredients] = useState(false);
   const [ingMsg, setIngMsg] = useState("");
@@ -59,23 +91,18 @@ export default function AdminPage() {
     checkSession();
   }, []);
 
-  // تحديث عداد الثواني محلياً كل ثانية ومزامنة الطلبات مع السيرفر كل 3 ثوانٍ
+// مزامنة ذكية: فقط لما يكون في تاب الطلبات والصفحة نشطة
   useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    const secondTimer = setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
+    if (!isAuthenticated || activeTab !== "orders") return;
 
     const syncTimer = setInterval(() => {
-      loadOrders();
-    }, 3000);
+      if (document.visibilityState === "visible") {
+        loadOrders();
+      }
+    }, 4000);
 
-    return () => {
-      clearInterval(secondTimer);
-      clearInterval(syncTimer);
-    };
-  }, [isAuthenticated]);
+    return () => clearInterval(syncTimer);
+  }, [isAuthenticated, activeTab]);
 
   const checkSession = async () => {
     try {
@@ -273,25 +300,32 @@ export default function AdminPage() {
     setNewCat({ id: "", name: "", sort_order: 10 });
   };
 
-  // ================= إدارة أسعار المكونات =================
-  const handleIngredientChange = (category, id, value) => {
+const handleIngredientChange = (category, id, size, value) => {
     setIngredientPrices(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
-        [id]: Number(value) || 0
+        [id]: {
+          ...(typeof prev[category]?.[id] === 'object' && prev[category]?.[id] !== null 
+            ? prev[category][id] 
+            : { small: prev[category]?.[id] ?? 0, med: prev[category]?.[id] ?? 0, large: prev[category]?.[id] ?? 0 }),
+          // لو الخانة اتمسحت تفضل فاضية وتعتبر قيمتها صفر
+          [size]: value === '' ? '' : (Number(value) >= 0 ? Number(value) : 0)
+        }
       }
     }));
   };
-
   const handleSaveIngredients = async () => {
     setSavingIngredients(true);
     setIngMsg("");
     try {
+// تحويل أي خانة فارغة لصفر تلقائياً قبل الحفظ في الداتابيز
+      const payload = JSON.parse(JSON.stringify(ingredientPrices, (_, val) => val === '' ? 0 : val));
+
       const res = await fetch("/api/ingredients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(ingredientPrices)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         setIngMsg("تم حفظ وتحديث جميع أسعار المكونات بنجاح! ✓");
@@ -575,6 +609,7 @@ export default function AdminPage() {
         </div>
 
         {/* ================= TAB 0: CASHIER ORDERS ================= */}
+{/* ================= TAB 0: CASHIER ORDERS ================= */}
         {activeTab === "orders" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
             
@@ -589,129 +624,68 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "18px" }}>
-           {pendingOrders.map((ord) => {
-  const elapsed = Math.floor((now - new Date(ord.created_at).getTime()) / 1000);
-  const remain = Math.max(0, 900 - elapsed);
-  const m = String(Math.floor(remain / 60)).padStart(2, "0");
-  const s = String(remain % 60).padStart(2, "0");
+                  {pendingOrders.map((ord) => {
+                   
 
-  if (remain === 0 && ord.payment_status === "pending") {
-    handleUpdateOrderStatus(ord.id, "expired", "pending");
-  }
+                    return (
+                      <div key={ord.id} style={{ background: "#140d08", border: "1px solid #ff7a2e", borderRadius: "20px", padding: "20px", boxShadow: "0 10px 30px rgba(0,0,0,0.7)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(243,233,220,0.1)", paddingBottom: "10px", marginBottom: "12px" }}>
+                          <div>
+                            <span style={{ fontFamily: "Impact", fontSize: "20px", color: "#ffb347" }}>#{ord.order_number}</span>
+                            <span style={{ marginLeft: "8px", fontSize: "10px", color: "#9a8b7a" }}>{new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                       
+                        </div>
 
-  const isPickup = ord.customer_address?.includes("IN STORE") || ord.customer_address?.includes("PICKUP");
+                        <div style={{ fontSize: "12px", marginBottom: "12px", lineHeight: "1.6" }}>
+                          <b style={{ color: "#fff" }}>{ord.customer_name}</b> ({ord.customer_phone})<br />
+                          <span style={{ color: "#9a8b7a" }}>📍 {ord.customer_address}</span>
+                        </div>
 
-  return (
-    <div key={ord.id} style={{ background: "#140d08", border: "1px solid #ff7a2e", borderRadius: "20px", padding: "20px", boxShadow: "0 12px 36px rgba(0,0,0,0.8)" }}>
-      {/* Header الكارت */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(243,233,220,0.1)", paddingBottom: "10px", marginBottom: "12px" }}>
-        <div>
-          <span style={{ fontFamily: "Impact", fontSize: "22px", color: "#ffb347" }}>#{ord.order_number}</span>
-          <span style={{ marginLeft: "8px", fontSize: "10px", color: "#9a8b7a" }}>{new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-        </div>
-        <span style={{ fontFamily: "Impact", fontSize: "18px", color: remain < 180 ? "#c22b1a" : "#e8b04b", background: "rgba(255,255,255,0.04)", padding: "4px 10px", borderRadius: "8px" }}>
-          ⏱ {m}:{s}
-        </span>
-      </div>
+                        {/* قائمة المنتجات */}
+                        <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "10px", padding: "10px", marginBottom: "12px", maxHeight: "140px", overflowY: "auto", fontSize: "11px" }}>
+                          {ord.items?.map((it, idx) => (
+                            <div key={idx} style={{ marginBottom: "6px", borderBottom: "1px dashed rgba(255,255,255,0.05)", paddingBottom: "4px" }}>
+                              <b style={{ color: "#fff" }}>{it.name}</b> × {it.qty} = <span style={{ color: "#e8b04b" }}>EGP {it.unit * it.qty}</span>
+                              {it.meta && <div style={{ fontSize: "9px", color: "#9a8b7a" }}>{it.meta}</div>}
+                            </div>
+                          ))}
+                          <div style={{ textAlign: "right", fontWeight: "900", color: "#ffb347", fontSize: "13px", marginTop: "6px" }}>
+                            TOTAL: EGP {ord.total}
+                          </div>
+                        </div>
 
-      {/* بيانات العميل والتوصيل */}
-      <div style={{ fontSize: "12px", marginBottom: "14px", lineHeight: "1.6" }}>
-        <b style={{ color: "#fff", fontSize: "14px" }}>{ord.customer_name}</b> <span style={{ color: "#e8b04b" }}>({ord.customer_phone})</span><br />
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
-          <span style={{ padding: "2px 8px", borderRadius: "99px", fontSize: "10px", fontWeight: "900", background: isPickup ? "rgba(232,176,75,0.15)" : "rgba(87,168,79,0.15)", color: isPickup ? "#e8b04b" : "#7cc46a", border: `1px solid ${isPickup ? '#e8b04b' : '#57a84f'}` }}>
-            {isPickup ? "🏪 IN STORE / PICKUP (في المحل)" : "🛵 DELIVERY (توصيل)"}
-          </span>
-        </div>
-        {!isPickup && (
-          <div style={{ color: "#9a8b7a", fontSize: "11px", marginTop: "4px" }}>📍 {ord.customer_address}</div>
-        )}
-        <div style={{ marginTop: "4px" }}>
-          Payment: <b style={{ color: ord.payment_method === 'cash' ? '#7cc46a' : '#ffb347' }}>{ord.payment_method?.toUpperCase()}</b>
-        </div>
-      </div>
+                        {ord.receipt_url && (
+                          <button
+                            onClick={() => setSelectedReceiptModal(ord.receipt_url)}
+                            style={{ width: "100%", padding: "8px", background: "rgba(255,122,46,0.15)", border: "1px solid #ff7a2e", color: "#ffb347", borderRadius: "8px", fontSize: "10px", fontWeight: "800", marginBottom: "12px", cursor: "pointer" }}
+                          >
+                            📄 VIEW PAYMENT RECEIPT
+                          </button>
+                        )}
 
-      {/* قائمة المنتجات مع صور البيتزا وتفاصيل المكونات كاملة */}
-      <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "14px", padding: "12px", marginBottom: "14px", maxHeight: "240px", overflowY: "auto" }}>
-        {ord.items?.map((it, idx) => (
-          <div key={idx} style={{ display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "12px", paddingBottom: "10px", borderBottom: "1px dashed rgba(255,255,255,0.08)" }}>
-            {/* صورة البيتزا */}
-            <div style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", border: "1px solid var(--line)", flexShrink: 0, background: "#1b110a" }}>
-              <img 
-                src={it.img || "https://image.qwenlm.ai/public_source/dc6c2b4d-a883-49e5-8fdc-ae104a79b739/1dc5fbcdf-abfc-4041-af24-57397c1bd986.png"} 
-                alt="" 
-                style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-              />
-            </div>
-            
-            {/* تفاصيل المكونات بالتفصيل */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <b style={{ color: "#fff", fontSize: "12px" }}>{it.name}</b>
-                <span style={{ color: "#e8b04b", fontWeight: "bold", fontSize: "11px" }}>EGP {it.unit * it.qty}</span>
-              </div>
-              <div style={{ color: "var(--mut)", fontSize: "10px", marginTop: "1px" }}>Qty: {it.qty} × EGP {it.unit}</div>
-
-              {it.snap ? (
-                <div style={{ fontSize: "10px", color: "#c5b7a7", marginTop: "4px", lineHeight: "1.4", background: "rgba(0,0,0,0.2)", padding: "6px", borderRadius: "6px" }}>
-                  <div>🍕 <b>Crust:</b> {it.snap.dough?.toUpperCase()}</div>
-                  <div>🥫 <b>Sauce:</b> {it.snap.sauce?.toUpperCase()}</div>
-                  <div>🧀 <b>Cheese:</b> {it.snap.cheese?.toUpperCase()}</div>
-                  {Object.keys(it.snap.meats || {}).length > 0 && (
-                    <div>🥩 <b>Meats:</b> {Object.entries(it.snap.meats).map(([k,v]) => `${k.toUpperCase()} (${v})`).join(', ')}</div>
-                  )}
-                  {it.snap.vegs?.length > 0 && (
-                    <div>🥦 <b>Vegs:</b> {it.snap.vegs.map(v => v.toUpperCase()).join(', ')}</div>
-                  )}
-                  {it.snap.extras?.length > 0 && (
-                    <div>✨ <b>Extras:</b> {it.snap.extras.map(e => e.toUpperCase()).join(', ')}</div>
-                  )}
-                </div>
-              ) : (
-                it.meta && <div style={{ fontSize: "10px", color: "#9a8b7a", marginTop: "2px" }}>{it.meta}</div>
-              )}
-            </div>
-          </div>
-        ))}
-        
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
-          <span style={{ fontSize: "11px", letterSpacing: "1px", color: "#9a8b7a" }}>TOTAL AMOUNT:</span>
-          <b style={{ color: "#ffb347", fontFamily: "Impact", fontSize: "20px" }}>EGP {ord.total}</b>
-        </div>
-      </div>
-
-      {/* زر عرض إيصال التحويل */}
-      {ord.receipt_url && (
-        <button
-          onClick={() => setSelectedReceiptModal(ord.receipt_url)}
-          style={{ width: "100%", padding: "10px", background: "rgba(255,122,46,0.15)", border: "1px solid #ff7a2e", color: "#ffb347", borderRadius: "10px", fontSize: "11px", fontWeight: "800", marginBottom: "12px", cursor: "pointer" }}
-        >
-          📄 VIEW PAYMENT RECEIPT (معاينة إيصال التحويل)
-        </button>
-      )}
-
-      {/* أزرار الكاشير */}
-      <div style={{ display: "flex", gap: "8px" }}>
-        <button
-          onClick={() => handleUpdateOrderStatus(ord.id, "paid", "preparing")}
-          style={{ flex: 1, padding: "12px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}
-        >
-          CONFIRM PAYMENT
-        </button>
-        <button
-          onClick={() => handleUpdateOrderStatus(ord.id, "rejected", "pending")}
-          style={{ padding: "12px 18px", background: "rgba(194,43,26,0.2)", border: "1px solid #c22b1a", color: "#ff8b7a", borderRadius: "99px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}
-        >
-          REJECT
-        </button>
-      </div>
-    </div>
-  );
-})}
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            onClick={() => handleUpdateOrderStatus(ord.id, "paid", "preparing")}
+                            style={{ flex: 1, padding: "12px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
+                          >
+                            CONFIRM PAYMENT
+                          </button>
+                          <button
+                            onClick={() => handleUpdateOrderStatus(ord.id, "rejected", "pending")}
+                            style={{ padding: "12px 16px", background: "rgba(194,43,26,0.2)", border: "1px solid #c22b1a", color: "#ff8b7a", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
+                          >
+                            REJECT
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
 
-            {/* قسم الطلبات المدفوعة ومتابعة المطبخ */}
+            {/* قسم المطبخ (الطلبات المدفوعة) */}
             <div>
               <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "22px", color: "#e8b04b", letterSpacing: "1px", marginBottom: "14px" }}>
                 🍕 ACTIVE KITCHEN ORDERS (PAID)
@@ -730,18 +704,9 @@ export default function AdminPage() {
                           {ord.order_status?.toUpperCase()}
                         </span>
                       </div>
-                      <div style={{ fontSize: "11px", color: "#9a8b7a", marginBottom: "10px", lineHeight: "1.5" }}>
+                      <div style={{ fontSize: "11px", color: "#9a8b7a", marginBottom: "10px" }}>
                         Customer: <b style={{ color: "#fff" }}>{ord.customer_name}</b> | Phone: {ord.customer_phone}<br />
-                        Address: {ord.customer_address}<br />
                         Total: <b style={{ color: "#ffb347" }}>EGP {ord.total}</b>
-                      </div>
-
-                      <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "8px", padding: "8px", marginBottom: "12px", fontSize: "11px" }}>
-                        {ord.items?.map((it, idx) => (
-                          <div key={idx} style={{ color: "#c5b7a7" }}>
-                            • {it.name} × {it.qty}
-                          </div>
-                        ))}
                       </div>
                       
                       <div style={{ display: "flex", gap: "6px" }}>
@@ -768,7 +733,7 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* أرشيف الطلبات المكتملة، المرفوضة، والمنتهية */}
+            {/* أرشيف الطلبات */}
             <div>
               <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "18px", color: "#9a8b7a", letterSpacing: "1px", marginBottom: "12px" }}>
                 ARCHIVED / COMPLETED / EXPIRED ORDERS
@@ -790,11 +755,7 @@ export default function AdminPage() {
                         <td style={{ padding: "10px", fontWeight: "bold" }}>#{o.order_number}</td>
                         <td style={{ padding: "10px" }}>{o.customer_name}</td>
                         <td style={{ padding: "10px", color: "#e8b04b" }}>EGP {o.total}</td>
-                        <td style={{ padding: "10px", textTransform: "uppercase" }}>
-                          <span style={{ color: o.payment_status === 'paid' ? '#57a84f' : o.payment_status === 'rejected' ? '#ff8b7a' : '#9a8b7a' }}>
-                            {o.payment_status}
-                          </span>
-                        </td>
+                        <td style={{ padding: "10px", textTransform: "uppercase" }}>{o.payment_status}</td>
                         <td style={{ padding: "10px", textTransform: "uppercase" }}>{o.order_status}</td>
                       </tr>
                     ))}
@@ -803,17 +764,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Modal معاينة صورة الإيصال */}
-            {selectedReceiptModal && (
-              <div onClick={() => setSelectedReceiptModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-                <div onClick={e => e.stopPropagation()} style={{ background: "#140d08", padding: "16px", borderRadius: "16px", maxWidth: "500px", width: "100%", textAlign: "center", border: "1px solid #ff7a2e" }}>
-                  <img src={selectedReceiptModal} alt="Receipt" style={{ maxWidth: "100%", maxHeight: "70vh", borderRadius: "10px", objectFit: "contain" }} />
-                  <button onClick={() => setSelectedReceiptModal(null)} className="btn ghost" style={{ marginTop: "12px", width: "100%", padding: "10px", border: "1px solid rgba(243,233,220,0.2)" }}>
-                    CLOSE
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -838,7 +788,7 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "14px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>PRICE (EGP)</label>
                     <input
@@ -847,42 +797,46 @@ export default function AdminPage() {
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                       required
-                      style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "10px", color: "#fff", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "12px", color: "#fff", boxSizing: "border-box", fontSize: "13px" }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>TYPE</label>
+                    <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>CATEGORY</label>
                     <select
-                      value={formData.is_simple ? "simple" : "custom"}
-                      onChange={(e) => setFormData({ ...formData, is_simple: e.target.value === "simple" })}
-                      style={{ width: "100%", padding: "12px", background: "#140d08", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "10px", color: "#fff", boxSizing: "border-box" }}
+                      value={formData.categories[0] || (categories[0]?.id || "signature")}
+                      onChange={(e) => {
+                        const catId = e.target.value;
+                        const isSimple = ['sides', 'drinks', 'desserts'].includes(catId);
+                        setFormData({
+                          ...formData,
+                          categories: [catId],
+                          is_simple: isSimple
+                        });
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "13px 16px",
+                        background: "#18100a",
+                        border: "1px solid rgba(255, 122, 46, 0.4)",
+                        borderRadius: "12px",
+                        color: "#ffb347",
+                        fontSize: "13px",
+                        fontWeight: "800",
+                        letterSpacing: "1px",
+                        outline: "none",
+                        cursor: "pointer",
+                        boxSizing: "border-box"
+                      }}
                     >
-                      <option value="custom">PIZZA (CUSTOMIZABLE)</option>
-                      <option value="simple">SIMPLE (DRINK / SIDE)</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id} style={{ background: "#140d08", color: "#fff" }}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>CATEGORIES</label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                    {categories.map((c) => (
-                      <label key={c.id} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "10px", background: "rgba(255,255,255,0.05)", padding: "6px 10px", borderRadius: "8px", cursor: "pointer" }}>
-                        <input
-                          type="checkbox"
-                          checked={formData.categories.includes(c.id)}
-                          onChange={(e) => {
-                            const updated = e.target.checked
-                              ? [...formData.categories, c.id]
-                              : formData.categories.filter((x) => x !== c.id);
-                            setFormData({ ...formData, categories: updated });
-                          }}
-                        />
-                        {c.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
                 <div>
                   <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>INGREDIENTS (COMMA SEPARATED)</label>
@@ -894,12 +848,63 @@ export default function AdminPage() {
                     style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "10px", color: "#fff", boxSizing: "border-box" }}
                   />
                 </div>
+<div>
+                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "8px" }}>
+                    PRODUCT IMAGE
+                  </label>
+                  
+                  {/* صندوق الرفع الفاخر */}
+                  <label style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    background: "rgba(255, 255, 255, 0.02)",
+                    border: "1.5px dashed rgba(255, 122, 46, 0.45)",
+                    borderRadius: "16px",
+                    padding: "16px 20px",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease"
+                  }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setImageFile(e.target.files[0])}
+                      style={{ display: "none" }}
+                    />
+                    
+                    {/* عرض الصورة المختارة أو الأيقونة */}
+                    {imageFile ? (
+                      <img
+                        src={URL.createObjectURL(imageFile)}
+                        alt="Preview"
+                        style={{ width: "54px", height: "54px", borderRadius: "50%", objectFit: "cover", border: "2px solid #ff7a2e", boxShadow: "0 0 15px rgba(255,122,46,0.4)" }}
+                      />
+                    ) : formData.image_url ? (
+                      <img
+                        src={formData.image_url}
+                        alt="Current"
+                        style={{ width: "54px", height: "54px", borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(243,233,220,0.2)" }}
+                      />
+                    ) : (
+                      <div style={{ width: "54px", height: "54px", borderRadius: "50%", background: "rgba(255,122,46,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", color: "#ffb347" }}>
+                        📷
+                      </div>
+                    )}
 
-                <div>
-                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>PRODUCT IMAGE</label>
-                  <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} style={{ color: "#9a8b7a", fontSize: "10px", maxWidth: "100%" }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#f3e9dc", letterSpacing: "1px" }}>
+                        {imageFile ? imageFile.name : formData.image_url ? "CHANGE CURRENT IMAGE" : "CLICK TO UPLOAD IMAGE"}
+                      </div>
+                      <div style={{ fontSize: "10px", color: "#9a8b7a", marginTop: "3px" }}>
+                        PNG, JPG or WEBP (Recommended 500x500px)
+                      </div>
+                    </div>
+
+                    <span style={{ padding: "8px 16px", borderRadius: "99px", background: "rgba(255,122,46,0.15)", border: "1px solid #ff7a2e", color: "#ffb347", fontSize: "10px", fontWeight: "900", letterSpacing: "1px" }}>
+                      BROWSE
+                    </span>
+                  </label>
                 </div>
-
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px" }}>
                   <button
                     type="submit"
@@ -1098,6 +1103,7 @@ export default function AdminPage() {
         )}
 
         {/* ================= TAB 3: INGREDIENT PRICES ================= */}
+{/* ================= TAB 3: INGREDIENT PRICES (مكان المقاسات الثلاثة) ================= */}
         {activeTab === "ingredients" && (
           <div style={{ background: "#140d08", border: "1px solid rgba(243, 233, 220, 0.1)", borderRadius: "20px", padding: "26px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "14px" }}>
@@ -1106,7 +1112,7 @@ export default function AdminPage() {
                   EDIT INGREDIENT PRICES (EGP)
                 </h3>
                 <p style={{ color: "#9a8b7a", fontSize: "11px", margin: "4px 0 0" }}>
-                  الأسعار المحددة هنا تظهر مباشرة في البيتزا كيتشن وتُحسب تلقائياً في الفاتورة.
+                  حدد سعر كل مكون حسب الحجم (Small / Med / Large).
                 </p>
               </div>
               <button
@@ -1135,46 +1141,115 @@ export default function AdminPage() {
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "20px" }}>
               {ingredientCategories.map((cat) => (
                 <div key={cat.key} style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(243, 233, 220, 0.08)", borderRadius: "16px", padding: "18px" }}>
-                  <h4 style={{ fontSize: "15px", color: "#ffb347", marginBottom: "14px", borderBottom: "1px solid rgba(255, 255, 255, 0.06)", paddingBottom: "8px" }}>
+                  <h4 style={{ fontSize: "15px", color: "#ffb347", marginBottom: "12px", borderBottom: "1px solid rgba(255, 255, 255, 0.06)", paddingBottom: "8px" }}>
                     {cat.title}
                   </h4>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {Object.entries(ingredientPrices[cat.key] || {}).map(([id, price]) => (
-                      <div key={id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", color: "#c5b7a7", fontWeight: "600" }}>
-                          {id}
-                        </span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+
+                  {/* شريط عناوين المقاسات */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", gap: "6px", marginBottom: "8px", fontSize: "10px", fontWeight: "900", color: "#9a8b7a", textAlign: "center" }}>
+                    <span style={{ textAlign: "left" }}>ITEM</span>
+                    <span style={{ color: "#ffb347" }}>SMALL</span>
+                    <span style={{ color: "#ff7a2e" }}>MED</span>
+                    <span style={{ color: "#e8b04b" }}>LARGE</span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {Object.entries(ingredientPrices[cat.key] || {}).map(([id, priceObj]) => {
+                      const p = typeof priceObj === 'object' && priceObj !== null 
+                        ? priceObj 
+                        : { small: priceObj || 0, med: priceObj || 0, large: priceObj || 0 };
+
+                      return (
+                        <div key={id} style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", gap: "6px", alignItems: "center" }}>
+                          <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#c5b7a7", fontWeight: "700" }}>
+                            {id}
+                          </span>
+                         <input
+                            type="number"
+                            value={p.small ?? ''}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => handleIngredientChange(cat.key, id, 'small', e.target.value)}
+                            style={{ width: "100%", background: "#1d120a", border: "1px solid rgba(255, 179, 71, 0.2)", borderRadius: "6px", padding: "6px 4px", color: "#ffb347", fontWeight: "bold", textAlign: "center", fontSize: "12px" }}
+                          />
                           <input
                             type="number"
-                            value={price}
-                            onChange={(e) => handleIngredientChange(cat.key, id, e.target.value)}
-                            style={{
-                              width: "80px",
-                              background: "#1d120a",
-                              border: "1px solid rgba(255, 122, 46, 0.3)",
-                              borderRadius: "8px",
-                              padding: "6px 10px",
-                              color: "#ffb347",
-                              fontWeight: "bold",
-                              textAlign: "center",
-                              fontSize: "13px"
-                            }}
+                            value={p.med ?? ''}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => handleIngredientChange(cat.key, id, 'med', e.target.value)}
+                            style={{ width: "100%", background: "#1d120a", border: "1px solid rgba(255, 122, 46, 0.3)", borderRadius: "6px", padding: "6px 4px", color: "#ff7a2e", fontWeight: "bold", textAlign: "center", fontSize: "12px" }}
                           />
-                          <span style={{ fontSize: "10px", color: "#9a8b7a" }}>EGP</span>
+                          <input
+                            type="number"
+                            value={p.large ?? ''}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => handleIngredientChange(cat.key, id, 'large', e.target.value)}
+                            style={{ width: "100%", background: "#1d120a", border: "1px solid rgba(232, 176, 75, 0.3)", borderRadius: "6px", padding: "6px 4px", color: "#e8b04b", fontWeight: "bold", textAlign: "center", fontSize: "12px" }}
+                          />
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
             </div>
           </div>
         )}
-
+{/* نافذة معاينة إيصال الدفع */}
+        {selectedReceiptModal && (
+          <div 
+            onClick={() => setSelectedReceiptModal(null)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(6px)",
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px"
+            }}
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()} 
+              style={{
+                background: "#140d08",
+                border: "1px solid #ff7a2e",
+                borderRadius: "20px",
+                padding: "20px",
+                maxWidth: "500px",
+                width: "100%",
+                textAlign: "center"
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                <b style={{ color: "#ffb347", fontSize: "14px", letterSpacing: "1px" }}>PAYMENT RECEIPT</b>
+                <button 
+                  onClick={() => setSelectedReceiptModal(null)}
+                  style={{ background: "none", border: "none", color: "#ff8b7a", fontSize: "18px", cursor: "pointer", fontWeight: "bold" }}
+                >
+                  ✕
+                </button>
+              </div>
+              <img 
+                src={selectedReceiptModal} 
+                alt="Receipt" 
+                style={{ width: "100%", maxHeight: "65vh", objectFit: "contain", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }} 
+              />
+              <a 
+                href={selectedReceiptModal} 
+                target="_blank" 
+                rel="noreferrer"
+                style={{ display: "inline-block", marginTop: "14px", color: "#e8b04b", fontSize: "11px", fontWeight: "bold", textDecoration: "none" }}
+              >
+                ↗ OPEN FULL IMAGE IN NEW TAB
+              </a>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -37,7 +37,7 @@ export const CartDrawer = () => (
           <button type="button" id="payVisaBtn" className="pay-method-btn">💳 VISA / INSTAPAY</button>
         </div>
 
-        {/* خيار نوع الطلب (توصيل / في المحل) - يظهر فقط في حالة الفيزا */}
+        {/* خيار نوع الطلب (توصيل / في المحل) */}
         <div id="orderTypeBox" style={{ display: 'none', marginBottom: '16px' }}>
           <h4 style={{ fontFamily: 'var(--disp)', fontSize: '16px', color: 'var(--gold)', marginBottom: '8px' }}>ORDER TYPE</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -52,14 +52,13 @@ export const CartDrawer = () => (
           <textarea id="ckAddress" placeholder="STREET, BUILDING, APARTMENT NUMBER (عنوان التوصيل بالتفصيل)" className="ck-input" style={{ minHeight: '65px', resize: 'none' }}></textarea>
         </div>
 
-        {/* تفاصيل التحويل والإيصال (تكبير الأرقام مع خاصية النسخ) */}
+        {/* تفاصيل التحويل والإيصال */}
         <div id="visaBox" style={{ display: 'none', background: 'rgba(255,122,46,0.06)', border: '1px dashed var(--ember)', borderRadius: '16px', padding: '16px', marginBottom: '18px' }}>
           <div style={{ fontSize: '11px', color: 'var(--ink)', marginBottom: '14px' }}>
             <span style={{ color: 'var(--ember2)', fontWeight: '800', letterSpacing: '1px', display: 'block', marginBottom: '8px' }}>
               ⚡ TAP NUMBER OR ID TO COPY:
             </span>
 
-            {/* رقم التحويل بحجم كبير وقابل للنسخ */}
             <div className="copy-badge" id="copyPhoneBtn" data-copy="01001234567" title="Click to copy">
               <span className="cb-label">VODAFONE CASH / PHONE</span>
               <div className="cb-val-row">
@@ -68,7 +67,6 @@ export const CartDrawer = () => (
               </div>
             </div>
 
-            {/* الايميل / معرف انستاباي بحجم كبير وقابل للنسخ */}
             <div className="copy-badge" id="copyInstaBtn" data-copy="forno@instapay" title="Click to copy" style={{ marginTop: '8px' }}>
               <span className="cb-label">INSTAPAY USERNAME</span>
               <div className="cb-val-row">
@@ -97,17 +95,13 @@ export const CartDrawer = () => (
         </div>
       </div>
 
-      {/* 3. شاشة حالة الطلب المباشرة للعميل */}
+      {/* 3. شاشة حالة الطلب المباشرة للعميل (بدون عداد الوقت) */}
       <div id="orderTrackerStep" style={{ display: 'none', flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '30px 24px' }}>
         <span className="kicker" style={{ marginBottom: '10px' }}>LIVE ORDER STATUS</span>
         <h3 id="trackOrderNum" style={{ fontSize: '32px', color: 'var(--ember2)', margin: '0 0 10px' }}>#FN-000000</h3>
         
         <div id="trackStatusBadge" style={{ padding: '8px 20px', borderRadius: '99px', fontSize: '11px', fontWeight: '900', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '16px', background: 'rgba(255,122,46,0.15)', color: 'var(--ember2)', border: '1px solid var(--ember)' }}>
           PAYMENT PENDING
-        </div>
-
-        <div id="trackTimerBox" style={{ display: 'block', fontSize: '12px', color: 'var(--mut)', marginBottom: '20px' }}>
-          TIME REMAINING: <b id="trackTimerVal" style={{ color: 'var(--gold)', fontSize: '16px', fontFamily: 'var(--disp)' }}>15:00</b>
         </div>
 
         <p id="trackDesc" style={{ fontSize: '11px', color: 'var(--mut)', lineHeight: '1.6', maxWidth: '300px', marginBottom: '26px' }}>

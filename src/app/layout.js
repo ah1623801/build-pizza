@@ -1,7 +1,20 @@
 // src/app/layout.js
 import './globals.css';
 import Script from 'next/script';
+import { Anton, Inter } from 'next/font/google';
 
+const anton = Anton({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--disp',
+  display: 'swap',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--body',
+  display: 'swap',
+});
 export const viewport = {
   themeColor: '#0a0705',
   width: 'device-width',
@@ -25,25 +38,23 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head>
+<head>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍕</text></svg>" />
         <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍕</text></svg>" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/anton@5.1.0/index.css" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.0/400.css" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.0/600.css" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.1.0/800.css" />
+        {/* تحميل المكتبات مباشرة في الـ Head لتنفيذها فورا قبل إقلاع الصفحة */}
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
       </head>
-      <body>
+
+   <body className={`${anton.variable} ${inter.variable}`}>
         {children}
 
-        {/* تفعيل الـ Service Worker لتثبيت التطبيق */}
+      {/* تفعيل الـ Service Worker فقط في الـ Production لتجنب حظر السكربتات محليا */}
         <Script id="register-sw" strategy="afterInteractive">
           {`
-            if ('serviceWorker' in navigator) {
+            if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
               window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js');
               });
@@ -51,10 +62,6 @@ export default function RootLayout({ children }) {
           `}
         </Script>
 
-        {/* تحميل المكتبات */}
-        <Script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" strategy="beforeInteractive" />
-        <Script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" strategy="beforeInteractive" />
-        <Script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js" strategy="beforeInteractive" />
       </body>
     </html>
   );
