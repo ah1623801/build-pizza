@@ -1,5 +1,7 @@
 export async function initApp() {
   if (typeof window === 'undefined') return;
+  if (window.__forno_app_inited) return; // منع تكرار التشغيل ومضاعفة الطلبات
+  window.__forno_app_inited = true;
 
   console.log('🍕 [FORNO 1/4] Starting initApp...');
 
@@ -88,8 +90,8 @@ if (builder) {
 const isLandscape = window.innerWidth > window.innerHeight;
     const isTabletPortrait = !isLandscape && window.innerWidth >= 650 && window.innerWidth <= 1150;
 
-    // حساب السنتر للكمبيوتر الحقيقي فقط (مش للتابلت وهو واقف)
-    if (window.innerWidth > 980 && !isTabletPortrait && stageHost && builder) {
+    // حساب السنتر للكمبيوتر المكتبي الحقيقي فقط (> 1400px) واستثناء التابلت
+    if (window.innerWidth > 1400 && stageHost && builder) {
       gsap.set(stageHost, { x: 0, y: 0 });
       const bRect = builder.getBoundingClientRect();
       const hRect = stageHost.getBoundingClientRect();
@@ -142,100 +144,20 @@ const isLandscape = window.innerWidth > window.innerHeight;
         const isMobileLandscape = isLandscape && window.innerHeight <= 520;
         const isDesktop = !isTabletPortrait && !isTabletLandscape && !isMobileLandscape && window.innerWidth > 1024 && !isTouch;
 
+        updateResponsiveLayout(true);
+
         if (isDesktop) {
-          // كمبيوتر حقيقي: البيتزا ترجع لمكانها في الـ Grid والبانل يفتح
-          const scaleMap = { small: 0.84, med: 1.0, large: 1.15 };
-          gsap.to(stageHost, { x: 0, y: 0, scale: scaleMap[sz] || 1, duration: 0.95, ease: 'power3.inOut' });
           if (rail) gsap.fromTo(rail, { autoAlpha: 0, x: -50 }, { autoAlpha: 1, x: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
           if (panel) gsap.fromTo(panel, { autoAlpha: 0, x: 50 }, { autoAlpha: 1, x: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
           renderPanel();
         } else {
-  // تعريف متغيرات التابلت والموبايل بدقة قبل الفحص مباشرة
-          const isLandscape = window.innerWidth > window.innerHeight;
-          const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-          const isTablet = (isTouch && window.innerWidth >= 650 && window.innerWidth <= 1400) || 
-                           (window.innerWidth >= 650 && window.innerWidth <= 1400 && window.innerHeight >= 550);
-          const isTabletPortrait = !isLandscape && window.innerWidth >= 650 && window.innerWidth <= 1100;
-          const isMobileLandscape = isLandscape && window.innerHeight <= 520;
-
           const wheelEl = document.getElementById('ingWheel');
-
-          if (isTablet && isLandscape) {
-            // تابلت بالعرض: استقرار البيتزا مع الإضاءة والعجلة عند 56%
-            gsap.to(stageHost, {
-              left: '50%',
-              top: '56%',
-              xPercent: -50,
-              yPercent: -50,
-              x: 0,
-              y: 0,
-              scale: 1,
-              rotation: 0,
-              duration: 0.8,
-              ease: 'power3.out',
-              onUpdate: () => window.__forno_place_wheel?.(),
-              onComplete: () => window.__forno_place_wheel?.()
-            });
-          } else if (isMobileLandscape) {
-            // موبايل بالعرض: نص البيتزا طالع من تحت والنص مدفون برة
-            gsap.to(stageHost, {
-              left: '50%',
-              top: '100%',
-              xPercent: -50,
-              yPercent: -50,
-              x: 0,
-              y: 0,
-              scale: 1,
-              rotation: 0,
-              duration: 0.8,
-              ease: 'power3.out',
-              onUpdate: () => window.__forno_place_wheel?.(),
-              onComplete: () => window.__forno_place_wheel?.()
-            });
-} else if (isTabletPortrait) {
-            // تابلت بالطول: استقرار البيتزا وظهور 65% منها بالضبط
-            gsap.to(stageHost, {
-              right: 0,
-              left: 'auto',
-              top: '10vh',
-              xPercent: 35, // 65% ظاهر جوة الشاشة
-              yPercent: 0,
-              x: 0,
-              y: 0,
-              scale: 1,
-              rotation: 15,
-              duration: 0.95,
-              ease: 'power3.out',
-              onUpdate: () => window.__forno_place_wheel?.(),
-              onComplete: () => window.__forno_place_wheel?.()
-            });
-          } else {
-            // موبايل طولي عادي
-            gsap.fromTo(stageHost,
-              { left: '50%', top: '7vh', xPercent: -50, x: '0vw', scale: 0.72, rotation: 0 },
-              { 
-                left: '60%', 
-                top: '-2vh', 
-                xPercent: -50, 
-                x: '50vw', 
-                scale: 1, 
-                rotation: 35, 
-                duration: 1.15, 
-                ease: 'power3.out', 
-                force3D: true, 
-                onUpdate: () => window.__forno_place_wheel?.(), 
-                onComplete: () => window.__forno_place_wheel?.() 
-              }
-            );
-          }
-
           if (wheelEl) {
             gsap.fromTo(wheelEl,
               { autoAlpha: 0, scale: 0.5, rotation: -120, xPercent: -50, yPercent: -50 },
               { autoAlpha: 1, scale: 1, rotation: 0, xPercent: -50, yPercent: -50, duration: 1.15, ease: 'power3.out', force3D: true }
             );
           }
-
           gsap.fromTo(['#wheelBake', '#mPrice', '#drawerBtn'],
             { autoAlpha: 0, y: 10 },
             { autoAlpha: 1, y: 0, duration: 0.6, delay: 0.4, ease: 'power2.out' }
@@ -251,19 +173,48 @@ const isLandscape = window.innerWidth > window.innerHeight;
 
     
 
-  let lastWidth = window.innerWidth;
   function setAppHeight(){
     document.documentElement.style.setProperty('--apph', window.innerHeight + 'px');
   }
   setAppHeight();
 
+  // دالة تحرير وتصحيح الريسبونسف بدون خناقة بين الـ CSS والـ JS
+  function updateResponsiveLayout() {
+    const stageHost = document.getElementById('stageHost');
+    const builder = document.getElementById('builder');
+    if (!stageHost || !builder) return;
+
+    // تنظيف أي قيود inline قديمة سايبها الـ GSAP عشان نسيب الـ CSS ياخد مكانه الصح
+    gsap.killTweensOf(stageHost);
+    stageHost.style.left = '';
+    stageHost.style.right = '';
+    stageHost.style.top = '';
+    stageHost.style.bottom = '';
+    stageHost.style.transform = '';
+
+    // تظبيط مكان العجلة والـ ScrollTrigger بعد انتهاء أنيميشن المتصفح
+    let ticks = 0;
+    const syncInterval = setInterval(() => {
+      window.__forno_place_wheel?.();
+      ticks++;
+      if (ticks >= 7) {
+        clearInterval(syncInterval);
+        if (window.ScrollTrigger) ScrollTrigger.refresh();
+      }
+    }, 100);
+  }
+
+  let resizeTimer = null;
   window.addEventListener('resize', () => {
-    if (window.innerWidth !== lastWidth) {
-      lastWidth = window.innerWidth;
-      setAppHeight();
-    }
+    setAppHeight();
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(updateResponsiveLayout, 100);
   });
-  window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 150));
+
+  window.addEventListener('orientationchange', () => {
+    setAppHeight();
+    setTimeout(updateResponsiveLayout, 150);
+  });
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
   const rand=(a,b)=>a+Math.random()*(b-a);
   const pick=a=>a[(Math.random()*a.length)|0];
@@ -964,27 +915,34 @@ function unitPrice(s) {
  // البداية تكون كلاسيك فوراً  
   let combo=null;
   const QORDER=['less','normal','more'];
-  function priceOf(arr,id){const o=arr.find(x=>x.id===id);return o?o.price:0;}
-  function baseHas(cat,id){
-    if(!combo)return false;
-    const b=combo.snap;
-    if(cat==='meat')return id in b.meats;
-    if(cat==='veg')return b.vegs.includes(id);
-    if(cat==='extras')return b.extras.includes(id);
+  function baseHas(cat, id) {
+    if (!combo) return false;
+    const b = combo.snap;
+    if (cat === 'meat') return id in b.meats;
+    if (cat === 'veg') return b.vegs.includes(id);
+    if (cat === 'extras') return b.extras.includes(id);
     return false;
   }
-  function comboDelta(){
-    if(!combo)return 0;
-    const b=combo.snap;let d=0;
-    if(state.dough!==b.dough)d+=Math.max(0,priceOf(DOUGH,state.dough)-priceOf(DOUGH,b.dough));
-    if(state.sauce!==b.sauce)d+=Math.max(0,priceOf(SAUCE,state.sauce)-priceOf(SAUCE,b.sauce));
-    if(state.cheese!==b.cheese)d+=Math.max(0,priceOf(CHEESE,state.cheese)-priceOf(CHEESE,b.cheese));
-    for(const[id,q]of Object.entries(state.meats)){
-      if(id in b.meats)d+=Math.max(0,meatPrice(id,q)-meatPrice(id,b.meats[id]));
-      else d+=meatPrice(id,q);
+
+  function priceOf(arr, id, size) {
+    const o = arr.find(x => x.id === id);
+    return getIngPrice(o, size);
+  }
+
+  function comboDelta() {
+    if (!combo) return 0;
+    const b = combo.snap;
+    const sz = state.size || 'med';
+    let d = 0;
+    if (state.dough !== b.dough) d += Math.max(0, priceOf(DOUGH, state.dough, sz) - priceOf(DOUGH, b.dough, sz));
+    if (state.sauce !== b.sauce) d += Math.max(0, priceOf(SAUCE, state.sauce, sz) - priceOf(SAUCE, b.sauce, sz));
+    if (state.cheese !== b.cheese) d += Math.max(0, priceOf(CHEESE, state.cheese, sz) - priceOf(CHEESE, b.cheese, sz));
+    for (const [id, q] of Object.entries(state.meats)) {
+      if (id in b.meats) d += Math.max(0, meatPrice(id, q, sz) - meatPrice(id, b.meats[id], sz));
+      else d += meatPrice(id, q, sz);
     }
-    for(const v of state.vegs)if(!b.vegs.includes(v))d+=priceOf(VEG,v);
-    for(const e of state.extras)if(!b.extras.includes(e))d+=priceOf(EXTRAS,e);
+    for (const v of state.vegs) if (!b.vegs.includes(v)) d += priceOf(VEG, v, sz);
+    for (const e of state.extras) if (!b.extras.includes(e)) d += priceOf(EXTRAS, e, sz);
     return d;
   }
 function priceOf(arr, id, size) {
@@ -1387,12 +1345,14 @@ $('#btnCartAdd')?.addEventListener('click', () => {
       });
       body.querySelector('.sv-order').addEventListener('click',()=>{
         cart.push({uid:Date.now(),kind:'pizza',name:sv.name,snap:JSON.parse(JSON.stringify(sv.snap)),unit:sv.unit,qty:sv.qty});
-        renderCart();popBadge();closeSaved();openCart();toast(sv.name+' ADDED TO CART');
+        persistCart();closeSaved();openCart();toast(sv.name+' ADDED TO CART');
       });
       body.querySelector('.sv-edit').addEventListener('click',()=>{
         state=JSON.parse(JSON.stringify(sv.snap));
         combo=sv.combo?JSON.parse(JSON.stringify(sv.combo)):null;
         orderQty=sv.qty||1;
+        mobileSizeChosen=true; // السماح بالتعديل الفوري على الموبايل
+        $('#builder')?.classList.remove('picking-size');
         stage.applySnapshot(state,1);
         maxReached=6;goStep(6);
         closeSaved();
@@ -1723,16 +1683,12 @@ if (ord.payment_status === 'rejected') {
       badge.style.color = 'var(--ink)';
       badge.style.borderColor = 'var(--line)';
       desc.textContent = 'Order fulfilled. Thank you for choosing FORNO!';
-    }
-else if (ord.order_status === 'completed') {
-      badge.textContent = 'COMPLETED';
-      badge.style.background = 'rgba(255,255,255,0.1)';
-      badge.style.color = 'var(--ink)';
-      badge.style.borderColor = 'var(--line)';
-      desc.textContent = 'Order fulfilled. Thank you for choosing FORNO!';
       
-      // 🛑 إيقاف الريكوستات فوراً ومسح الطلب المكتمل من الكاش
-      if (customerPollInterval) clearInterval(customerPollInterval);
+      // إيقاف الريكوستات فوراً ومسح الطلب المكتمل من الكاش
+      if (customerPollInterval) {
+        clearInterval(customerPollInterval);
+        customerPollInterval = null;
+      }
       try { localStorage.removeItem('forno_active_order'); } catch (e) {}
     }
   }
@@ -1952,7 +1908,16 @@ function buildTabs(){
     toast(it.name+' — COMBO PRICE EGP '+it.price);
   }
 
-$('#cForm')?.addEventListener('submit', (e) => {
+// 1. تفعيل التبديل بين أزرار الأقسام
+  $$('#topics button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#topics button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+    });
+  });
+
+  // 2. إرسال الرسالة للداتابيز ثم فتح واتساب
+  $('#cForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = $('#fName')?.value.trim();
     const email = $('#fEmail')?.value.trim();
@@ -1964,12 +1929,19 @@ $('#cForm')?.addEventListener('submit', (e) => {
       return;
     }
 
-    // رقم واتساب المطعم (غيره برقمك الحقيقي بكود الدولة 20)
-    const targetWhatsAppNumber = '201001234567';
-// قراءة القسم المختار مباشرة بأمان بدون أي مشاكل Scope
     const topic = $('#topics button.on')?.textContent?.trim() || 'GENERAL';
 
-    // تنسيق رسالة فخمة تفتح نفس المدير
+    // حفظ في قاعدة البيانات فوراً عبر الـ API
+    try {
+      fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, topic, message })
+      }).catch(() => {});
+    } catch (_) {}
+
+    // تجهيز وفتح رسالة الواتساب
+    const targetWhatsAppNumber = '201001234567';
     const formattedMsg = 
       `🍕 *رسالة جديدة من موقع FORNO*\n\n` +
       `👤 *الاسم:* ${name}\n` +
@@ -1981,12 +1953,11 @@ $('#cForm')?.addEventListener('submit', (e) => {
     const waUrl = `https://wa.me/${targetWhatsAppNumber}?text=${encodeURIComponent(formattedMsg)}`;
     window.open(waUrl, '_blank');
 
-// تصفير الحقول وإبقاء الفورم ثابتا مكانه بدون إخفاء
     $('#fName').value = '';
     $('#fPhone').value = '';
     $('#fEmail').value = '';
     $('#fMsg').value = '';
-    toast('OPENING WHATSAPP... 💬🍕');
+    toast('MESSAGE SENT & OPENING WHATSAPP... 💬🍕');
   });
 
   /* ================= TOAST ================= */

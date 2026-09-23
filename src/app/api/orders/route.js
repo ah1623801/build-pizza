@@ -69,18 +69,20 @@ export async function POST(request) {
     let data = null;
     let insertError = null;
 
+    const safeAddress = customer_address ? customer_address.trim() : 'IN-STORE / PICKUP';
+
     for (let attempt = 0; attempt < 3; attempt++) {
       order_number = 'FN-' + Math.floor(100000 + Math.random() * 900000);
       const res = await supabaseServer
         .from('orders')
         .insert([{
           order_number,
-          customer_name: customer_name.trim(),
-          customer_phone: customer_phone.trim(),
-          customer_address: customer_address.trim(),
+          customer_name: (customer_name || '').trim(),
+          customer_phone: (customer_phone || '').trim(),
+          customer_address: safeAddress,
           items,
           total,
-          payment_method,
+          payment_method: payment_method || 'cash',
           payment_status: 'pending',
           order_status: 'pending',
           receipt_url
@@ -97,7 +99,6 @@ export async function POST(request) {
     }
 
     if (!inserted) return NextResponse.json({ error: insertError?.message || 'Failed to generate order' }, { status: 500 });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true, order: data });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -106,7 +107,16 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized to update orders' }, { status: 401 });
+    }
+
     const { id, payment_status, order_status } = await request.json();
+    if (!id) {
+      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    }
+
     const updateData = {};
     if (payment_status) updateData.payment_status = payment_status;
     if (order_status) updateData.order_status = order_status;

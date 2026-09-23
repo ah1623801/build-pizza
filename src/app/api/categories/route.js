@@ -5,6 +5,11 @@ import { supabaseServer } from '@/lib/supabaseServer';
 // 1. إضافة أو تعديل تصنيف
 export async function POST(request) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, name, sort_order, original_id } = body;
 
@@ -27,7 +32,7 @@ export async function POST(request) {
 
     if (result.error) throw result.error;
 
-    return NextResponse.json({ success: true, category: data[0] });
+    return NextResponse.json({ success: true, category: result.data[0] });
   } catch (error) {
     console.error('API Error [POST /api/categories]:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -37,6 +42,11 @@ export async function POST(request) {
 // 2. حذف تصنيف
 export async function DELETE(request) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

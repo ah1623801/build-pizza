@@ -21,6 +21,11 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized to change pricing' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { data, error } = await supabaseServer
       .from('settings')

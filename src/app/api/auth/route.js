@@ -6,8 +6,8 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 function getAuthClient() {
-  const url = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
-  const key = process.env.SUPABASE_ANON_KEY || 'placeholder-key';
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const key = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
   return createClient(url, key, {
     auth: { persistSession: false },
   });
@@ -66,6 +66,6 @@ export async function POST(request) {
 // 3. تسجيل الخروج
 export async function DELETE() {
   const response = NextResponse.json({ success: true });
-  response.cookies.delete('admin_token');
+  response.cookies.set('admin_token', '', { path: '/', maxAge: 0 });
   return response;
 }

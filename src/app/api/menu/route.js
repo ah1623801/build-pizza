@@ -23,6 +23,11 @@ export async function GET() {
 // 2. إضافة أو تعديل منتج + رفع الصورة على السيرفر
 export async function POST(request) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const id = formData.get('id'); // لو موجود يبقى تعديل، لو مش موجود يبقى إضافة
     const name = formData.get('name');
@@ -89,6 +94,11 @@ export async function POST(request) {
 // 3. حذف منتج
 export async function DELETE(request) {
   try {
+    const token = request.cookies.get('admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
