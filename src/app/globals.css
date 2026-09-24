@@ -40,17 +40,39 @@ em{font-style:normal;color:var(--ember)}
 @keyframes grain{0%,100%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-3%)}60%{transform:translate(-2%,-2%)}80%{transform:translate(3%,3%)}}
 /* ---------- LOADER ---------- */
 #loader{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center}
-.ld-in{text-align:center}
-.ld-logo{font-family:var(--disp);font-size:52px;letter-spacing:.06em}
+.ld-in{text-align:center;display:flex;flex-direction:column;align-items:center}
+.ld-pizza-wrap{margin-bottom:20px;filter:drop-shadow(0 10px 25px rgba(255,122,46,0.3))}
+.ld-pizza-svg{animation:pzSpin 12s linear infinite}
+@keyframes pzSpin{to{transform:rotate(360deg)}}
+
+/* أنيميشن نزول وتكون الشرائح الست واحدة تلو الأخرى */
+.pz-slice{
+  opacity: 0;
+  transform-origin: 70px 70px;
+  animation: sliceAssemble 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.pz-slice.s1{animation-delay: 0.0s;}
+.pz-slice.s2{animation-delay: 0.25s;}
+.pz-slice.s3{animation-delay: 0.5s;}
+.pz-slice.s4{animation-delay: 0.75s;}
+.pz-slice.s5{animation-delay: 1.0s;}
+.pz-slice.s6{animation-delay: 1.25s;}
+
+@keyframes sliceAssemble{
+  0%{opacity:0;transform:scale(0.3) rotate(var(--rot, 0deg));}
+  20%, 80%{opacity:1;transform:scale(1) rotate(var(--rot, 0deg));}
+  100%{opacity:0;transform:scale(0.8) rotate(var(--rot, 0deg));}
+}
+
+.ld-logo{font-family:var(--disp);font-size:46px;letter-spacing:.06em}
 .ld-logo span{color:var(--ember)}
-.ld-bar{width:220px;height:2px;background:var(--line);margin:26px auto 12px;overflow:hidden;border-radius:2px}
+.ld-bar{width:220px;height:2px;background:var(--line);margin:18px auto 12px;overflow:hidden;border-radius:2px}
 .ld-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ember),var(--ember2))}
 #loadPct{font-size:12px;letter-spacing:.3em;color:var(--mut)}
-.ld-note{margin-top:14px;font-size:10px;letter-spacing:.4em;color:var(--ember)}
-/* ---------- NAV ---------- */
-/* ---------- FIXED MODERN GLASS NAVBAR ---------- */
+.ld-note{margin-top:10px;font-size:10px;letter-spacing:.4em;color:var(--ember)}
+/* ---------- UNPINNED TOP NAVBAR ---------- */
 #nav {
-  position: fixed !important;
+  position: absolute !important;
   top: 0;
   left: 0;
   right: 0;
@@ -59,21 +81,20 @@ em{font-style:normal;color:var(--ember)}
   align-items: center;
   justify-content: space-between;
   padding: 22px 5vw;
-  border-bottom: 1px solid transparent;
-  transition: padding 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              background 0.35s ease,
-              border-color 0.35s ease,
-              box-shadow 0.35s ease;
+  background: transparent !important;
+  border-bottom: 1px solid transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-/* شكل النافبار الفخم أول ما تسكرول لتحت */
 #nav.scrolled {
-  padding: 12px 5vw !important;
-  background: rgba(14, 9, 6, 0.85) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 122, 46, 0.22) !important;
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  position: absolute !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* تحسين أزرار النافبار */
@@ -167,8 +188,9 @@ em{font-style:normal;color:var(--ember)}
 #rail button.done::after{content:"✓";margin-left:auto;color:var(--ember)}
 #rail button.cur{color:var(--ink);border-color:rgba(255,122,46,.5);background:rgba(255,122,46,.08);box-shadow:0 0 30px rgba(255,122,46,.12)}
 .stage-wrap{position:relative;display:flex;align-items:center;justify-content:center;min-height:0}
-.stage-light{position:absolute;width:80%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,140,60,.2),transparent 65%);filter:blur(20px);pointer-events:none}
-.stage-shadow{position:absolute;bottom:6%;width:52%;height:7%;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.75),transparent 70%);filter:blur(8px)}
+.stage-light, .stage-shadow {
+  display: none !important;
+}
 #stageHost {
   width: min(62vh, 44vw);
   aspect-ratio: 1;
@@ -584,8 +606,40 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
   #rail{display:none!important}
   .stage-wrap{touch-action:pan-y;user-select:none;-webkit-user-select:none}
 }
-@media(min-width:600px) and (max-width:980px){
-  .wi{--ws:66px}
+/* مقاس وسطي ومريح للتابلت (650px+) */
+@media (min-width: 650px) {
+  .wi {
+    --ws: 66px !important; /* مقاس ملموم وأشيك للدايرة */
+  }
+  .wi-in svg {
+    width: 80% !important;
+    height: 80% !important;
+  }
+  .wg-label {
+    font-size: 11px !important;
+    letter-spacing: .3em !important;
+  }
+  .ms-circle-btn {
+    width: 72px !important;
+    height: 72px !important;
+  }
+  .ms-circle-btn b {
+    font-size: 26px !important;
+  }
+}
+
+/* مقاس متناسق للابتوب والكمبيوتر (1200px+) */
+@media (min-width: 1200px) {
+  .wi {
+    --ws: 72px !important; /* حجم مضبوط بدون ضخامة مبالغ فيها */
+  }
+  .wi-in svg {
+    width: 82% !important;
+    height: 82% !important;
+  }
+  .wg-label {
+    font-size: 11.5px !important;
+  }
 }
 
 /* ---------- WHEEL v3: أيقونات كود، من غير خطوط ---------- */
@@ -633,12 +687,13 @@ body.mm-open #mMenuOverlay{opacity:1;pointer-events:auto}
 #mMenu button:hover{color:var(--ember2)}
 #mMenu #mmSaved{color:var(--ember2);font-size:19px;display:flex;justify-content:space-between;align-items:center;border-bottom:none;margin-top:6px}
 #mmSavedCount{font-family:var(--body);font-size:11px;font-weight:800;background:var(--ember);color:#1a0c04;border-radius:99px;padding:3px 9px}
-@media(max-width:980px){
-  #burgerBtn{display:flex}
-  #savedBtn{display:none}
-  .cb-txt{display:none}
-  .cb-ico{display:block}
-  #cartBtn{padding:11px 14px}
+@media (max-width: 980px), (max-width: 1100px) and (orientation: portrait) {
+  .nav-links { display: none !important; }
+  #burgerBtn { display: flex !important; }
+  #savedBtn { display: none !important; }
+  .cb-txt { display: none !important; }
+  .cb-ico { display: block !important; }
+  #cartBtn { padding: 11px 14px !important; }
 }
 .menu-bar{margin-top:auto}
 
@@ -709,9 +764,8 @@ body.mm-open #burgerBtn{opacity:0;pointer-events:none}
 
 
 
-/* إخفاؤهم تماماً في الديسكتوب */
 #mPrice, #wheelBake {
-  display: none !important;
+  display: inline-flex !important;
 }
 
 /* إظهارهم فقط في الشاشات الصغيرة (الموبايل والتابلت) */
@@ -1033,7 +1087,7 @@ html.lenis, html.lenis body {
   transition: opacity 0.4s ease;
 }
 
-@media(min-width: 981px) {
+@media (min-width: 981px) and (orientation: landscape) {
   #builder.picking-size #mobileSizeSelector {
     display: flex !important;
     position: absolute;
@@ -1106,16 +1160,24 @@ html.lenis, html.lenis body {
   text-shadow: 0 0 10px rgba(255, 122, 46, 0.8);
 }
 
-/* تخصيصات الموبايل للشاشة الابتدائية */
-@media (max-width: 980px) {
+/* تخصيصات الموبايل والتابلت بالكامل للشاشة الابتدائية */
+@media (max-width: 1150px) and (orientation: portrait), (max-width: 980px) {
   #mobileSizeSelector {
     display: none !important;
   }
   #builder.picking-size #mobileSizeSelector {
     display: flex !important;
+    position: absolute !important;
+    top: 20px !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    margin: 0 auto !important;
+    z-index: 95 !important;
   }
   #builder.picking-size #stageHost {
     left: 50% !important;
+    right: auto !important;
     top: 7vh !important;
     transform: translate(-50%, 0) translateX(0) scale(0.72) !important;
   }
@@ -1332,13 +1394,8 @@ textarea:-webkit-autofill:active {
   #ingWheel {
     display: block !important;
   }
-  .b-head {
-    position: absolute !important;
-    top: 6px !important;
-    left: 0;
-    right: 0;
-    transform: scale(0.72) !important;
-    z-index: 50;
+.b-head {
+    display: none !important;
   }
 
   .stage-wrap {
@@ -1371,8 +1428,8 @@ textarea:-webkit-autofill:active {
   }
 }
 
-/* ================= 2. التابلت بالعرض يشمل IPAD PRO 13 حتى 1400px ================= */
-@media (min-width: 650px) and (max-width: 1400px) and (orientation: landscape) and (min-height: 521px) {
+/* ================= 2. التابلت واللابتوب والكمبيوتر بالعرض ================= */
+@media (min-width: 650px) and (orientation: landscape) and (min-height: 521px) {
   #rail, .panel, .desktop-size-bar {
     display: none !important;
   }
@@ -1428,12 +1485,8 @@ textarea:-webkit-autofill:active {
     pointer-events: none !important;
   }
 
-  .b-head {
-    position: absolute !important;
-    top: 8px !important;
-    left: 0;
-    right: 0;
-    text-align: center !important;
+.b-head {
+    display: none !important;
   }
 
   #mPrice {
@@ -1447,7 +1500,7 @@ textarea:-webkit-autofill:active {
     right: 24px !important;
     left: auto !important;
   }
-}
+
 
 /* النافبار ظاهر عادي في أول الصفحة بس غير ثابت على الموبايل والتابلت */
 @media (max-width: 1024px), (max-width: 1400px) and (pointer: coarse) {
@@ -1463,27 +1516,101 @@ textarea:-webkit-autofill:active {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
-}
 
-/* ================= 3. التابلت بالطول (TABLET PORTRAIT: من 650px لحد 1150px) ================= */
-@media (min-width: 650px) and (max-width: 1150px) and (orientation: portrait) {
-  #nav, #rail, .panel, .desktop-size-bar {
+
+}}
+/* ================= 2. التابلت واللابتوب بالعرض ================= */
+@media (min-width: 650px) and (orientation: landscape) and (min-height: 521px) {
+  #rail, .panel, .desktop-size-bar {
     display: none !important;
   }
-/* توسيع مدار عجلة الأيقونات لبرة بنسبة 18% */
   #ingWheel {
     display: block !important;
-    transform: translate(-50%, -50%) scale(1.18) !important;
+  }
+  #builder {
+    padding: 20px 4vw !important;
+    overflow: hidden !important;
+  }
+  .b-grid {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  .stage-wrap {
+    width: 100% !important;
+    height: 85vh !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    overflow: visible !important;
+  }
+  #stageHost {
+    position: absolute !important;
+    left: 50% !important;
+    top: 56% !important;
+    bottom: auto !important;
+    width: min(72vh, 65vw) !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 2;
+  }
+  .b-head {
+    position: absolute !important;
+    top: 8px !important;
+    left: 0;
+    right: 0;
+    text-align: center !important;
+  }
+  #mPrice {
+    display: flex !important;
+    bottom: 16px !important;
+    left: 24px !important;
+  }
+  #wheelBake {
+    display: inline-flex !important;
+    bottom: 16px !important;
+    right: 24px !important;
+    left: auto !important;
+  }
+  #builder.picking-size #stageHost {
+    left: 50% !important;
+    top: 44% !important;
+    transform: translate(-50%, -50%) scale(0.92) !important;
+  }
+  #builder.picking-size #mobileSizeSelector {
+    top: auto !important;
+    bottom: 28px !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+  }
+}
+/* ================= 3. التابلت بالطول فقط من 650px لـ 1150px (يشمل iPad Mini و iPad Pro 13 وممنوع يلمس الموبايل) ================= */
+@media (min-width: 650px) and (max-width: 1150px) and (orientation: portrait) {
+  .nav-links, #rail, .panel, .desktop-size-bar, #savedBtn, .cb-txt {
+    display: none !important;
+  }
+  #burgerBtn, .cb-ico {
+    display: flex !important;
+  }
+  #nav {
+    display: flex !important;
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
   }
 
-  /* كسر شبكة الأعمدة الثلاثية للديسكتوب وفرد الحاوية بعرض الشاشة كاملاً */
+  /* تحويل الشبكة لعمود واحد بدون تقسيم 3 أعمدة */
   .b-grid {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
     margin: 0 !important;
   }
-
   .stage-wrap {
     height: 85vh !important;
     width: 100% !important;
@@ -1492,20 +1619,13 @@ textarea:-webkit-autofill:active {
     position: relative !important;
   }
 
-/* رفع البيتزا لفوق عند 2vh لتسحب المكونات معاها لأعلى الشاشة */
-  #stageHost {
-    position: absolute !important;
-    top: 2vh !important;
-    right: 0 !important;
-    left: auto !important;
-    width: min(88vh, 105vw) !important;
-    transform: translateX(35%) !important; /* 65% ظاهر جوة الشاشة */
-    z-index: 2;
+  /* تشغيل وتكبير عجلة الأيقونات في وضع الطول */
+  #ingWheel {
+    display: block !important;
+    transform: translate(-50%, -50%) scale(1.18) !important;
   }
-
-/* تصغير مقاس أيقونات العجلة في التابلت بالطول */
   .wi {
-    --ws: 68px !important; /* مقاس ملموم وأشيك */
+    --ws: 68px !important;
   }
   .wi-in svg {
     width: 80% !important;
@@ -1514,7 +1634,6 @@ textarea:-webkit-autofill:active {
   .wg-label {
     font-size: 11px !important;
   }
-
   #mPrice {
     display: flex !important;
     bottom: 24px !important;
@@ -1526,19 +1645,41 @@ textarea:-webkit-autofill:active {
     left: 24px !important;
   }
 
-
-/* وضعية اختيار الحجم في التابلت بالعرض: البيتزا في المنتصف المريح والأزرار تحتها مباشرة */
-  #builder.picking-size #stageHost {
-    left: 50% !important;
-    top: 44% !important;
-    transform: translate(-50%, -50%) scale(0.92) !important;
+  /* تموضع البيتزا على اليمين بزاوية 15 درجة زي الـ iPad Mini تماماً */
+  #stageHost {
+    position: absolute !important;
+    top: 2vh !important;
+    right: 0 !important;
+    left: auto !important;
+    width: min(88vh, 105vw) !important;
+    transform: translateX(35%) !important;
+    z-index: 2;
   }
 
+  /* شاشة اختيار المقاس للتابلت وهو واقف (iPad Pro 13 و iPad Mini) */
   #builder.picking-size #mobileSizeSelector {
-    top: auto !important;
-    bottom: 28px !important;
+    display: flex !important;
+    position: absolute !important;
+    top: 15px !important;
+    bottom: auto !important;
     left: 0 !important;
     right: 0 !important;
     transform: none !important;
+    margin: 0 auto !important;
+    z-index: 95 !important;
+  }
+  #builder.picking-size #stageHost {
+    left: 50% !important;
+    right: auto !important;
+    top: 12vh !important;
+    width: min(65vh, 75vw) !important; /* حجم متناسق لا يغطي على الأزرار */
+    transform: translate(-50%, 0) scale(0.68) !important;
+  }
+  #builder.picking-size #ingWheel,
+  #builder.picking-size #wheelBake,
+  #builder.picking-size #mPrice,
+  #builder.picking-size #drawerBtn {
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 }

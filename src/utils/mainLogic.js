@@ -134,76 +134,128 @@ document.querySelectorAll('.ms-circle-btn').forEach(btn => {
           }
         });
 
-        // 2. فحص نوع الجهاز بدقة في بداية الدالة
-const isLandscape = window.innerWidth > window.innerHeight;
-        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        
-        // تمييز التابلت وهو واقف بدقة (يشمل iPad Pro 13 بمقاس 1032px)
-        const isTabletPortrait = !isLandscape && window.innerWidth >= 650 && window.innerWidth <= 1100;
-        const isTabletLandscape = isLandscape && ((isTouch && window.innerWidth >= 650 && window.innerWidth <= 1400) || (window.innerWidth >= 650 && window.innerWidth <= 1400 && window.innerHeight >= 550));
+        const isLandscape = window.innerWidth > window.innerHeight;
         const isMobileLandscape = isLandscape && window.innerHeight <= 520;
-        const isDesktop = !isTabletPortrait && !isTabletLandscape && !isMobileLandscape && window.innerWidth > 1024 && !isTouch;
+const isTabletPortrait = !isLandscape && window.innerWidth >= 650 && window.innerWidth <= 1150;
+        const wheelEl = document.getElementById('ingWheel');
 
-        updateResponsiveLayout(true);
-
-        if (isDesktop) {
-          if (rail) gsap.fromTo(rail, { autoAlpha: 0, x: -50 }, { autoAlpha: 1, x: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
-          if (panel) gsap.fromTo(panel, { autoAlpha: 0, x: 50 }, { autoAlpha: 1, x: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
-          renderPanel();
+        if (isMobileLandscape) {
+          // 1. الموبايل وهو نايم (نصه مدفون تحت عند 100%)
+          gsap.to(stageHost, {
+            left: '50%', top: '100%', right: 'auto',
+            xPercent: -50, yPercent: -50, x: 0, y: 0,
+            scale: 1, rotation: 0, duration: 1.0, ease: 'power3.out',
+            onUpdate: () => window.__forno_place_wheel?.(),
+            onComplete: () => window.__forno_place_wheel?.()
+          });
+        } else if (!isLandscape && window.innerWidth < 650) {
+          // 2. الموبايل وهو واقف (35 درجة و 50vw لليمين بحجمه الأصلي)
+          gsap.to(stageHost, {
+            left: '60%', top: '-2vh', right: 'auto',
+            xPercent: -50, yPercent: 0, x: '50vw', y: 0,
+            scale: 1, rotation: 35, duration: 1.15, ease: 'power3.out',
+            force3D: true,
+            onUpdate: () => window.__forno_place_wheel?.(),
+            onComplete: () => window.__forno_place_wheel?.()
+          });
+        } else if (isTabletPortrait) {
+          // 3. التابلت بالطول (15 درجة و 35% لليمين كما هو)
+          gsap.to(stageHost, {
+            right: 0, left: 'auto', top: '10vh',
+            xPercent: 35, yPercent: 0, x: 0, y: 0,
+            scale: 1, rotation: 15, duration: 1.1, ease: 'power3.out',
+            onUpdate: () => window.__forno_place_wheel?.(),
+            onComplete: () => window.__forno_place_wheel?.()
+          });
         } else {
-          const wheelEl = document.getElementById('ingWheel');
-          if (wheelEl) {
-            gsap.fromTo(wheelEl,
-              { autoAlpha: 0, scale: 0.5, rotation: -120, xPercent: -50, yPercent: -50 },
-              { autoAlpha: 1, scale: 1, rotation: 0, xPercent: -50, yPercent: -50, duration: 1.15, ease: 'power3.out', force3D: true }
-            );
-          }
-          gsap.fromTo(['#wheelBake', '#mPrice', '#drawerBtn'],
-            { autoAlpha: 0, y: 10 },
-            { autoAlpha: 1, y: 0, duration: 0.6, delay: 0.4, ease: 'power2.out' }
+          // 4. كل الشاشات بالعرض (تابلت + لابتوب + كمبيوتر مكتبي): نفس شكل التابلت الفخم والعجلة
+          gsap.to(stageHost, {
+            left: '50%', top: '56%', right: 'auto',
+            xPercent: -50, yPercent: -50, x: 0, y: 0,
+            scale: 1, rotation: 0, duration: 1.1, ease: 'power3.out',
+            onUpdate: () => window.__forno_place_wheel?.(),
+            onComplete: () => window.__forno_place_wheel?.()
+          });
+        }
+
+        if (wheelEl) {
+          gsap.fromTo(wheelEl,
+            { autoAlpha: 0, scale: 0.5, rotation: -90, xPercent: -50, yPercent: -50 },
+            { autoAlpha: 1, scale: 1, rotation: 0, xPercent: -50, yPercent: -50, duration: 1.1, delay: 0.1, ease: 'power3.out', force3D: true }
           );
         }
 
-        // تحديث عداد السعر الحي فوراً
-        document.dispatchEvent(new Event('click'));
-        toast(`SIZE CHOSEN: ${sz.toUpperCase()} 🍕`);
+      gsap.fromTo(['#wheelBake', '#mPrice', '#drawerBtn'],
+          { autoAlpha: 0, y: 14 },
+          { autoAlpha: 1, y: 0, duration: 0.6, delay: 0.35, ease: 'power2.out' }
+        );
       };
     });
   }
-
-    
 
   function setAppHeight(){
     document.documentElement.style.setProperty('--apph', window.innerHeight + 'px');
   }
   setAppHeight();
+let lastWidth = window.innerWidth;
+  function setAppHeight(){
+    document.documentElement.style.setProperty('--apph', window.innerHeight + 'px');
+  }
+  setAppHeight();
 
-  // دالة تحرير وتصحيح الريسبونسف بدون خناقة بين الـ CSS والـ JS
   function updateResponsiveLayout() {
+    setAppHeight();
     const stageHost = document.getElementById('stageHost');
-    const builder = document.getElementById('builder');
-    if (!stageHost || !builder) return;
+    if (!stageHost) return;
 
-    // تنظيف أي قيود inline قديمة سايبها الـ GSAP عشان نسيب الـ CSS ياخد مكانه الصح
-    gsap.killTweensOf(stageHost);
-    stageHost.style.left = '';
-    stageHost.style.right = '';
-    stageHost.style.top = '';
-    stageHost.style.bottom = '';
-    stageHost.style.transform = '';
+    const isLandscape = window.innerWidth > window.innerHeight;
+    const isMobileLandscape = isLandscape && window.innerHeight <= 520;
+    const isMobilePortrait = !isLandscape && window.innerWidth < 650;
 
-    // تظبيط مكان العجلة والـ ScrollTrigger بعد انتهاء أنيميشن المتصفح
-    let ticks = 0;
-    const syncInterval = setInterval(() => {
-      window.__forno_place_wheel?.();
-      ticks++;
-      if (ticks >= 7) {
-        clearInterval(syncInterval);
-        if (window.ScrollTrigger) ScrollTrigger.refresh();
+    // تشغيل الأنيميشن فقط إذا كان العميل داخل وضع البناء
+    if (mobileSizeChosen) {
+      gsap.killTweensOf(stageHost);
+      if (isMobileLandscape) {
+        // سلاسة الانتقال لقاع الشاشة (الهاتف نايم)
+        gsap.to(stageHost, {
+          left: '50%', top: '100%', right: 'auto',
+          xPercent: -50, yPercent: -50, x: 0, y: 0,
+          scale: 1, rotation: 0, duration: 0.65, ease: 'power2.out',
+          onUpdate: () => window.__forno_place_wheel?.(),
+          onComplete: () => window.__forno_place_wheel?.()
+        });
+      } else if (isMobilePortrait) {
+        // سلاسة الانتقال للشكل المائل (الهاتف واقف)
+        gsap.to(stageHost, {
+          left: '60%', top: '-2vh', right: 'auto',
+          xPercent: -50, yPercent: 0, x: '50vw', y: 0,
+          scale: 1, rotation: 35, duration: 0.65, ease: 'power2.out',
+          force3D: true,
+          onUpdate: () => window.__forno_place_wheel?.(),
+          onComplete: () => window.__forno_place_wheel?.()
+        });
       }
-    }, 100);
+    }
+
+    setTimeout(() => {
+      window.__forno_place_wheel?.();
+      if (window.ScrollTrigger) ScrollTrigger.refresh();
+    }, 700);
   }
 
+  let orientTimer = null;
+  window.addEventListener('resize', () => {
+    if (Math.abs(window.innerWidth - lastWidth) > 30) {
+      lastWidth = window.innerWidth;
+      clearTimeout(orientTimer);
+      orientTimer = setTimeout(updateResponsiveLayout, 100);
+    }
+  });
+
+  window.addEventListener('orientationchange', () => {
+    clearTimeout(orientTimer);
+    orientTimer = setTimeout(updateResponsiveLayout, 150);
+  });
   let resizeTimer = null;
   window.addEventListener('resize', () => {
     setAppHeight();
@@ -2376,9 +2428,9 @@ window.addEventListener('resize', place);
       syncMenuFromServer().catch(() => {})
     ];
 
-    // حماية ضد أي بطء: أقصى انتظار ثانيتين ونصف
-    const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2500));
-    await Promise.race([Promise.all(jobs), timeoutPromise]);
+ // حماية ضد أي بطء: أقصى انتظار 5 ثواني
+ const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 5000));
+ await Promise.race([Promise.all(jobs), timeoutPromise]);
 
     loadAnim.kill();
     gsap.to(progress, {
