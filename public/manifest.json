@@ -1,18 +1,36 @@
 {
   "name": "FORNO — Real Wood-Fired Pizza",
   "short_name": "FORNO",
-  "description": "Interactive Custom Wood-Fired Pizza Kitchen",
+  "description": "Interactive Custom Wood-Fired Pizza Kitchen — Build your own pizza, watch it bake in our 3D oven, and order directly online.",
   "start_url": "/",
-  "display": "fullscreen",
+  "scope": "/",
+  "display": "standalone",
   "background_color": "#0a0705",
   "theme_color": "#0a0705",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "categories": ["food", "shopping", "lifestyle"],
   "icons": [
     {
       "src": "/ico.webp",
       "sizes": "192x192 512x512",
       "type": "image/webp",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Build Your Pizza",
+      "short_name": "Build",
+      "description": "Launch the interactive pizza builder",
+      "url": "/#builder",
+      "icons": [{ "src": "/ico.webp", "sizes": "192x192" }]
+    },
+    {
+      "name": "Our Menu",
+      "short_name": "Menu",
+      "description": "Browse signature wood-fired pizzas",
+      "url": "/#menu",
+      "icons": [{ "src": "/ico.webp", "sizes": "192x192" }]
     }
   ]
 }

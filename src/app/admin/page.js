@@ -1,16 +1,26 @@
 // src/app/admin/page.js
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import OrdersTab from "@/components/admin/OrdersTab";
+import MenuTab from "@/components/admin/MenuTab";
+import CategoriesTab from "@/components/admin/CategoriesTab";
+import IngredientsTab from "@/components/admin/IngredientsTab";
+import MessagesTab from "@/components/admin/MessagesTab";
+import ReceiptModal from "@/components/admin/ReceiptModal";
+import { playOrderAlertChime, unlockAudioOnUserGesture } from "@/components/admin/audioNotification";
+import { formatBilingual, parseBilingual } from "@/lib/i18n";
+import { supabaseClient, isSupabaseLive } from "@/lib/supabaseClient";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Auth inputs
+  // Auth inputs & Remember Me
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [authError, setAuthError] = useState("");
 
   // Navigation Tabs: orders | items | categories | ingredients
@@ -19,54 +29,57 @@ export default function AdminPage() {
   // Orders State (Cashier)
   const [orders, setOrders] = useState([]);
   const [selectedReceiptModal, setSelectedReceiptModal] = useState(null);
+  const previousOrdersCountRef = useRef(0);
 
   // Dashboard Data
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
 
-  // Item Form
+  // Item Form (Bilingual: EN & AR)
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
+    name_en: "",
+    name_ar: "",
     item_id: "",
     price: "",
     is_simple: false,
     categories: [],
-    ingredients: "",
+    ingredients_en: "",
+    ingredients_ar: "",
     image_url: "",
   });
   const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Category Form
-  const [newCat, setNewCat] = useState({ id: "", name: "", sort_order: 10 });
+  // Category Form (Bilingual: EN & AR)
+  const [newCat, setNewCat] = useState({ id: "", name_en: "", name_ar: "", sort_order: 10 });
   const [editingCat, setEditingCat] = useState(null);
 
-// Ingredient Pricing State
+  // Ingredient Pricing State
   const [ingredientPrices, setIngredientPrices] = useState({
     dough: {
       thin: { small: 0, med: 0, large: 0 },
       classic: { small: 0, med: 0, large: 0 },
       thick: { small: 15, med: 20, large: 25 },
-      cheese: { small: 25, med: 35, large: 45 }
+      cheese: { small: 25, med: 35, large: 45 },
     },
     sauce: {
       tomato: { small: 15, med: 20, large: 25 },
       spicy: { small: 20, med: 30, large: 35 },
       bbq: { small: 25, med: 35, large: 40 },
-      garlic: { small: 30, med: 40, large: 45 }
+      garlic: { small: 30, med: 40, large: 45 },
     },
     cheese: {
       mozzarella: { small: 20, med: 25, large: 35 },
       extra: { small: 30, med: 40, large: 50 },
       four: { small: 45, med: 55, large: 65 },
-      smoked: { small: 35, med: 45, large: 55 }
+      smoked: { small: 35, med: 45, large: 55 },
     },
     meat: {
       pepperoni: { small: 35, med: 45, large: 55 },
       beef: { small: 40, med: 50, large: 60 },
       chicken: { small: 35, med: 45, large: 55 },
-      sausage: { small: 30, med: 40, large: 50 }
+      sausage: { small: 30, med: 40, large: 50 },
     },
     veg: {
       olives: { small: 10, med: 15, large: 20 },
@@ -74,60 +87,32 @@ export default function AdminPage() {
       onion: { small: 8, med: 12, large: 15 },
       greenPepper: { small: 10, med: 15, large: 20 },
       jalapeno: { small: 12, med: 18, large: 22 },
-      corn: { small: 10, med: 12, large: 15 },
-      basil: { small: 8, med: 10, large: 12 }
+      basil: { small: 8, med: 10, large: 12 },
     },
     extras: {
       extraCheese: { small: 25, med: 30, large: 40 },
       chili: { small: 8, med: 10, large: 12 },
       garlic: { small: 8, med: 10, large: 12 },
-      truffle: { small: 25, med: 35, large: 45 }
-    }
+      truffle: { small: 25, med: 35, large: 45 },
+    },
   });
   const [savingIngredients, setSavingIngredients] = useState(false);
   const [ingMsg, setIngMsg] = useState("");
-
-  useEffect(() => {
-    checkSession();
-  }, []);
-
-// مزامنة ذكية: فقط لما يكون في تاب الطلبات والصفحة نشطة
-  useEffect(() => {
-    if (!isAuthenticated || activeTab !== "orders") return;
-
-    const syncTimer = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        loadOrders();
-      }
-    }, 4000);
-
-    return () => clearInterval(syncTimer);
-  }, [isAuthenticated, activeTab]);
-
-  const checkSession = async () => {
-    try {
-      const res = await fetch("/api/auth");
-      const data = await res.json();
-      if (data.authenticated) {
-        setIsAuthenticated(true);
-        setUserEmail(data.email);
-        loadOrders();
-        loadMenuData();
-        loadIngredientPrices();
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadOrders = async () => {
     try {
       const res = await fetch("/api/orders");
       if (res.ok) {
         const data = await res.json();
-        setOrders(data || []);
+        const newOrders = Array.isArray(data) ? data : [];
+        
+        // Play alert sound if a new pending order arrived
+        const pendingCount = newOrders.filter((o) => o.payment_status === "pending").length;
+        if (previousOrdersCountRef.current > 0 && pendingCount > previousOrdersCountRef.current) {
+          playOrderAlertChime();
+        }
+        previousOrdersCountRef.current = pendingCount;
+        setOrders(newOrders);
       }
     } catch (e) {
       console.error("Orders sync error:", e);
@@ -151,13 +136,121 @@ export default function AdminPage() {
       if (res.ok) {
         const data = await res.json();
         if (data && Object.keys(data).length > 0) {
-          setIngredientPrices(prev => ({ ...prev, ...data }));
+          setIngredientPrices((prev) => ({ ...prev, ...data }));
         }
       }
     } catch (e) {
       console.error("Ingredients fetch error:", e);
     }
   };
+
+  // Customer Inquiries & Messages
+  const [messages, setMessages] = useState([]);
+
+  const loadMessages = async () => {
+    try {
+      const res = await fetch("/api/contact");
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error("Messages fetch error:", e);
+    }
+  };
+
+  const handleDeleteMessage = async (id) => {
+    if (!confirm("Are you sure you want to remove this message?")) return;
+    try {
+      const res = await fetch(`/api/contact?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setMessages((prev) => prev.filter((m) => m.id !== id));
+      }
+    } catch (e) {
+      alert("Error deleting message: " + e.message);
+    }
+  };
+
+  useEffect(() => {
+    unlockAudioOnUserGesture();
+    let active = true;
+    (async () => {
+      // 1. استرجاع البريد الإلكتروني فقط إذا اختار المستخدم تذكره
+      let savedEmail = "";
+      if (typeof window !== "undefined") {
+        const isRemembered = localStorage.getItem("forno_admin_remember") === "true";
+        setRememberMe(isRemembered);
+        if (isRemembered) {
+          savedEmail = localStorage.getItem("forno_admin_email") || "";
+          if (savedEmail) setEmail(savedEmail);
+        }
+        // تنظيف أي كلمة مرور كانت محفوظة سابقاً لأمان النظام
+        localStorage.removeItem("forno_admin_password");
+      }
+
+      try {
+        const res = await fetch("/api/auth");
+        const data = await res.json();
+        if (!active) return;
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          setUserEmail(data.email);
+          loadOrders();
+          loadMenuData();
+          loadIngredientPrices();
+          loadMessages();
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Realtime subscription + fallback sync for cashier orders (شغال دايماً طول ما الأدمن مسجل)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let channel = null;
+    if (isSupabaseLive) {
+      try {
+        channel = supabaseClient
+          .channel("admin-orders-realtime")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "orders" },
+            (payload) => {
+              if (payload.eventType === "INSERT") {
+                playOrderAlertChime();
+              }
+              loadOrders();
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn("Realtime admin channel fallback:", err);
+      }
+    }
+
+    // Relaxed background polling safety-net (every 10s)
+    const syncTimer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        loadOrders();
+      }
+    }, 10000);
+
+    return () => {
+      clearInterval(syncTimer);
+      if (channel && isSupabaseLive) {
+        supabaseClient.removeChannel(channel);
+      }
+    };
+  }, [isAuthenticated, activeTab]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -170,11 +263,23 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        setPassword(""); // تفريغ كلمة المرور فوراً من الذاكرة لحماية الحساب
+        if (typeof window !== "undefined") {
+          if (rememberMe) {
+            localStorage.setItem("forno_admin_remember", "true");
+            localStorage.setItem("forno_admin_email", email.trim());
+          } else {
+            localStorage.setItem("forno_admin_remember", "false");
+            localStorage.removeItem("forno_admin_email");
+          }
+          localStorage.removeItem("forno_admin_password");
+        }
         setIsAuthenticated(true);
         setUserEmail(data.email);
         loadOrders();
         loadMenuData();
         loadIngredientPrices();
+        loadMessages();
       } else {
         setAuthError(data.error || "بيانات الدخول غير صحيحة");
       }
@@ -187,6 +292,9 @@ export default function AdminPage() {
     await fetch("/api/auth", { method: "DELETE" });
     setIsAuthenticated(false);
     setUserEmail("");
+    setPassword("");
+    setOrders([]); // تنظيف كاش الطلبات وبيانات العملاء فور تسجيل الخروج
+    setMessages([]);
   };
 
   // ================= إدارة دورة الطلبات (الكاشير) =================
@@ -195,7 +303,7 @@ export default function AdminPage() {
       const res = await fetch("/api/orders", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, payment_status, order_status })
+        body: JSON.stringify({ id, payment_status, order_status }),
       });
       if (res.ok) {
         loadOrders();
@@ -205,22 +313,31 @@ export default function AdminPage() {
     }
   };
 
-  // ================= إدارة المنتجات =================
+  // ================= إدارة المنتجات (دعم ثنائي اللغة) =================
   const handleSaveItem = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
       const formPayload = new FormData();
       if (editingItem) formPayload.append("id", editingItem.id);
-      formPayload.append("name", formData.name);
-      formPayload.append("item_id", formData.item_id);
+
+      const combinedName = formatBilingual(formData.name_en, formData.name_ar);
+      const enIngs = (formData.ingredients_en || "").split(",").map((x) => x.trim()).filter(Boolean);
+      const arIngs = (formData.ingredients_ar || "").split(",").map((x) => x.trim()).filter(Boolean);
+      const combinedIngs = [];
+      const maxLen = Math.max(enIngs.length, arIngs.length);
+      for (let i = 0; i < maxLen; i++) {
+        const en = enIngs[i] || "";
+        const ar = arIngs[i] || "";
+        combinedIngs.push(formatBilingual(en, ar));
+      }
+
+      formPayload.append("name", combinedName);
+      formPayload.append("item_id", (formData.item_id || formData.name_en || "item").toLowerCase().replace(/\s+/g, "-"));
       formPayload.append("price", formData.price);
       formPayload.append("is_simple", formData.is_simple);
       formPayload.append("categories", JSON.stringify(formData.categories));
-      formPayload.append(
-        "ingredients",
-        JSON.stringify(formData.ingredients.split(",").map((x) => x.trim()).filter(Boolean))
-      );
+      formPayload.append("ingredients", JSON.stringify(combinedIngs));
       formPayload.append("image_url", formData.image_url);
       if (imageFile) formPayload.append("image", imageFile);
 
@@ -252,22 +369,30 @@ export default function AdminPage() {
   const resetItemForm = () => {
     setEditingItem(null);
     setFormData({
-      name: "",
+      name_en: "",
+      name_ar: "",
       item_id: "",
       price: "",
       is_simple: false,
       categories: [],
-      ingredients: "",
+      ingredients_en: "",
+      ingredients_ar: "",
       image_url: "",
     });
     setImageFile(null);
   };
 
-  // ================= إدارة التصنيفات =================
+  // ================= إدارة التصنيفات (دعم ثنائي اللغة) =================
   const handleSaveCategory = async (e) => {
     e.preventDefault();
     try {
-      const payload = editingCat ? { ...newCat, original_id: editingCat.id } : newCat;
+      const combinedName = formatBilingual(newCat.name_en, newCat.name_ar);
+      const payload = {
+        id: (newCat.id || newCat.name_en || "category").toLowerCase().replace(/\s+/g, "-"),
+        name: combinedName,
+        sort_order: newCat.sort_order,
+        ...(editingCat ? { original_id: editingCat.id } : {}),
+      };
       const res = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -297,35 +422,56 @@ export default function AdminPage() {
 
   const resetCatForm = () => {
     setEditingCat(null);
-    setNewCat({ id: "", name: "", sort_order: 10 });
+    setNewCat({ id: "", name_en: "", name_ar: "", sort_order: 10 });
   };
 
-const handleIngredientChange = (category, id, size, value) => {
-    setIngredientPrices(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [id]: {
-          ...(typeof prev[category]?.[id] === 'object' && prev[category]?.[id] !== null 
-            ? prev[category][id] 
-            : { small: prev[category]?.[id] ?? 0, med: prev[category]?.[id] ?? 0, large: prev[category]?.[id] ?? 0 }),
-          // لو الخانة اتمسحت تفضل فاضية وتعتبر قيمتها صفر
-          [size]: value === '' ? '' : (Number(value) >= 0 ? Number(value) : 0)
-        }
-      }
-    }));
+  // ================= إدارة أسعار المكونات =================
+  const handleIngredientChange = (catKey, id, size, value) => {
+    const num = parseFloat(value) || 0;
+    setIngredientPrices((prev) => {
+      const currentCat = prev[catKey] || {};
+      const currentItem = currentCat[id];
+      const isObj = typeof currentItem === "object" && currentItem !== null;
+
+      const updatedItem = isObj
+        ? { ...currentItem, [size]: num }
+        : { small: currentItem || 0, med: currentItem || 0, large: currentItem || 0, [size]: num };
+
+      return {
+        ...prev,
+        [catKey]: {
+          ...currentCat,
+          [id]: updatedItem,
+        },
+      };
+    });
   };
+
   const handleSaveIngredients = async () => {
     setSavingIngredients(true);
     setIngMsg("");
     try {
-// تحويل أي خانة فارغة لصفر تلقائياً قبل الحفظ في الداتابيز
-      const payload = JSON.parse(JSON.stringify(ingredientPrices, (_, val) => val === '' ? 0 : val));
+      const payload = {};
+      for (const [catKey, itemsObj] of Object.entries(ingredientPrices)) {
+        payload[catKey] = {};
+        for (const [id, priceVal] of Object.entries(itemsObj)) {
+          if (typeof priceVal === "object" && priceVal !== null) {
+            payload[catKey][id] = {
+              small: Number(priceVal.small) || 0,
+              med: Number(priceVal.med) || 0,
+              large: Number(priceVal.large) || 0,
+            };
+          } else {
+            const val = Number(priceVal) || 0;
+            payload[catKey][id] = { small: val, med: val, large: val };
+          }
+        }
+      }
 
       const res = await fetch("/api/ingredients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         setIngMsg("تم حفظ وتحديث جميع أسعار المكونات بنجاح! ✓");
@@ -358,7 +504,7 @@ const handleIngredientChange = (category, id, size, value) => {
         alignItems: "center",
         justifyContent: "center",
         padding: "20px",
-        fontFamily: "'Inter', sans-serif"
+        fontFamily: "'Inter', sans-serif",
       }}>
         <form onSubmit={handleLogin} style={{
           width: "100%",
@@ -370,7 +516,7 @@ const handleIngredientChange = (category, id, size, value) => {
           padding: "40px 24px",
           backdropFilter: "blur(20px)",
           textAlign: "center",
-          boxSizing: "border-box"
+          boxSizing: "border-box",
         }}>
           <h2 style={{ fontFamily: "Impact, sans-serif", fontSize: "32px", letterSpacing: "1px", margin: "0 0 6px", color: "#f3e9dc" }}>
             FORNO <span style={{ color: "#ff7a2e" }}>ADMIN</span>
@@ -387,7 +533,7 @@ const handleIngredientChange = (category, id, size, value) => {
               padding: "12px",
               borderRadius: "10px",
               fontSize: "12px",
-              marginBottom: "20px"
+              marginBottom: "20px",
             }}>
               {authError}
             </div>
@@ -412,7 +558,7 @@ const handleIngredientChange = (category, id, size, value) => {
                 color: "#f3e9dc",
                 fontSize: "14px",
                 outline: "none",
-                boxSizing: "border-box"
+                boxSizing: "border-box",
               }}
             />
           </div>
@@ -436,10 +582,31 @@ const handleIngredientChange = (category, id, size, value) => {
                 color: "#f3e9dc",
                 fontSize: "14px",
                 outline: "none",
-                boxSizing: "border-box"
+                boxSizing: "border-box",
               }}
             />
           </div>
+
+          <label style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            color: "#f3e9dc",
+            fontSize: "12px",
+            fontWeight: "600",
+            marginBottom: "24px",
+            cursor: "pointer",
+            userSelect: "none",
+            justifyContent: "flex-start",
+          }}>
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              style={{ accentColor: "#ff7a2e", width: "16px", height: "16px", cursor: "pointer" }}
+            />
+            <span>حفظ بيانات الدخول على هذا الجهاز (Remember Me)</span>
+          </label>
 
           <button
             type="submit"
@@ -450,72 +617,59 @@ const handleIngredientChange = (category, id, size, value) => {
               color: "#1a0c04",
               border: "none",
               borderRadius: "99px",
-              fontFamily: "'Inter', sans-serif",
-              fontSize: "12px",
               fontWeight: "900",
-              letterSpacing: "3px",
+              fontSize: "12px",
+              letterSpacing: "2px",
               cursor: "pointer",
-              boxShadow: "0 10px 30px rgba(255, 122, 46, 0.4)"
             }}
           >
-            LOGIN TO DASHBOARD
+            ENTER DASHBOARD
           </button>
         </form>
       </div>
     );
   }
 
-  // ================= الداشبورد الرئيسية =================
-  const ingredientCategories = [
-    { key: "dough", title: "🍕 العجين (Dough)" },
-    { key: "sauce", title: "🥫 الصلصات (Sauce)" },
-    { key: "cheese", title: "🧀 الأجبان (Cheese)" },
-    { key: "meat", title: "🥩 اللحوم (Meats)" },
-    { key: "veg", title: "🥦 الخضراوات (Veggies)" },
-    { key: "extras", title: "✨ الإضافات (Extras)" },
-  ];
-
-  const pendingOrders = orders.filter(o => o.payment_status === "pending");
-  const paidActiveOrders = orders.filter(o => o.payment_status === "paid" && o.order_status !== "completed");
-  const archivedOrders = orders.filter(o => o.order_status === "completed" || o.payment_status === "expired" || o.payment_status === "rejected");
+  const pendingCount = orders.filter((o) => o.payment_status === "pending").length;
+  const totalRevenue = orders
+    .filter((o) => o.payment_status === "paid")
+    .reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+  const paidOrdersCount = orders.filter((o) => o.payment_status === "paid").length;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0705", color: "#f3e9dc", fontFamily: "'Inter', sans-serif", paddingBottom: "80px" }}>
-      {/* Header */}
+    <div style={{ minHeight: "100vh", background: "#0a0705", color: "#f3e9dc", fontFamily: "'Inter', sans-serif", paddingBottom: "60px" }}>
+      {/* Top Header */}
       <header style={{
+        background: "#140d08",
+        borderBottom: "1px solid rgba(243, 233, 220, 0.1)",
+        padding: "18px 4vw",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: "16px 4vw",
-        borderBottom: "1px solid rgba(243, 233, 220, 0.1)",
-        background: "#140d08",
-        flexWrap: "wrap",
-        gap: "12px"
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontFamily: "Impact, sans-serif", fontSize: "24px", letterSpacing: "1px" }}>
-            FORNO<span style={{ color: "#ff7a2e" }}>.</span>
-          </span>
-          <span style={{ background: "#ff7a2e", color: "#140d08", fontSize: "9px", fontWeight: "900", padding: "4px 8px", borderRadius: "99px", letterSpacing: "2px" }}>
-            CASHIER PORTAL
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <h1 style={{ fontFamily: "Impact, sans-serif", fontSize: "24px", letterSpacing: "1px", margin: 0, color: "#f3e9dc" }}>
+            FORNO <span style={{ color: "#ff7a2e" }}>ADMIN</span>
+          </h1>
+          <span style={{ fontSize: "11px", color: "#ff7a2e", background: "rgba(255, 122, 46, 0.15)", padding: "4px 10px", borderRadius: "99px", fontWeight: "800" }}>
+            CASHIER
           </span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <span style={{ color: "#9a8b7a", fontSize: "11px" }}>
-            {userEmail}
-          </span>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <span style={{ fontSize: "11px", color: "#9a8b7a" }}>{userEmail}</span>
           <button
             onClick={handleLogout}
             style={{
-              background: "none",
-              border: "1px solid rgba(243, 233, 220, 0.2)",
-              color: "#f3e9dc",
-              padding: "8px 14px",
+              background: "rgba(194, 43, 26, 0.15)",
+              border: "1px solid #c22b1a",
+              color: "#ff8b7a",
+              padding: "6px 14px",
               borderRadius: "99px",
-              fontSize: "9px",
+              fontSize: "10px",
               fontWeight: "800",
               letterSpacing: "2px",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             LOGOUT
@@ -525,15 +679,49 @@ const handleIngredientChange = (category, id, size, value) => {
 
       {/* Main Container */}
       <main style={{ maxWidth: "1300px", margin: "20px auto 0", padding: "0 4vw" }}>
-        
+        {/* KPI Summary Overview */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "14px",
+            marginBottom: "24px",
+          }}
+        >
+          <div style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "16px", padding: "16px 20px" }}>
+            <div style={{ fontSize: "10px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>PAID REVENUE</div>
+            <div style={{ fontSize: "24px", fontFamily: "var(--disp)", color: "#57a84f", marginTop: "4px" }}>
+              EGP {totalRevenue.toLocaleString()}
+            </div>
+          </div>
+          <div style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "16px", padding: "16px 20px" }}>
+            <div style={{ fontSize: "10px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>PAID ORDERS</div>
+            <div style={{ fontSize: "24px", fontFamily: "var(--disp)", color: "#ffb347", marginTop: "4px" }}>
+              {paidOrdersCount}
+            </div>
+          </div>
+          <div style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "16px", padding: "16px 20px" }}>
+            <div style={{ fontSize: "10px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>PENDING CASHIER</div>
+            <div style={{ fontSize: "24px", fontFamily: "var(--disp)", color: pendingCount > 0 ? "#ff7a2e" : "#9a8b7a", marginTop: "4px" }}>
+              {pendingCount}
+            </div>
+          </div>
+          <div style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "16px", padding: "16px 20px" }}>
+            <div style={{ fontSize: "10px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>TOTAL ORDERS</div>
+            <div style={{ fontSize: "24px", fontFamily: "var(--disp)", color: "#f3e9dc", marginTop: "4px" }}>
+              {orders.length}
+            </div>
+          </div>
+        </div>
+
         {/* Navigation Tabs */}
-        <div style={{ 
-          display: "flex", 
-          gap: "10px", 
-          marginBottom: "24px", 
-          overflowX: "auto", 
+        <div style={{
+          display: "flex",
+          gap: "10px",
+          marginBottom: "24px",
+          overflowX: "auto",
           paddingBottom: "10px",
-          scrollbarWidth: "none"
+          scrollbarWidth: "none",
         }}>
           <button
             onClick={() => setActiveTab("orders")}
@@ -547,10 +735,10 @@ const handleIngredientChange = (category, id, size, value) => {
               fontWeight: "900",
               fontSize: "10px",
               letterSpacing: "2px",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
-            ORDERS ({pendingOrders.length} PENDING)
+            ORDERS ({pendingCount} PENDING)
           </button>
 
           <button
@@ -565,12 +753,12 @@ const handleIngredientChange = (category, id, size, value) => {
               fontWeight: "800",
               fontSize: "10px",
               letterSpacing: "2px",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             PRODUCTS ({items.length})
           </button>
-          
+
           <button
             onClick={() => setActiveTab("categories")}
             style={{
@@ -583,7 +771,7 @@ const handleIngredientChange = (category, id, size, value) => {
               fontWeight: "800",
               fontSize: "10px",
               letterSpacing: "2px",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             CATEGORIES ({categories.length})
@@ -601,655 +789,128 @@ const handleIngredientChange = (category, id, size, value) => {
               fontWeight: "800",
               fontSize: "10px",
               letterSpacing: "2px",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             INGREDIENT PRICES 🍕
           </button>
-        </div>
 
-        {/* ================= TAB 0: CASHIER ORDERS ================= */}
-{/* ================= TAB 0: CASHIER ORDERS ================= */}
-        {activeTab === "orders" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
-            
-            {/* قسم الطلبات قيد الدفع مع العداد */}
-            <div>
-              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "22px", color: "#ff7a2e", letterSpacing: "1px", marginBottom: "14px" }}>
-                🔥 PENDING PAYMENT ORDERS
-              </h3>
-              {pendingOrders.length === 0 ? (
-                <div style={{ padding: "30px", background: "#140d08", borderRadius: "16px", color: "#9a8b7a", textAlign: "center", fontSize: "12px", border: "1px solid rgba(243,233,220,0.08)" }}>
-                  NO ORDERS AWAITING PAYMENT.
-                </div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "18px" }}>
-                  {pendingOrders.map((ord) => {
-                   
-
-                    return (
-                      <div key={ord.id} style={{ background: "#140d08", border: "1px solid #ff7a2e", borderRadius: "20px", padding: "20px", boxShadow: "0 10px 30px rgba(0,0,0,0.7)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(243,233,220,0.1)", paddingBottom: "10px", marginBottom: "12px" }}>
-                          <div>
-                            <span style={{ fontFamily: "Impact", fontSize: "20px", color: "#ffb347" }}>#{ord.order_number}</span>
-                            <span style={{ marginLeft: "8px", fontSize: "10px", color: "#9a8b7a" }}>{new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                       
-                        </div>
-
-                        <div style={{ fontSize: "12px", marginBottom: "12px", lineHeight: "1.6" }}>
-                          <b style={{ color: "#fff" }}>{ord.customer_name}</b> ({ord.customer_phone})<br />
-                          <span style={{ color: "#9a8b7a" }}>📍 {ord.customer_address}</span>
-                        </div>
-
-                        {/* قائمة المنتجات */}
-                        <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "10px", padding: "10px", marginBottom: "12px", maxHeight: "140px", overflowY: "auto", fontSize: "11px" }}>
-                          {ord.items?.map((it, idx) => (
-                            <div key={idx} style={{ marginBottom: "6px", borderBottom: "1px dashed rgba(255,255,255,0.05)", paddingBottom: "4px" }}>
-                              <b style={{ color: "#fff" }}>{it.name}</b> × {it.qty} = <span style={{ color: "#e8b04b" }}>EGP {it.unit * it.qty}</span>
-                              {it.meta && <div style={{ fontSize: "9px", color: "#9a8b7a" }}>{it.meta}</div>}
-                            </div>
-                          ))}
-                          <div style={{ textAlign: "right", fontWeight: "900", color: "#ffb347", fontSize: "13px", marginTop: "6px" }}>
-                            TOTAL: EGP {ord.total}
-                          </div>
-                        </div>
-
-                        {ord.receipt_url && (
-                          <button
-                            onClick={() => setSelectedReceiptModal(ord.receipt_url)}
-                            style={{ width: "100%", padding: "8px", background: "rgba(255,122,46,0.15)", border: "1px solid #ff7a2e", color: "#ffb347", borderRadius: "8px", fontSize: "10px", fontWeight: "800", marginBottom: "12px", cursor: "pointer" }}
-                          >
-                            📄 VIEW PAYMENT RECEIPT
-                          </button>
-                        )}
-
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <button
-                            onClick={() => handleUpdateOrderStatus(ord.id, "paid", "preparing")}
-                            style={{ flex: 1, padding: "12px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
-                          >
-                            CONFIRM PAYMENT
-                          </button>
-                          <button
-                            onClick={() => handleUpdateOrderStatus(ord.id, "rejected", "pending")}
-                            style={{ padding: "12px 16px", background: "rgba(194,43,26,0.2)", border: "1px solid #c22b1a", color: "#ff8b7a", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
-                          >
-                            REJECT
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* قسم المطبخ (الطلبات المدفوعة) */}
-            <div>
-              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "22px", color: "#e8b04b", letterSpacing: "1px", marginBottom: "14px" }}>
-                🍕 ACTIVE KITCHEN ORDERS (PAID)
-              </h3>
-              {paidActiveOrders.length === 0 ? (
-                <div style={{ padding: "20px", background: "#140d08", borderRadius: "16px", color: "#9a8b7a", textAlign: "center", fontSize: "12px", border: "1px solid rgba(243,233,220,0.06)" }}>
-                  NO ACTIVE KITCHEN ORDERS.
-                </div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "16px" }}>
-                  {paidActiveOrders.map((ord) => (
-                    <div key={ord.id} style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "18px", padding: "18px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                        <b style={{ fontFamily: "Impact", fontSize: "18px", color: "#fff" }}>#{ord.order_number}</b>
-                        <span style={{ fontSize: "10px", padding: "4px 8px", borderRadius: "99px", background: ord.order_status === "ready" ? "#57a84f" : "#ff7a2e", color: "#140d08", fontWeight: "900" }}>
-                          {ord.order_status?.toUpperCase()}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#9a8b7a", marginBottom: "10px" }}>
-                        Customer: <b style={{ color: "#fff" }}>{ord.customer_name}</b> | Phone: {ord.customer_phone}<br />
-                        Total: <b style={{ color: "#ffb347" }}>EGP {ord.total}</b>
-                      </div>
-                      
-                      <div style={{ display: "flex", gap: "6px" }}>
-                        {ord.order_status === "preparing" && (
-                          <button
-                            onClick={() => handleUpdateOrderStatus(ord.id, "paid", "ready")}
-                            style={{ flex: 1, padding: "10px", background: "#e8b04b", color: "#140d08", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
-                          >
-                            MARK READY
-                          </button>
-                        )}
-                        {ord.order_status === "ready" && (
-                          <button
-                            onClick={() => handleUpdateOrderStatus(ord.id, "paid", "completed")}
-                            style={{ flex: 1, padding: "10px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
-                          >
-                            COMPLETE ORDER ✓
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* أرشيف الطلبات */}
-            <div>
-              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "18px", color: "#9a8b7a", letterSpacing: "1px", marginBottom: "12px" }}>
-                ARCHIVED / COMPLETED / EXPIRED ORDERS
-              </h3>
-              <div style={{ background: "#140d08", borderRadius: "16px", border: "1px solid rgba(243,233,220,0.06)", overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px", textAlign: "left" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#9a8b7a" }}>
-                      <th style={{ padding: "10px" }}>ORDER</th>
-                      <th style={{ padding: "10px" }}>CUSTOMER</th>
-                      <th style={{ padding: "10px" }}>TOTAL</th>
-                      <th style={{ padding: "10px" }}>PAYMENT</th>
-                      <th style={{ padding: "10px" }}>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {archivedOrders.map(o => (
-                      <tr key={o.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                        <td style={{ padding: "10px", fontWeight: "bold" }}>#{o.order_number}</td>
-                        <td style={{ padding: "10px" }}>{o.customer_name}</td>
-                        <td style={{ padding: "10px", color: "#e8b04b" }}>EGP {o.total}</td>
-                        <td style={{ padding: "10px", textTransform: "uppercase" }}>{o.payment_status}</td>
-                        <td style={{ padding: "10px", textTransform: "uppercase" }}>{o.order_status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* ================= TAB 1: PRODUCTS ================= */}
-        {activeTab === "items" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {/* Add / Edit Product Form */}
-            <div style={{ background: "#140d08", border: "1px solid rgba(243, 233, 220, 0.1)", borderRadius: "20px", padding: "20px" }}>
-              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "20px", color: "#e8b04b", marginBottom: "16px", letterSpacing: "1px" }}>
-                {editingItem ? "EDIT PRODUCT" : "ADD NEW PRODUCT"}
-              </h3>
-              <form onSubmit={handleSaveItem} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>PRODUCT NAME</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. THE TRUFFLE"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value, item_id: e.target.value.toLowerCase().replace(/\s+/g, "-") })}
-                    required
-                    style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "10px", color: "#fff", boxSizing: "border-box" }}
-                  />
-                </div>
-
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>PRICE (EGP)</label>
-                    <input
-                      type="number"
-                      placeholder="290"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      required
-                      style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "12px", color: "#fff", boxSizing: "border-box", fontSize: "13px" }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>CATEGORY</label>
-                    <select
-                      value={formData.categories[0] || (categories[0]?.id || "signature")}
-                      onChange={(e) => {
-                        const catId = e.target.value;
-                        const isSimple = ['sides', 'drinks', 'desserts'].includes(catId);
-                        setFormData({
-                          ...formData,
-                          categories: [catId],
-                          is_simple: isSimple
-                        });
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "13px 16px",
-                        background: "#18100a",
-                        border: "1px solid rgba(255, 122, 46, 0.4)",
-                        borderRadius: "12px",
-                        color: "#ffb347",
-                        fontSize: "13px",
-                        fontWeight: "800",
-                        letterSpacing: "1px",
-                        outline: "none",
-                        cursor: "pointer",
-                        boxSizing: "border-box"
-                      }}
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id} style={{ background: "#140d08", color: "#fff" }}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-
-                <div>
-                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>INGREDIENTS (COMMA SEPARATED)</label>
-                  <input
-                    type="text"
-                    placeholder="Mozzarella, Fresh Basil, Olives"
-                    value={formData.ingredients}
-                    onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
-                    style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "10px", color: "#fff", boxSizing: "border-box" }}
-                  />
-                </div>
-<div>
-                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "8px" }}>
-                    PRODUCT IMAGE
-                  </label>
-                  
-                  {/* صندوق الرفع الفاخر */}
-                  <label style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "16px",
-                    background: "rgba(255, 255, 255, 0.02)",
-                    border: "1.5px dashed rgba(255, 122, 46, 0.45)",
-                    borderRadius: "16px",
-                    padding: "16px 20px",
-                    cursor: "pointer",
-                    transition: "all 0.3s ease"
-                  }}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setImageFile(e.target.files[0])}
-                      style={{ display: "none" }}
-                    />
-                    
-                    {/* عرض الصورة المختارة أو الأيقونة */}
-                    {imageFile ? (
-                      <img
-                        src={URL.createObjectURL(imageFile)}
-                        alt="Preview"
-                        style={{ width: "54px", height: "54px", borderRadius: "50%", objectFit: "cover", border: "2px solid #ff7a2e", boxShadow: "0 0 15px rgba(255,122,46,0.4)" }}
-                      />
-                    ) : formData.image_url ? (
-                      <img
-                        src={formData.image_url}
-                        alt="Current"
-                        style={{ width: "54px", height: "54px", borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(243,233,220,0.2)" }}
-                      />
-                    ) : (
-                      <div style={{ width: "54px", height: "54px", borderRadius: "50%", background: "rgba(255,122,46,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", color: "#ffb347" }}>
-                        📷
-                      </div>
-                    )}
-
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "12px", fontWeight: "800", color: "#f3e9dc", letterSpacing: "1px" }}>
-                        {imageFile ? imageFile.name : formData.image_url ? "CHANGE CURRENT IMAGE" : "CLICK TO UPLOAD IMAGE"}
-                      </div>
-                      <div style={{ fontSize: "10px", color: "#9a8b7a", marginTop: "3px" }}>
-                        PNG, JPG or WEBP (Recommended 500x500px)
-                      </div>
-                    </div>
-
-                    <span style={{ padding: "8px 16px", borderRadius: "99px", background: "rgba(255,122,46,0.15)", border: "1px solid #ff7a2e", color: "#ffb347", fontSize: "10px", fontWeight: "900", letterSpacing: "1px" }}>
-                      BROWSE
-                    </span>
-                  </label>
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px" }}>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    style={{
-                      flex: "1 1 auto",
-                      padding: "14px",
-                      background: "linear-gradient(135deg, #ff7a2e, #e05a12)",
-                      color: "#1a0c04",
-                      border: "none",
-                      borderRadius: "99px",
-                      fontWeight: "900",
-                      fontSize: "10px",
-                      letterSpacing: "2px",
-                      cursor: "pointer",
-                      minWidth: "180px"
-                    }}
-                  >
-                    {submitting ? "SAVING..." : editingItem ? "UPDATE PRODUCT" : "CREATE PRODUCT"}
-                  </button>
-                  {editingItem && (
-                    <button
-                      type="button"
-                      onClick={resetItemForm}
-                      style={{
-                        flex: "1 1 auto",
-                        padding: "14px 20px",
-                        background: "none",
-                        border: "1px solid rgba(243,233,220,0.2)",
-                        color: "#fff",
-                        borderRadius: "99px",
-                        fontSize: "10px",
-                        fontWeight: "800",
-                        cursor: "pointer",
-                        minWidth: "120px"
-                      }}
-                    >
-                      CANCEL
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-
-            {/* List Table */}
-            <div style={{ background: "#140d08", border: "1px solid rgba(243, 233, 220, 0.1)", borderRadius: "20px", padding: "20px" }}>
-              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "20px", color: "#e8b04b", marginBottom: "16px", letterSpacing: "1px" }}>EXISTING PRODUCTS</h3>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", minWidth: "500px", borderCollapse: "collapse", textAlign: "left" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(243, 233, 220, 0.1)", color: "#9a8b7a", fontSize: "9px", letterSpacing: "1px" }}>
-                      <th style={{ padding: "10px" }}>IMG</th>
-                      <th style={{ padding: "10px" }}>NAME</th>
-                      <th style={{ padding: "10px" }}>PRICE</th>
-                      <th style={{ padding: "10px" }}>ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((it) => (
-                      <tr key={it.id} style={{ borderBottom: "1px solid rgba(243, 233, 220, 0.05)" }}>
-                        <td style={{ padding: "10px" }}>
-                          {it.image_url ? (
-                            <img src={it.image_url} alt="" style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
-                          ) : (
-                            <span style={{ fontSize: "9px", color: "#9a8b7a" }}>NO IMG</span>
-                          )}
-                        </td>
-                        <td style={{ padding: "10px" }}>
-                          <b style={{ fontSize: "12px" }}>{it.name}</b>
-                          <div style={{ fontSize: "9px", color: "#9a8b7a", marginTop: "2px" }}>{it.categories?.join(", ")}</div>
-                        </td>
-                        <td style={{ padding: "10px", fontFamily: "Impact, sans-serif", color: "#e8b04b", fontSize: "16px" }}>EGP {it.price}</td>
-                        <td style={{ padding: "10px" }}>
-                          <div style={{ display: "flex", gap: "6px" }}>
-                            <button
-                              onClick={() => {
-                                setEditingItem(it);
-                                setFormData({
-                                  name: it.name,
-                                  item_id: it.item_id,
-                                  price: it.price,
-                                  is_simple: it.is_simple || false,
-                                  categories: it.categories || [],
-                                  ingredients: (it.ingredients || []).join(", "),
-                                  image_url: it.image_url || "",
-                                });
-                                window.scrollTo({ top: 0, behavior: "smooth" });
-                              }}
-                              style={{ padding: "6px 12px", background: "#ff7a2e", color: "#140d08", border: "none", borderRadius: "6px", fontSize: "9px", fontWeight: "800", cursor: "pointer" }}
-                            >
-                              EDIT
-                            </button>
-                            <button
-                              onClick={() => handleDeleteItem(it.id)}
-                              style={{ padding: "6px 12px", background: "rgba(194, 43, 26, 0.2)", border: "1px solid rgba(194, 43, 26, 0.4)", color: "#ff8b7a", borderRadius: "6px", fontSize: "9px", fontWeight: "800", cursor: "pointer" }}
-                            >
-                              DEL
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= TAB 2: CATEGORIES ================= */}
-        {activeTab === "categories" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px", alignItems: "start" }}>
-            
-            {/* Category Form */}
-            <div style={{ background: "#140d08", border: "1px solid rgba(243, 233, 220, 0.1)", borderRadius: "20px", padding: "20px" }}>
-              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "20px", color: "#e8b04b", marginBottom: "16px", letterSpacing: "1px" }}>
-                {editingCat ? "EDIT CATEGORY" : "ADD CATEGORY"}
-              </h3>
-              <form onSubmit={handleSaveCategory} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>CATEGORY NAME</label>
-                  <input
-                    type="text"
-                    placeholder="NAME (e.g. SPECIALS)"
-                    value={newCat.name}
-                    onChange={(e) => setNewCat({ ...newCat, name: e.target.value, id: editingCat ? newCat.id : e.target.value.toLowerCase().replace(/\s+/g, "-") })}
-                    required
-                    style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "10px", color: "#fff", boxSizing: "border-box" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>SLUG ID</label>
-                  <input
-                    type="text"
-                    placeholder="ID (e.g. specials)"
-                    value={newCat.id}
-                    onChange={(e) => setNewCat({ ...newCat, id: e.target.value })}
-                    required
-                    style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "10px", color: "#fff", boxSizing: "border-box" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>SORT ORDER</label>
-                  <input
-                    type="number"
-                    placeholder="ORDER (e.g. 1)"
-                    value={newCat.sort_order}
-                    onChange={(e) => setNewCat({ ...newCat, sort_order: Number(e.target.value) })}
-                    required
-                    style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(243,233,220,0.15)", borderRadius: "10px", color: "#fff", boxSizing: "border-box" }}
-                  />
-                </div>
-
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button type="submit" style={{ flex: 1, padding: "14px", background: "#ff7a2e", color: "#140d08", border: "none", borderRadius: "99px", fontWeight: "900", cursor: "pointer", fontSize: "10px", letterSpacing: "2px" }}>
-                    {editingCat ? "UPDATE CATEGORY" : "ADD CATEGORY"}
-                  </button>
-                  {editingCat && (
-                    <button type="button" onClick={resetCatForm} style={{ padding: "14px 20px", background: "none", border: "1px solid rgba(243,233,220,0.2)", color: "#fff", borderRadius: "99px", fontSize: "10px", fontWeight: "800", cursor: "pointer" }}>
-                      CANCEL
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-
-            {/* Category List */}
-            <div style={{ background: "#140d08", border: "1px solid rgba(243, 233, 220, 0.1)", borderRadius: "20px", padding: "20px" }}>
-              <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "20px", color: "#e8b04b", marginBottom: "16px", letterSpacing: "1px" }}>CATEGORIES LIST</h3>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                {categories.map((c) => (
-                  <li key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid rgba(243,233,220,0.08)" }}>
-                    <span style={{ fontSize: "12px" }}>
-                      <b>{c.name}</b> <small style={{ color: "#9a8b7a" }}>({c.id})</small>
-                      <span style={{ marginLeft: "8px", background: "rgba(255,255,255,0.05)", padding: "2px 6px", borderRadius: "4px", fontSize: "9px", color: "#e8b04b" }}>Order: {c.sort_order}</span>
-                    </span>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button
-                        onClick={() => {
-                          setEditingCat(c);
-                          setNewCat({ id: c.id, name: c.name, sort_order: c.sort_order || 10 });
-                        }}
-                        style={{ color: "#e8b04b", background: "none", border: "none", cursor: "pointer", fontSize: "10px", fontWeight: "800" }}
-                      >
-                        EDIT
-                      </button>
-                      <button onClick={() => handleDeleteCategory(c.id)} style={{ color: "#ff8b7a", background: "none", border: "none", cursor: "pointer", fontSize: "10px", fontWeight: "800" }}>
-                        DELETE
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* ================= TAB 3: INGREDIENT PRICES ================= */}
-{/* ================= TAB 3: INGREDIENT PRICES (مكان المقاسات الثلاثة) ================= */}
-        {activeTab === "ingredients" && (
-          <div style={{ background: "#140d08", border: "1px solid rgba(243, 233, 220, 0.1)", borderRadius: "20px", padding: "26px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "14px" }}>
-              <div>
-                <h3 style={{ fontFamily: "Impact, sans-serif", fontSize: "24px", color: "#e8b04b", letterSpacing: "1px", margin: 0 }}>
-                  EDIT INGREDIENT PRICES (EGP)
-                </h3>
-                <p style={{ color: "#9a8b7a", fontSize: "11px", margin: "4px 0 0" }}>
-                  حدد سعر كل مكون حسب الحجم (Small / Med / Large).
-                </p>
-              </div>
-              <button
-                onClick={handleSaveIngredients}
-                disabled={savingIngredients}
-                style={{
-                  background: "linear-gradient(135deg, #ff7a2e, #e05a12)",
-                  color: "#1a0c04",
-                  border: "none",
-                  padding: "12px 28px",
-                  borderRadius: "99px",
-                  fontWeight: "900",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  letterSpacing: "1px",
-                  boxShadow: "0 8px 24px rgba(255, 122, 46, 0.3)"
-                }}
-              >
-                {savingIngredients ? "SAVING..." : "SAVE ALL PRICES"}
-              </button>
-            </div>
-
-            {ingMsg && (
-              <div style={{ padding: "12px 16px", background: "rgba(255, 122, 46, 0.15)", border: "1px solid #ff7a2e", borderRadius: "10px", marginBottom: "22px", color: "#ffb347", fontWeight: "bold", fontSize: "13px" }}>
-                {ingMsg}
-              </div>
-            )}
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "20px" }}>
-              {ingredientCategories.map((cat) => (
-                <div key={cat.key} style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(243, 233, 220, 0.08)", borderRadius: "16px", padding: "18px" }}>
-                  <h4 style={{ fontSize: "15px", color: "#ffb347", marginBottom: "12px", borderBottom: "1px solid rgba(255, 255, 255, 0.06)", paddingBottom: "8px" }}>
-                    {cat.title}
-                  </h4>
-
-                  {/* شريط عناوين المقاسات */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", gap: "6px", marginBottom: "8px", fontSize: "10px", fontWeight: "900", color: "#9a8b7a", textAlign: "center" }}>
-                    <span style={{ textAlign: "left" }}>ITEM</span>
-                    <span style={{ color: "#ffb347" }}>SMALL</span>
-                    <span style={{ color: "#ff7a2e" }}>MED</span>
-                    <span style={{ color: "#e8b04b" }}>LARGE</span>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {Object.entries(ingredientPrices[cat.key] || {}).map(([id, priceObj]) => {
-                      const p = typeof priceObj === 'object' && priceObj !== null 
-                        ? priceObj 
-                        : { small: priceObj || 0, med: priceObj || 0, large: priceObj || 0 };
-
-                      return (
-                        <div key={id} style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", gap: "6px", alignItems: "center" }}>
-                          <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#c5b7a7", fontWeight: "700" }}>
-                            {id}
-                          </span>
-                         <input
-                            type="number"
-                            value={p.small ?? ''}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => handleIngredientChange(cat.key, id, 'small', e.target.value)}
-                            style={{ width: "100%", background: "#1d120a", border: "1px solid rgba(255, 179, 71, 0.2)", borderRadius: "6px", padding: "6px 4px", color: "#ffb347", fontWeight: "bold", textAlign: "center", fontSize: "12px" }}
-                          />
-                          <input
-                            type="number"
-                            value={p.med ?? ''}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => handleIngredientChange(cat.key, id, 'med', e.target.value)}
-                            style={{ width: "100%", background: "#1d120a", border: "1px solid rgba(255, 122, 46, 0.3)", borderRadius: "6px", padding: "6px 4px", color: "#ff7a2e", fontWeight: "bold", textAlign: "center", fontSize: "12px" }}
-                          />
-                          <input
-                            type="number"
-                            value={p.large ?? ''}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => handleIngredientChange(cat.key, id, 'large', e.target.value)}
-                            style={{ width: "100%", background: "#1d120a", border: "1px solid rgba(232, 176, 75, 0.3)", borderRadius: "6px", padding: "6px 4px", color: "#e8b04b", fontWeight: "bold", textAlign: "center", fontSize: "12px" }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-{/* نافذة معاينة إيصال الدفع */}
-        {selectedReceiptModal && (
-          <div 
-            onClick={() => setSelectedReceiptModal(null)}
+          <button
+            onClick={() => setActiveTab("messages")}
             style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.85)",
-              backdropFilter: "blur(6px)",
-              zIndex: 9999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px"
+              flexShrink: 0,
+              padding: "10px 20px",
+              borderRadius: "99px",
+              border: "1px solid " + (activeTab === "messages" ? "#ff7a2e" : "rgba(243,233,220,0.15)"),
+              background: activeTab === "messages" ? "#ff7a2e" : "transparent",
+              color: activeTab === "messages" ? "#140d08" : "#9a8b7a",
+              fontWeight: "800",
+              fontSize: "10px",
+              letterSpacing: "2px",
+              cursor: "pointer",
             }}
           >
-            <div 
-              onClick={(e) => e.stopPropagation()} 
-              style={{
-                background: "#140d08",
-                border: "1px solid #ff7a2e",
-                borderRadius: "20px",
-                padding: "20px",
-                maxWidth: "500px",
-                width: "100%",
-                textAlign: "center"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-                <b style={{ color: "#ffb347", fontSize: "14px", letterSpacing: "1px" }}>PAYMENT RECEIPT</b>
-                <button 
-                  onClick={() => setSelectedReceiptModal(null)}
-                  style={{ background: "none", border: "none", color: "#ff8b7a", fontSize: "18px", cursor: "pointer", fontWeight: "bold" }}
-                >
-                  ✕
-                </button>
-              </div>
-              <img 
-                src={selectedReceiptModal} 
-                alt="Receipt" 
-                style={{ width: "100%", maxHeight: "65vh", objectFit: "contain", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)" }} 
-              />
-              <a 
-                href={selectedReceiptModal} 
-                target="_blank" 
-                rel="noreferrer"
-                style={{ display: "inline-block", marginTop: "14px", color: "#e8b04b", fontSize: "11px", fontWeight: "bold", textDecoration: "none" }}
-              >
-                ↗ OPEN FULL IMAGE IN NEW TAB
-              </a>
-            </div>
-          </div>
+            MESSAGES ({messages.length}) ✉️
+          </button>
+        </div>
+
+        {/* Tab 0: Orders */}
+        {activeTab === "orders" && (
+          <OrdersTab
+            orders={orders}
+            onUpdateStatus={handleUpdateOrderStatus}
+            onSelectReceipt={(url) => setSelectedReceiptModal(url)}
+          />
         )}
+
+        {/* Tab 1: Products */}
+        {activeTab === "items" && (
+          <MenuTab
+            items={items}
+            categories={categories}
+            editingItem={editingItem}
+            formData={formData}
+            setFormData={setFormData}
+            imageFile={imageFile}
+            setImageFile={setImageFile}
+            submitting={submitting}
+            onSaveItem={handleSaveItem}
+            onDeleteItem={handleDeleteItem}
+            onEditItem={(it) => {
+              setEditingItem(it);
+              const parsedName = parseBilingual(it.name);
+              const ingList = Array.isArray(it.ingredients) ? it.ingredients : [];
+              const enList = [];
+              const arList = [];
+              ingList.forEach((ing) => {
+                const p = parseBilingual(ing);
+                if (p.en) enList.push(p.en);
+                if (p.ar) arList.push(p.ar);
+              });
+              setFormData({
+                name_en: parsedName.en,
+                name_ar: parsedName.ar,
+                item_id: it.item_id,
+                price: it.price,
+                is_simple: it.is_simple || false,
+                categories: it.categories || [],
+                ingredients_en: enList.join(", "),
+                ingredients_ar: arList.join(", "),
+                image_url: it.image_url || "",
+              });
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            onCancelEdit={resetItemForm}
+          />
+        )}
+
+        {/* Tab 2: Categories */}
+        {activeTab === "categories" && (
+          <CategoriesTab
+            categories={categories}
+            editingCat={editingCat}
+            newCat={newCat}
+            setNewCat={setNewCat}
+            onSaveCategory={handleSaveCategory}
+            onDeleteCategory={handleDeleteCategory}
+            onEditCategory={(c) => {
+              setEditingCat(c);
+              const parsedCat = parseBilingual(c.name);
+              setNewCat({
+                id: c.id,
+                name_en: parsedCat.en,
+                name_ar: parsedCat.ar,
+                sort_order: c.sort_order || 10,
+              });
+            }}
+            onCancelEdit={resetCatForm}
+          />
+        )}
+
+        {/* Tab 3: Ingredients Pricing Matrix */}
+        {activeTab === "ingredients" && (
+          <IngredientsTab
+            ingredientPrices={ingredientPrices}
+            onIngredientChange={handleIngredientChange}
+            onSaveIngredients={handleSaveIngredients}
+            savingIngredients={savingIngredients}
+            ingMsg={ingMsg}
+          />
+        )}
+
+        {/* Tab 4: Customer Messages & Inquiries */}
+        {activeTab === "messages" && (
+          <MessagesTab
+            messages={messages}
+            onDeleteMessage={handleDeleteMessage}
+          />
+        )}
+
+        {/* Payment Receipt Modal */}
+        <ReceiptModal
+          receiptUrl={selectedReceiptModal}
+          onClose={() => setSelectedReceiptModal(null)}
+        />
       </main>
     </div>
   );

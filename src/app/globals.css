@@ -12,6 +12,27 @@ html { overflow-x: clip; }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); overflow-x: clip; -webkit-font-smoothing: antialiased; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+.skip-link {
+  position: fixed;
+  top: -999px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ember);
+  color: #140d08;
+  padding: 12px 24px;
+  font-weight: 800;
+  border-radius: 99px;
+  z-index: 999999;
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 1px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 20px;
+}
+
 /* إلغاء أي overflow hidden عن سكشن البيتزا وحاوية التثبيت */
 #builder, .pin-spacer {
   overflow: visible !important;
@@ -162,11 +183,13 @@ em{font-style:normal;color:var(--ember)}
 
 #builder {
   position: relative;
-  height: 100vh;
-  height: var(--apph, 100svh);
-  padding: 84px 4vw 24px;
+  min-height: 100vh;
+  min-height: var(--apph, 100svh);
+  padding: 84px 4vw 30px;
   display: flex;
   flex-direction: column;
+  overflow: clip;
+  z-index: 5;
   background: radial-gradient(circle at 50% 40%, rgba(45, 26, 14, 0.45) 0%, rgba(10, 7, 5, 0.95) 75%),
               linear-gradient(rgba(10,7,5,.88),rgba(10,7,5,.95));
 }
@@ -179,8 +202,7 @@ em{font-style:normal;color:var(--ember)}
     background: rgba(18, 11, 7, 0.95) !important;
   }
 }
-.b-head h2{font-size:clamp(38px,5.6vw,84px)}
-.b-grid{display:grid;grid-template-columns:170px 1fr 430px;gap:2.5vw;align-items:center;margin-top:20px;flex:1;min-height:0}
+.b-head h2{font-size:clamp(32px,4.8vw,64px);letter-spacing:3px;margin:0;}
 #rail{display:flex;flex-direction:column;gap:6px}
 #rail button{display:flex;gap:12px;align-items:center;padding:11px 14px;border-radius:12px;font-size:10px;font-weight:800;letter-spacing:.28em;color:var(--mut);border:1px solid transparent;text-align:left;transition:.3s}
 #rail button b{font-family:var(--disp);font-weight:400;font-size:13px;color:inherit}
@@ -204,7 +226,8 @@ em{font-style:normal;color:var(--ember)}
 }
 /* pizza stage */
 .pz{width:100%;height:100%;position:relative}
-.pz-scale,.pz-rot{position:absolute;inset:0}
+.pz-scale{position:absolute;inset:0}
+.pz-rot{position:absolute;inset:0;transform-origin:50% 50% !important;transition:none !important;will-change:transform}
 .ly{position:absolute;inset:0;pointer-events:none}
 .l-dough img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
 .l-sauce{inset:5%}
@@ -278,26 +301,79 @@ em{font-style:normal;color:var(--ember)}
 #menuTabs button{flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.3em;padding:11px 20px;border-radius:99px;border:1px solid var(--line);color:var(--mut);transition:.3s}
 #menuTabs button.on{background:var(--ember);border-color:var(--ember);color:#1a0c04}
 .menu-view{overflow:hidden;padding-left:6vw}
-#menuTrack{display:flex;gap:26px;width:max-content;padding:10px 6vw 30px 0}
-.mcard{width:min(430px,78vw);border:1px solid var(--line);border-radius:26px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.25));padding:26px;position:relative;overflow:hidden;transition:border-color .3s}
+#menuTrack{display:flex;gap:26px;width:max-content;padding:10px 6vw 30px 0;will-change:transform;transform:translateZ(0)}
+.mcard{width:min(420px,32vw);border:1px solid var(--line);border-radius:26px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.25));padding:22px 24px;position:relative;overflow:hidden;transition:border-color .3s;display:flex;flex-direction:column;will-change:transform;transform:translateZ(0)}
 .mcard:hover{border-color:rgba(255,122,46,.55)}
-.mimg{width:78%;aspect-ratio:1;border-radius:50%;overflow:hidden;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.6);margin:6px auto 22px}
+.mimg{width:min(200px, 18vh, 65%);aspect-ratio:1;border-radius:50%;overflow:hidden;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.6);margin:6px auto 16px;flex-shrink:0}
 .mimg img{width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1)}
 .mcard:hover .mimg img{transform:scale(1.09) rotate(4deg)}
 .mnum{font-family:var(--disp);font-size:110px;color:transparent;-webkit-text-stroke:1px rgba(255,179,71,.4);text-align:center;line-height:1;padding:40px 0}
 .mcat{font-size:9px;letter-spacing:.35em;color:var(--ember);font-weight:800}
-.mcard h3{font-size:30px;margin:8px 0 12px}
-.mings{list-style:none;display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px;min-height:26px}
-.mings li{font-size:10px;letter-spacing:.12em;border:1px solid var(--line);padding:5px 10px;border-radius:99px;color:var(--mut);opacity:0;transform:translateY(8px);transition:.4s}
-.mcard:hover .mings li{opacity:1;transform:none}
-.mings li:nth-child(2){transition-delay:.06s}.mings li:nth-child(3){transition-delay:.12s}.mings li:nth-child(4){transition-delay:.18s}.mings li:nth-child(5){transition-delay:.24s}.mings li:nth-child(6){transition-delay:.3s}
-.mrow{display:flex;align-items:center;justify-content:space-between}
-.mprice{font-family:var(--disp);font-size:26px;color:var(--gold)}
-.mbtn{font-size:10px;font-weight:800;letter-spacing:.25em;padding:12px 20px;border-radius:99px;background:var(--ember);color:#1a0c04;opacity:0;transform:translateY(8px);transition:.35s}
-.mcard:hover .mbtn{opacity:1;transform:none}
-.mbtn:hover{background:var(--ember2)}
+.mcard h3{font-size:clamp(20px, 2.2vw, 28px);margin:6px 0 10px}
+.mings{list-style:none;display:flex;flex-wrap:wrap;align-items:flex-start;align-content:flex-start;gap:6px;margin-bottom:16px;min-height:28px}
+.mings li{display:inline-flex;align-items:center;justify-content:center;height:26px;box-sizing:border-box;font-size:10px;line-height:1;letter-spacing:.06em;border:1px solid var(--line);background:rgba(255,255,255,.03);padding:0 11px;border-radius:99px;color:var(--mut);white-space:nowrap;opacity:1 !important;transform:none !important;transition:border-color .25s, color .25s, background .25s}
+.mcard:hover .mings li{border-color:rgba(255,122,46,.45);color:var(--ink);background:rgba(255,122,46,.06)}
+.mrow{display:flex;align-items:center;justify-content:space-between;margin-top:auto !important;padding-top:10px}
+.mprice{font-family:var(--disp);font-size:24px;color:var(--gold)}
+.mbtn{font-size:10px;font-weight:800;letter-spacing:.25em;padding:12px 20px;border-radius:99px;background:var(--ember);color:#1a0c04;opacity:1 !important;transform:none !important;transition:background .25s, transform .2s}
+.mbtn:hover{background:var(--ember2);transform:scale(1.04)}
 .menu-bar{height:2px;background:var(--line);margin:0 6vw;border-radius:2px;overflow:hidden}
 #menuBar{display:block;height:100%;width:0;background:var(--ember)}
+
+/* تطويل وتحسين تناسق كروت المنيو على شاشات الكمبيوتر واللابتوب */
+@media (min-width: 981px) {
+  .menu-pin {
+    padding: clamp(45px, 6.5vh, 75px) 0 20px;
+  }
+  #menuTabs {
+    padding: 16px 6vw 24px;
+  }
+  .mcard {
+    width: min(390px, 28vw);
+    min-height: clamp(520px, 58vh, 590px);
+    padding: 30px 28px 24px;
+    border-radius: 30px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .mimg {
+    width: min(220px, 21vh, 68%);
+    margin: 8px auto 22px;
+  }
+  .mcard h3 {
+    font-size: clamp(23px, 2.3vw, 30px);
+    margin: 8px 0 14px;
+  }
+  .mings {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    align-content: flex-start;
+    gap: 8px;
+    margin-bottom: 24px;
+    min-height: 60px;
+  }
+  .mings li {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    font-size: 11px;
+    line-height: 1;
+    padding: 0 13px;
+    border-radius: 99px;
+  }
+  .mrow {
+    padding-top: 18px;
+    border-top: 1px solid rgba(243, 233, 220, 0.08);
+  }
+  .mprice {
+    font-size: 26px;
+  }
+  .mbtn {
+    font-size: 11px;
+    padding: 13px 24px;
+  }
+}
 /* ---------- CONTACT ---------- */
 #contact{padding:120px 6vw;background:radial-gradient(900px 500px at 20% 20%,rgba(255,110,40,.08),transparent 60%),var(--bg2)}
 .c-grid{display:grid;grid-template-columns:1fr 1fr;gap:6vw;position:relative}
@@ -326,20 +402,73 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
 
 .cd-head{display:flex;justify-content:space-between;align-items:center;padding:24px 26px;border-bottom:1px solid var(--line)}
 .cd-head h3{font-size:22px;letter-spacing:.08em}
-#cartClose{font-size:16px;color:var(--mut)}
-#cartItems{flex:1;overflow-y:auto;padding:20px 26px;display:flex;flex-direction:column;gap:18px}
-.ci{display:flex;gap:16px;border:1px solid var(--line);border-radius:18px;padding:14px;background:rgba(255,255,255,.02)}
-.ci-pz{width:92px;height:92px;flex:0 0 auto}
-.ci-img{width:92px;height:92px;border-radius:50%;object-fit:cover}
+#cartViewStep {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+#checkoutStep {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 20px 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#orderTrackerStep {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  padding: 24px;
+  text-align: center;
+  overflow-y: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* حالة الـ Checkout: إخفاء السلة وأزرارها بالكامل وجعل شاشة الدفع تملأ كامل طول الكارت */
+#cartDrawer.in-checkout #cartViewStep,
+#cartDrawer.in-tracker #cartViewStep {
+  display: none !important;
+}
+
+#cartDrawer.in-checkout #checkoutStep {
+  display: flex !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+#cartDrawer.in-tracker #checkoutStep {
+  display: none !important;
+}
+
+#cartDrawer.in-tracker #orderTrackerStep {
+  display: flex !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+#cartItems{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:16px;width:100%;box-sizing:border-box}
+.ci{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:18px;padding:14px;background:rgba(255,255,255,.02);width:100%;box-sizing:border-box}
+.ci-pz{width:84px;height:84px;flex:0 0 auto}
+.ci-img{width:84px;height:84px;border-radius:50%;object-fit:cover}
 .ci-body{flex:1;min-width:0}
 .ci-name{font-family:var(--disp);font-size:16px;letter-spacing:.05em}
 .ci-meta{color:var(--mut);font-size:10px;line-height:1.7;letter-spacing:.08em;margin:6px 0}
-.ci-foot{display:flex;justify-content:space-between;align-items:center}
+.ci-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .ci-foot .stepper button{width:26px;height:26px;font-size:13px}
-.ci-price{color:var(--gold);font-weight:800;font-size:13px;letter-spacing:.08em}
+.ci-price{color:var(--gold);font-weight:800;font-size:13px;letter-spacing:.08em;white-space:nowrap}
 .ci-rm{color:var(--mut);font-size:12px;align-self:flex-start}
 .ci-rm:hover{color:var(--red)}
-.cd-foot{padding:22px 26px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.cd-foot{padding:20px 22px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px;width:100%;box-sizing:border-box}
 .cd-total{display:flex;justify-content:space-between;align-items:center}
 .cd-total span{font-size:11px;letter-spacing:.35em;color:var(--mut)}
 .cd-total b{font-family:var(--disp);font-size:28px;color:var(--ember2)}
@@ -375,7 +504,16 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
 .rv-btns{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;justify-content:center}
 #toast{position:fixed;bottom:26px;left:50%;transform:translate(-50%,80px);background:#1c120b;border:1px solid rgba(255,122,46,.4);color:var(--ink);padding:14px 26px;border-radius:99px;font-size:11px;font-weight:800;letter-spacing:.25em;z-index:300;transition:transform .5s cubic-bezier(.2,.8,.2,1);box-shadow:0 20px 50px rgba(0,0,0,.6)}
 #toast.show{transform:translate(-50%,0)}
-[data-rev]{opacity:0;transform:translateY(40px)}
+[data-rev] {
+  opacity: 0;
+  transform: translateY(24px);
+  will-change: opacity, transform;
+}
+.no-js [data-rev],
+[data-rev].rev-in {
+  opacity: 1;
+  transform: none;
+}
 /* ---------- MOBILE ---------- */
 
 /* ---------- DRAWER (mobile) ---------- */
@@ -554,7 +692,74 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
 .lv-perf::before,.lv-perf::after{content:"";position:absolute;top:-4px;width:2px;height:8px;background:rgba(96,62,26,.5)}
 .lv-perf::before{left:-8px}.lv-perf::after{right:-8px}
 
-@media(min-width:981px){#mPrice{display:none!important}}
+/* ---------- DESKTOP & TABLET LANDSCAPE: CART & PRICE IN BUILDER ---------- */
+@media (min-width: 981px), (min-width: 650px) and (orientation: landscape) and (min-height: 581px) {
+  #mPrice {
+    display: inline-flex !important;
+    position: absolute !important;
+    bottom: 32px !important;
+    left: 40px !important;
+    align-items: center !important;
+    z-index: 60 !important;
+    background: rgba(16, 10, 7, 0.94) !important;
+    border: none !important; /* شيل البوردر اللي على السعر */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 122, 46, 0.25) !important;
+    border-radius: 999px !important;
+    padding: 12px 28px !important;
+    transition: transform 0.25s ease !important;
+  }
+  #mPriceVal {
+    font-family: var(--disp) !important;
+    font-size: 28px !important;
+    color: #fff !important;
+    letter-spacing: 1px !important;
+  }
+  /* زر البيك في الركن السفلي اليمين */
+  #wheelBake {
+    display: inline-flex !important;
+    position: absolute !important;
+    bottom: 28px !important;
+    right: 40px !important;
+    left: auto !important;
+    width: 164px !important;
+    height: 48px !important;
+    padding: 0 20px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: 2px !important;
+    z-index: 65 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 122, 46, 0.35) !important;
+  }
+  /* زر الكارت مرفوع فوق زر البيك ومتوسطن معاه تماماً */
+  .mob-floating-cart {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    bottom: 90px !important; /* مرفوع فوق زر البيك مسافة مريحة */
+    right: 94px !important; /* 40px + (164 - 56) / 2 = 94px (متوسطن بالملّي) */
+    left: auto !important;
+    top: auto !important;
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    background: rgba(16, 10, 7, 0.94) !important;
+    border: 1.5px solid var(--ember) !important;
+    color: var(--ember2) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 122, 46, 0.35) !important;
+    z-index: 65 !important;
+    cursor: pointer !important;
+    transition: all 0.25s ease !important;
+  }
+  .mob-floating-cart:hover {
+    transform: scale(1.08) !important;
+    border-color: var(--gold) !important;
+    color: var(--gold) !important;
+  }
+}
 
 
 /* inside face of the lid (visible when open) */
@@ -589,8 +794,21 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
 
 
 
-/* ---------- INGREDIENT WHEEL ---------- */
-#ingWheel{display:none;position:absolute;z-index:9;pointer-events:none;aspect-ratio:1}
+/* ---------- INGREDIENT WHEEL & SMOOTH RESPONSIVE TRANSITIONS ---------- */
+#stageHost {
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.4s cubic-bezier(0.16, 1, 0.3, 1), left 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#ingWheel {
+  display: block;
+  position: absolute;
+  z-index: 9;
+  pointer-events: none;
+  aspect-ratio: 1;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1), left 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#wheelBake, .mob-floating-cart, #mPrice {
+  transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1), left 0.4s cubic-bezier(0.16, 1, 0.3, 1), right 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease, opacity 0.3s ease;
+}
 #wheelRot{position:absolute;inset:0}
 .wi{position:absolute;--ws:54px;width:var(--ws);height:var(--ws);margin:calc(var(--ws)/-2);pointer-events:auto;touch-action:pan-y;cursor:pointer}
 /* ---------- WHEEL v3: أيقونات كود، من غير خطوط ---------- */
@@ -598,7 +816,7 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
 .wi-in{border:1px solid rgba(243,233,220,.08);background:rgba(16,10,7,.72);box-shadow:0 8px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);transition:box-shadow .25s,border-color .25s}
 .wi.on .wi-in{border-color:var(--gc,#e8b04b);box-shadow:0 0 0 2px var(--gc,#e8b04b),0 0 26px var(--gc,#e8b04b)}
 .wg-label{position:absolute;font-size:9px;font-weight:800;letter-spacing:.3em;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.9);white-space:nowrap}
-#wheelBake{display:none;position:absolute;left:4vw;bottom:16px;z-index:60;padding:10px 18px;font-size:9px;letter-spacing:.2em;max-width:44vw;justify-content:center}
+#wheelBake{display:inline-flex;position:absolute;left:4vw;bottom:16px;z-index:60;padding:10px 18px;font-size:9px;letter-spacing:.2em;max-width:44vw;justify-content:center}
 @media(max-width:980px){
   #ingWheel{display:block}
   #wheelBake{box-shadow:none}
@@ -679,13 +897,20 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
 body.mm-open #burgerBtn i:nth-child(1){transform:translateY(7px) rotate(45deg)}
 body.mm-open #burgerBtn i:nth-child(2){opacity:0}
 body.mm-open #burgerBtn i:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-#mMenu{position:fixed;top:0;right:0;bottom:0;width:min(78vw,320px);background:#120b07;border-left:1px solid var(--line);z-index:150;transform:translateX(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding:96px 26px 30px}
+#mMenu{position:fixed;top:0;right:0;bottom:0;width:min(85vw,340px);background:#120b07;border-left:1px solid var(--line);z-index:150;transform:translateX(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding:30px 24px}
 body.mm-open #mMenu{transform:none}
 #mMenuOverlay{position:fixed;inset:0;background:rgba(5,3,2,.55);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.4s;z-index:145}
 body.mm-open #mMenuOverlay{opacity:1;pointer-events:auto}
-#mMenu button{text-align:left;font-family:var(--disp);font-size:26px;letter-spacing:.06em;color:var(--ink);padding:14px 0;border-bottom:1px solid var(--line);transition:color .25s}
-#mMenu button:hover{color:var(--ember2)}
-#mMenu #mmSaved{color:var(--ember2);font-size:19px;display:flex;justify-content:space-between;align-items:center;border-bottom:none;margin-top:6px}
+.m-menu-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.m-menu-head .logo{font-family:var(--disp);font-size:26px;color:var(--ink)}
+.m-menu-head .logo span{color:var(--ember)}
+#mMenuClose{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--ink);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.m-menu-links{display:flex;flex-direction:column;gap:6px;width:100%}
+.m-menu-links button{display:flex;width:100%;align-items:center;justify-content:flex-start;text-align:left;font-family:var(--disp);font-size:21px;letter-spacing:.06em;color:var(--ink);padding:14px 0;border-bottom:1px solid var(--line);background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:color .25s,transform .2s}
+.m-menu-links button:hover{color:var(--ember2);transform:translateX(4px)}
+body.lang-ar .m-menu-links button{text-align:right;justify-content:flex-end}
+body.lang-ar .m-menu-links button:hover{transform:translateX(-4px)}
+#mMenu #mmSaved{color:var(--ember2);font-size:18px;display:flex;justify-content:space-between;align-items:center;border-bottom:none;margin-top:10px}
 #mmSavedCount{font-family:var(--body);font-size:11px;font-weight:800;background:var(--ember);color:#1a0c04;border-radius:99px;padding:3px 9px}
 @media (max-width: 980px), (max-width: 1100px) and (orientation: portrait) {
   .nav-links { display: none !important; }
@@ -720,40 +945,63 @@ body.mm-open #burgerBtn{opacity:0;pointer-events:none}
 .pz.cooked .l-dough::before{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:3;background:radial-gradient(circle at 50% 50%,rgba(0,0,0,0) 58%,rgba(255,176,64,.26) 78%,rgba(255,140,40,.12) 90%,rgba(0,0,0,0) 97%);mix-blend-mode:screen}
 
 @media(max-width:980px){
-  .menu-pin{padding:80px 0 26px}
+  .menu-pin{padding:70px 0 26px; height: auto !important; min-height: unset !important; overflow: visible !important}
   .m-head{padding:0 5vw}
   .m-head h2{font-size:clamp(26px,7.4vw,44px)}
-  #menuTabs{padding:16px 5vw;gap:8px}
+  #menuTabs{padding:14px 5vw;gap:8px}
   #menuTabs button{padding:9px 16px;font-size:9px}
-  .menu-view{padding-left:5vw}
-  #menuTrack{gap:16px;padding:8px 5vw 22px 0}
- /* جعل الكروت تطول بمرونة حسب طول الشاشة مع تثبيت الأزرار بالأسفل */
+  .menu-view{
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x proximity !important;
+    scroll-behavior: smooth !important;
+    overscroll-behavior-x: contain;
+    padding: 0 5vw 16px !important;
+    touch-action: pan-x pan-y !important;
+    scrollbar-width: none;
+  }
+  .menu-view::-webkit-scrollbar { display: none; }
+  #menuTrack{
+    display: flex !important;
+    gap: 16px !important;
+    padding: 8px 0 20px 0 !important;
+    width: max-content !important;
+    touch-action: pan-x pan-y !important;
+    will-change: transform;
+    transform: translateZ(0);
+  }
   .mcard {
-    width: min(340px, 82vw);
-    height: clamp(400px, 58svh, 600px); /* يطول تلقائياً كل ما الشاشة تطول */
-    padding: clamp(16px, 2.4svh, 24px);
+    scroll-snap-align: start;
+    flex: 0 0 min(310px, 80vw) !important;
+    width: min(310px, 80vw) !important;
+    height: auto !important;
+    min-height: 480px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   .mimg {
-    width: clamp(130px, 22svh, 210px); /* حجم البيتزا يكبر بنعومة مع طول الشاشة */
+    width: clamp(140px, 20svh, 190px);
     aspect-ratio: 1;
-    margin: 4px auto clamp(10px, 2svh, 18px);
+    margin: 4px auto 14px;
     flex-shrink: 0;
   }
 
   .mrow {
-    margin-top: auto !important; /* تثبيت السعر والزر في قاع الكارت دائماً */
+    margin-top: auto !important;
     padding-top: 10px;
   }
   .mnum{font-size:70px;padding:24px 0}
   .mcard h3{font-size:22px;margin:6px 0 8px}
   .mings{min-height:22px;margin-bottom:12px;gap:5px}
-  .mings li{opacity:1;transform:none;font-size:9px;padding:4px 8px}
+  .mings li{opacity:1 !important;transform:none !important;font-size:9px;padding:4px 8px}
   
   .mprice{font-size:20px}
-  .mbtn{opacity:1;transform:none;padding:10px 16px;font-size:9px}
+  .mbtn{opacity:1 !important;transform:none !important;padding:10px 16px;font-size:9px}
   .menu-bar{margin:0 5vw}
 }
 
@@ -785,6 +1033,16 @@ body.mm-open #burgerBtn{opacity:0;pointer-events:none}
     padding: 10px 18px !important;
     font-size: 9px !important;
   }
+}
+
+.wb-oven-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  margin-right: 8px;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* ---------- LENIS SCROLL FIX ---------- */
@@ -1243,45 +1501,57 @@ html.lenis, html.lenis body {
 }
 
 
-/* ---------- FLOATING CART BUTTON (MOBILE) ---------- */
+/* ---------- FLOATING CART BUTTON ---------- */
 .mob-floating-cart {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #1a0f08;
+  border: 1.5px solid var(--ember);
+  color: var(--ember2);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(255,122,46,0.3);
+  z-index: 70;
+  cursor: pointer;
+  transition: all 0.25s ease;
 }
 
-@media (max-width: 980px) {
+/* في حالة الموبايل بالطول: أيقونة الكارت فوق السعر */
+@media (max-width: 649px) and (orientation: portrait) {
   .mob-floating-cart {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    bottom: calc(16px + env(safe-area-inset-bottom));
-    right: 16px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #1a0f08;
-    border: 1.5px solid var(--ember);
-    color: var(--ember2);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(255,122,46,0.3);
-    z-index: 70;
-    cursor: pointer;
+    display: flex !important;
+    position: absolute !important;
+    left: 16px !important;
+    right: auto !important;
+    bottom: calc(120px + env(safe-area-inset-bottom)) !important;
+    width: 48px !important;
+    height: 48px !important;
   }
-  .mob-floating-cart:active {
-    transform: scale(0.92);
+  #mPrice {
+    bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+    left: 16px !important;
   }
-  .mfc-badge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    background: var(--ember);
-    color: #1a0c04;
-    font-size: 10px;
-    font-weight: 900;
-    border-radius: 99px;
-    padding: 2px 6px;
-    min-width: 18px;
-    text-align: center;
+  #wheelBake {
+    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+    left: 16px !important;
   }
+}
+
+.mob-floating-cart:active {
+  transform: scale(0.92);
+}
+.mfc-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--ember);
+  color: #1a0c04;
+  font-size: 10px;
+  font-weight: 900;
+  border-radius: 99px;
+  padding: 2px 6px;
+  min-width: 18px;
+  text-align: center;
 }
 
 /* ---------- MODERN INPUTS & KILL WHITE AUTOFILL ---------- */
@@ -1383,7 +1653,7 @@ textarea:-webkit-autofill:active {
 }
 
 
-@media (max-width: 980px) and (orientation: landscape) and (max-height: 520px) {
+@media (max-width: 980px) and (orientation: landscape) and (max-height: 580px) {
   #builder {
     padding: 10px 4vw !important;
     overflow: hidden !important;
@@ -1415,92 +1685,77 @@ textarea:-webkit-autofill:active {
     z-index: 2;
   }
 
-  #mPrice {
-    bottom: 12px !important;
-    left: 16px !important;
-    display: flex !important;
-  }
+  /* زر البيك أيقونة الفرن وتكون مدورة ومرفوعة لفوق على اليمين */
   #wheelBake {
-    bottom: 12px !important;
-    right: 16px !important;
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
     left: auto !important;
+    bottom: auto !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #1a0f08 !important;
+    border: 1.5px solid var(--ember) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 122, 46, 0.4) !important;
+    z-index: 75 !important;
+    cursor: pointer !important;
+  }
+  #wheelBake .wb-oven-icon {
+    display: block !important;
+    width: 30px !important;
+    height: 30px !important;
+    margin: 0 !important;
+  }
+  #wheelBake span {
+    display: none !important;
+  }
+
+  /* رفع الكارت كمان فوق على اليمين جنب زر البيك */
+  .mob-floating-cart {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    top: 14px !important;
+    right: 72px !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background: #1a0f08 !important;
+    border: 1.5px solid var(--ember) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 122, 46, 0.3) !important;
+    z-index: 75 !important;
+    cursor: pointer !important;
+  }
+
+  /* السعر تحتهم على اليمين متكبر سيكة وبدون بوردر */
+  #mPrice {
     display: inline-flex !important;
+    position: absolute !important;
+    top: 72px !important;
+    right: 14px !important;
+    left: auto !important;
+    bottom: auto !important;
+    padding: 7px 16px !important;
+    background: rgba(16, 10, 7, 0.94) !important;
+    border: none !important;
+    border-radius: 999px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 122, 46, 0.35) !important;
+    z-index: 75 !important;
+  }
+  #mPriceVal {
+    font-size: 19px !important;
+    font-weight: 800 !important;
+    font-family: var(--disp) !important;
   }
 }
-
-/* ================= 2. التابلت واللابتوب والكمبيوتر بالعرض ================= */
-@media (min-width: 650px) and (orientation: landscape) and (min-height: 521px) {
-  #rail, .panel, .desktop-size-bar {
-    display: none !important;
-  }
-  #ingWheel {
-    display: block;
-  }
-
-  #builder {
-    padding: 20px 4vw !important;
-    overflow: hidden !important;
-  }
-
-  /* كسر تقسيم الأعمدة الثلاثي وجعل الحاوية في قلب الشاشة 100% */
-  .b-grid {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
-    margin: 0 !important;
-  }
-
-  .stage-wrap {
-    width: 100% !important;
-    height: 85vh !important;
-    margin: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    position: relative !important;
-    overflow: visible !important;
-  }
-
-/* تنزيل سنتر البيتزا لتحت بنسبة 56% لإعطاء مساحة مريحة في الأعلى */
-  #stageHost {
-    position: absolute !important;
-    left: 50% !important;
-    top: 56% !important;
-    bottom: auto !important;
-    width: min(72vh, 65vw) !important;
-    transform: translate(-50%, -50%) !important;
-    z-index: 2;
-  }
-
-  /* سحب الإضاءة البرتقالية وتثبيتها في ضهر البيتزا مباشرة في الموضع الجديد */
-  .stage-light {
-    display: block !important;
-    position: absolute !important;
-    left: 50% !important;
-    top: 56% !important;
-    transform: translate(-50%, -50%) !important;
-    width: min(76vh, 70vw) !important;
-    z-index: 1;
-    pointer-events: none !important;
-  }
-
-.b-head {
-    display: none !important;
-  }
-
-  #mPrice {
-    display: flex !important;
-    bottom: 16px !important;
-    left: 24px !important;
-  }
-  #wheelBake {
-    display: inline-flex !important;
-    bottom: 16px !important;
-    right: 24px !important;
-    left: auto !important;
-  }
-
 
 /* النافبار ظاهر عادي في أول الصفحة بس غير ثابت على الموبايل والتابلت */
 @media (max-width: 1024px), (max-width: 1400px) and (pointer: coarse) {
@@ -1516,11 +1771,9 @@ textarea:-webkit-autofill:active {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
-
-
-}}
+}
 /* ================= 2. التابلت واللابتوب بالعرض ================= */
-@media (min-width: 650px) and (orientation: landscape) and (min-height: 521px) {
+@media (min-width: 650px) and (orientation: landscape) and (min-height: 581px) {
   #rail, .panel, .desktop-size-bar {
     display: none !important;
   }
@@ -1558,31 +1811,30 @@ textarea:-webkit-autofill:active {
     z-index: 2;
   }
   .b-head {
+    display: block !important;
     position: absolute !important;
-    top: 8px !important;
-    left: 0;
-    right: 0;
+    top: 14px !important;
+    left: 0 !important;
+    right: 0 !important;
     text-align: center !important;
+    z-index: 10 !important;
+    pointer-events: none !important;
+    margin: 0 !important;
   }
-  #mPrice {
-    display: flex !important;
-    bottom: 16px !important;
-    left: 24px !important;
+  .b-head h2 {
+    font-size: clamp(28px, 4.2vw, 54px) !important;
+    letter-spacing: 2.5px !important;
+    margin: 0 !important;
   }
-  #wheelBake {
-    display: inline-flex !important;
-    bottom: 16px !important;
-    right: 24px !important;
-    left: auto !important;
-  }
+
   #builder.picking-size #stageHost {
     left: 50% !important;
-    top: 44% !important;
+    top: 54% !important;
     transform: translate(-50%, -50%) scale(0.92) !important;
   }
   #builder.picking-size #mobileSizeSelector {
     top: auto !important;
-    bottom: 28px !important;
+    bottom: 14px !important;
     left: 0 !important;
     right: 0 !important;
     transform: none !important;
@@ -1634,15 +1886,55 @@ textarea:-webkit-autofill:active {
   .wg-label {
     font-size: 11px !important;
   }
-  #mPrice {
-    display: flex !important;
-    bottom: 24px !important;
-    left: 24px !important;
-  }
+  /* كبر بيك بيتزا */
   #wheelBake {
     display: inline-flex !important;
-    bottom: 84px !important;
-    left: 24px !important;
+    bottom: 24px !important;
+    left: 28px !important;
+    right: auto !important;
+    width: 170px !important;
+    height: 50px !important;
+    padding: 0 20px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    letter-spacing: 2px !important;
+    border-radius: 999px !important;
+    z-index: 70 !important;
+  }
+  /* كبر السعر وبدون بوردر */
+  #mPrice {
+    display: inline-flex !important;
+    bottom: 88px !important;
+    left: 28px !important;
+    right: auto !important;
+    padding: 12px 26px !important;
+    border: none !important; /* شيل البوردر اللي على السعر */
+    border-radius: 999px !important;
+    z-index: 70 !important;
+  }
+  #mPriceVal {
+    font-size: 24px !important;
+    font-family: var(--disp) !important;
+  }
+  /* أيقونة الكارت فوقيهم ومتوسطنة فوق زر البيك */
+  .mob-floating-cart {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    bottom: 154px !important;
+    left: 85px !important; /* 28px + (170 - 56) / 2 = 85px */
+    right: auto !important;
+    top: auto !important;
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    background: #1a0f08 !important;
+    border: 1.5px solid var(--ember) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(255,122,46,0.3) !important;
+    z-index: 70 !important;
   }
 
   /* تموضع البيتزا على اليمين بزاوية 15 درجة زي الـ iPad Mini تماماً */
@@ -1682,4 +1974,340 @@ textarea:-webkit-autofill:active {
     opacity: 0 !important;
     pointer-events: none !important;
   }
+}
+
+/* ================= SLEEK LANGUAGE SWITCHER PILL ================= */
+.lang-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 3px 6px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.lang-pill:hover {
+  border-color: rgba(255, 122, 46, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+}
+.lp-opt {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--mut);
+  padding: 3px 8px;
+  border-radius: 999px;
+  transition: all 0.25s ease;
+  line-height: 1.2;
+}
+.lp-opt.active {
+  color: #120702 !important;
+  background: linear-gradient(135deg, #ff944d, #ff7a2e) !important;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(255, 122, 46, 0.35);
+}
+.lp-sep {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 10px;
+  margin: 0 1px;
+}
+.m-lang-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+.m-lang-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mut);
+}
+
+/* ================= LUXURY MINIMALIST FOOTER ================= */
+.luxury-footer {
+  background: #080503;
+  border-top: 1px solid rgba(255, 122, 46, 0.15);
+  padding: 60px 5vw 30px;
+  color: var(--ink);
+  position: relative;
+  overflow: hidden;
+}
+.luxury-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 122, 46, 0.4), transparent);
+}
+.lf-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.lf-top {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1.2fr;
+  gap: 40px;
+}
+.lf-logo {
+  font-family: var(--disp);
+  font-size: 32px;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+.lf-logo span {
+  color: var(--ember);
+}
+.lf-motto {
+  color: var(--mut);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 18px;
+  max-width: 320px;
+}
+.lf-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lf-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--mut);
+}
+.lf-heading {
+  font-family: var(--disp);
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--ember2);
+  margin-bottom: 16px;
+}
+.lf-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lf-nav button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--mut);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: inherit;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.lf-nav button:hover {
+  color: var(--ink);
+  transform: translateX(3px);
+}
+.lf-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lf-label {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.lf-sublabel {
+  font-size: 12px;
+  color: var(--mut);
+}
+.lf-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.lf-soc-link {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--ink);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.lf-soc-link:hover {
+  border-color: var(--ember);
+  color: var(--ember2);
+}
+.lf-soc-link.wa {
+  border-color: rgba(37, 211, 102, 0.3);
+  color: #25d366;
+}
+.lf-phone a {
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: 0.05em;
+}
+.lf-payments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.lf-pay-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--mut);
+  margin-right: 6px;
+}
+.lf-pay-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 122, 46, 0.08);
+  border: 1px solid rgba(255, 122, 46, 0.2);
+  color: var(--ink);
+}
+.lf-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--mut);
+}
+@media (max-width: 980px) {
+  .lf-top {
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+  }
+}
+@media (max-width: 600px) {
+  .lf-top {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .lf-bottom {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+}
+
+/* ================= ARABIC CAIRO FONT (TEXT ONLY - NO RTL LAYOUT FLIP) ================= */
+body.lang-ar,
+body.lang-ar button,
+body.lang-ar input,
+body.lang-ar textarea,
+body.lang-ar select,
+body.lang-ar h1,
+body.lang-ar h2,
+body.lang-ar h3,
+body.lang-ar h4,
+body.lang-ar p,
+body.lang-ar span,
+body.lang-ar b,
+body.lang-ar a {
+  font-family: var(--font-cairo), 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  letter-spacing: normal !important;
+}
+
+/* إخفاء صورة البيتزا من الهيرو */
+.hero-pz-wrap,
+#heroPizza {
+  display: none !important;
+}
+
+/* ================= LUXURY LANGUAGE BUTTON (EN / عر) ================= */
+.nav-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 122, 46, 0.45);
+  border-radius: 999px;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.nav-lang-btn:hover {
+  background: rgba(255, 122, 46, 0.18);
+  border-color: var(--flame);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(255, 122, 46, 0.35);
+}
+
+.nav-lang-btn span {
+  color: var(--gold);
+  font-weight: 900;
+  font-size: 15px;
+}
+
+/* In Mobile Drawer */
+.m-lang-btn {
+  padding: 10px 24px;
+  font-size: 17px;
+  background: rgba(255, 122, 46, 0.1);
+  border-color: rgba(255, 122, 46, 0.55);
+}
+
+.m-lang-btn span {
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.m-lang-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 0 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.m-lang-label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--mut);
+  text-transform: uppercase;
 }
