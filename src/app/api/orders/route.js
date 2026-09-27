@@ -151,19 +151,19 @@ async function calculateOrderTotal(items) {
 export async function GET(request) {
   try {
     const ip = getClientIp(request);
-    const limit = 30; // 30 req/min
-    const limitResult = checkRateLimit(`get_orders_${ip}`, { limit, windowMs: 60 * 1000 });
-    if (!limitResult.allowed) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please wait a moment.' },
-        { status: 429, headers: getRateLimitHeaders(limitResult, limit) }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('id');
 
     if (orderId) {
+      const limit = 120; // 120 req/min for tracking single order status
+      const limitResult = checkRateLimit(`get_order_track_${ip}`, { limit, windowMs: 60 * 1000 });
+      if (!limitResult.allowed) {
+        return NextResponse.json(
+          { error: 'Too many requests. Please wait a moment.' },
+          { status: 429, headers: getRateLimitHeaders(limitResult, limit) }
+        );
+      }
+
       if (!isSafeOrderNumber(orderId)) {
         return NextResponse.json({ error: 'Invalid order number format' }, { status: 400 });
       }
@@ -178,21 +178,30 @@ export async function GET(request) {
           .eq('order_number', orderId.trim())
           .single();
         if (error) return NextResponse.json({ error: error.message }, { status: 404 });
-        return NextResponse.json(data);
+        return NextResponse.json(data, { headers: getRateLimitHeaders(limitResult, limit) });
       }
 
-      // If customer tracking, return ONLY safe tracking fields to prevent IDOR / PII leak
+      // If customer tracking, return safe tracking fields (including total & safe status)
       const { data, error } = await supabaseServer
         .from('orders')
-        .select('order_number, order_status, payment_status, items, created_at')
+        .select('order_number, order_status, payment_status, total, items, created_at')
         .eq('order_number', orderId.trim())
         .single();
 
       if (error) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-      return NextResponse.json(data);
+      return NextResponse.json(data, { headers: getRateLimitHeaders(limitResult, limit) });
     }
 
     // Require admin session to list all orders
+    const limit = 60; // 60 req/min for admin dashboard
+    const limitResult = checkRateLimit(`get_orders_admin_${ip}`, { limit, windowMs: 60 * 1000 });
+    if (!limitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a moment.' },
+        { status: 429, headers: getRateLimitHeaders(limitResult, limit) }
+      );
+    }
+
     const authResult = await verifyAdmin(request);
     if (!authResult.authorized) {
       return NextResponse.json({ error: authResult.error || 'Unauthorized to view all orders' }, { status: 401 });
@@ -291,6 +300,41 @@ if (!uploadError) {
           .from('receipts')
           .createSignedUrl(path, 60 * 60 * 24 * 60); // رابط موقع مشفر لمدة 60 يوم
         receipt_url = signedData?.signedUrl || null;
+      }
+    }
+
+    // Server-side Deduplication Guard:
+    // If an order from the same customer phone with the exact same total was created in the last 15 seconds,
+    // return that existing order instead of generating a duplicate order in the database.
+    if (customer_phone && finalTotal > 0) {
+      const fifteenSecondsAgo = new Date(Date.now() - 15000).toISOString();
+      const { data: recentOrders } = await supabaseServer
+        .from('orders')
+        .select('*')
+        .eq('customer_phone', customer_phone)
+        .eq('total', finalTotal)
+        .gte('created_at', fifteenSecondsAgo)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (recentOrders && recentOrders.length > 0) {
+        const existingOrder = recentOrders[0];
+        console.warn(`[API /orders] Deduplication triggered: Reusing recent order #${existingOrder.order_number} for ${customer_phone}`);
+        const sitePhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '201001234567';
+        const waMsg = `🍕 *طلب جديد من FORNO* 🍕\n` +
+          `رقم الطلب: #${existingOrder.order_number}\n` +
+          `الاسم: ${existingOrder.customer_name}\n` +
+          `الهاتف: ${existingOrder.customer_phone}\n` +
+          `العنوان: ${existingOrder.customer_address}\n` +
+          `الإجمالي: ${existingOrder.total} ج.م${discount_amount > 0 ? ` (بعد خصم ${discount_amount} ج.م بكود ${coupon_code})` : ''}\n` +
+          `طريقة الدفع: ${existingOrder.payment_method === 'visa' ? 'فيزا / إنستاباي' : 'كاش'}\n` +
+          `أرجو تأكيد تحضير طلبي فوراً وشكراً!`;
+        const whatsapp_url = `https://wa.me/${sitePhone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(waMsg)}`;
+
+        return NextResponse.json(
+          { success: true, order: existingOrder, whatsapp_url, discount_amount },
+          { headers: getRateLimitHeaders(limitResult, limit) }
+        );
       }
     }
 

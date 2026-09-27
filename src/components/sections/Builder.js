@@ -1,6 +1,6 @@
 // src/components/sections/Builder.js
 export const Builder = () => (
-  <section id="builder">
+  <section id="builder" className="picking-size">
     <div className="b-head" data-rev="true">
       <h2 id="builderHeading">CREATE YOUR OWN <em>PIZZA</em></h2>
     </div>
@@ -13,15 +13,15 @@ export const Builder = () => (
           <div className="ms-circles" role="group" aria-label="Select Pizza Size">
             <button type="button" className="ms-circle-btn" data-size="small" aria-label="Small Pizza (25cm)" aria-pressed="false">
               <b>S</b>
-              <span className="ms-btn-hint">25cm</span>
+        
             </button>
             <button type="button" className="ms-circle-btn active" data-size="med" aria-label="Medium Pizza (30cm)" aria-pressed="true">
               <b>M</b>
-              <span className="ms-btn-hint">30cm</span>
+    
             </button>
             <button type="button" className="ms-circle-btn" data-size="large" aria-label="Large Pizza (35cm)" aria-pressed="false">
               <b>L</b>
-              <span className="ms-btn-hint">35cm</span>
+    
             </button>
           </div>
         </div>

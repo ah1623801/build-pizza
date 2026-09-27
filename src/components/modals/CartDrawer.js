@@ -139,23 +139,80 @@ export const CartDrawer = () => (
       </div>
 
       {/* 3. شاشة حالة الطلب المباشرة للعميل */}
-      <div id="orderTrackerStep" style={{ display: 'none', flex: 1, flexDirection: 'column', padding: '24px', textAlign: 'center' }}>
-        <div style={{ fontSize: '42px', marginBottom: '10px' }}>🍕</div>
-        <h4 id="trackOrderNo" style={{ fontFamily: 'var(--disp)', fontSize: '24px', color: 'var(--ember2)', marginBottom: '6px' }}>ORDER #</h4>
-        <p id="trackOrderRecvMsg" style={{ fontSize: '11px', color: 'var(--mut)', marginBottom: '20px' }}>THANK YOU! YOUR WOOD-FIRED ORDER IS RECEIVED.</p>
-
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line)', borderRadius: '16px', padding: '16px', marginBottom: '20px', textAlign: 'left' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span id="trackStatusLabel" style={{ fontSize: '10px', color: 'var(--mut)', letterSpacing: '1px' }}>STATUS:</span>
-            <span id="trackStatusBadge" style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '6px', background: 'rgba(255,122,46,0.15)', color: 'var(--ember2)', fontWeight: 'bold' }}>PENDING</span>
+      <div id="orderTrackerStep" style={{ display: 'none', flex: 1, flexDirection: 'column', padding: '24px 20px', textAlign: 'center', position: 'relative' }}>
+        
+        {/* Active Tracking Content Container */}
+        <div id="trackerActiveContent" className="tracker-active-content">
+          <div className="tracker-top-badge">
+            <span className="live-dot"></span>
+            <span>LIVE ORDER TRACKING</span>
           </div>
-          <p id="trackDesc" style={{ fontSize: '12px', color: 'var(--ink)', lineHeight: '1.5', margin: 0 }}>Waiting for kitchen confirmation...</p>
+
+          <h4 id="trackOrderNo" className="tracker-order-num">ORDER #</h4>
+          <p id="trackOrderRecvMsg" className="tracker-order-sub">YOUR WOOD-FIRED ORDER IS BEING PROCESSED</p>
+
+          {/* Stepper with animated progress line */}
+          <div className="order-stepper-wrap">
+            <div className="stepper-line-bg">
+              <div id="stepperLineFill" className="stepper-line-fill" style={{ width: '0%' }}></div>
+            </div>
+
+            <div className="stepper-nodes">
+              {/* Step 1: Received / Pending */}
+              <div id="stepNode1" className="step-node active">
+                <div className="step-icon-circle">
+                  <span className="step-icon">📋</span>
+                  <span className="step-check">✓</span>
+                </div>
+                <span className="step-label">RECEIVED</span>
+              </div>
+
+              {/* Step 2: Confirmed / Baking */}
+              <div id="stepNode2" className="step-node">
+                <div className="step-icon-circle">
+                  <span className="step-icon">🔥</span>
+                  <span className="step-check">✓</span>
+                </div>
+                <span className="step-label">BAKING</span>
+              </div>
+
+              {/* Step 3: Ready / Delivery */}
+              <div id="stepNode3" className="step-node">
+                <div className="step-icon-circle">
+                  <span className="step-icon">🛵</span>
+                  <span className="step-check">✓</span>
+                </div>
+                <span className="step-label">READY</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Current Status Highlight Card */}
+          <div className="tracker-status-card">
+            <div className="tracker-card-head">
+              <span id="trackStatusLabel" className="tracker-card-label">CURRENT STATUS</span>
+              <span id="trackStatusBadge" className="tracker-badge">PAYMENT PENDING</span>
+            </div>
+            <p id="trackDesc" className="tracker-card-desc">Waiting for cashier verification. Do not close this page.</p>
+          </div>
+
+          {/* WhatsApp Direct Confirmation Button */}
+          <a id="whatsappConfirmBtn" href="#" target="_blank" rel="noopener noreferrer" className="btn solid whatsapp-track-btn" style={{ display: 'none' }}>
+            <span>💬</span> CONFIRM ON WHATSAPP
+          </a>
         </div>
 
-        {/* زر الواتساب للتأكيد السريع المباشر */}
-        <a id="whatsappConfirmBtn" href="#" target="_blank" rel="noopener noreferrer" className="btn solid" style={{ display: 'none', width: '100%', marginBottom: '12px', background: '#25D366', color: '#fff', justifyContent: 'center' }}>
-          💬 CONFIRM ON WHATSAPP
-        </a>
+        {/* Celebratory Completed Screen (Appears smoothly when finished) */}
+        <div id="trackerCompletedScreen" className="tracker-completed-screen" style={{ display: 'none' }}>
+          <div className="completed-glow-ring">
+            <div className="completed-icon-wrap">
+              <span className="completed-check-icon">✓</span>
+            </div>
+          </div>
+          <h3 className="completed-title">COMPLETED</h3>
+          <p className="completed-subtitle">YOUR ORDER HAS BEEN FULFILLED! ENJOY YOUR WOOD-FIRED PIZZA 🔥</p>
+          <div className="completed-auto-close-hint">CLOSING CART...</div>
+        </div>
 
         <button id="trackDoneBtn" className="btn ghost" style={{ marginTop: 'auto', width: '100%', justifyContent: 'center' }}>CLOSE</button>
       </div>

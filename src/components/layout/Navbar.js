@@ -47,7 +47,8 @@ export const Navbar = () => {
     const el = document.querySelector(target);
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const absoluteTop = rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0) - 30;
+    const offset = target === '#builder' ? 0 : -30;
+    const absoluteTop = rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0) + offset;
     if (window.__forno_lenis && typeof window.__forno_lenis.scrollTo === 'function') {
       window.__forno_lenis.scrollTo(absoluteTop, { immediate: false, duration: 1.1 });
     } else {
@@ -123,12 +124,7 @@ export const Navbar = () => {
         <button id="mmSaved" onClick={() => { document.body.classList.remove('mm-open'); document.body.classList.add('saved-open'); }}>
           <span id="mNavSavedText">SAVED PIZZAS</span> <span id="mmSavedCount" className="nav-count-badge">0</span>
         </button>
-        <div className="m-lang-row">
-          <span className="m-lang-label" id="mLangLabel">{currentLang === 'ar' ? 'اللغة' : 'LANGUAGE'}</span>
-          <button type="button" className="nav-lang-btn m-lang-btn" onClick={handleToggleLang}>
-            <span id="mLangOpt">{currentLang === 'ar' ? 'English' : 'عربي'}</span>
-          </button>
-        </div>
+
       </div>
     </aside>
   </>

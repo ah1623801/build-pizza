@@ -148,7 +148,7 @@ export async function initApp() {
       stage,
       goStep: (i) => layout?.goStep(i),
       setMaxReached: (m) => layout?.setMaxReached(m),
-      setMobileSizeChosen: () => {},
+      setMobileSizeChosen: (val) => layout?.setMobileSizeChosen?.(val),
       openCart: () => cartModule?.openCart(),
       cart,
       persistCart: () => cartModule?.persistCart(),
@@ -169,6 +169,7 @@ export async function initApp() {
         orderQty = 1;
         stage.applySnapshot(state, 0.4);
         layout?.goStep(0);
+        layout?.openSizePicker?.();
         wheel?.clearSelection?.();
         document.querySelectorAll('.wi.on').forEach(el => el.classList.remove('on'));
         updateBadge(state);

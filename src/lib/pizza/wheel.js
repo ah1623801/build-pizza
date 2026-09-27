@@ -166,7 +166,7 @@ export function setupWheel({
   wrap.addEventListener(
     'touchmove',
     (e) => {
-      if (drag && downEl) {
+      if (drag && downEl && e.cancelable) {
         e.preventDefault();
       }
     },

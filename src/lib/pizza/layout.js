@@ -242,7 +242,7 @@ export function setupLayout({
     const rows = [];
     const szObj = SIZES.find(x => x.id === (state.size || 'med'));
 
-    rows.push({ st: 0, t: 'SIZE: ' + (szObj ? szObj.name : 'MEDIUM'), p: 0, inc: true });
+    rows.push({ st: 'size', t: 'SIZE: ' + (szObj ? szObj.name : 'MEDIUM'), p: 0, inc: false });
 
     const d = DOUGH.find(x => x.id === state.dough);
     if (d) rows.push({ st: 1, t: d.name, p: getIngPrice(d, state.size) });
@@ -280,7 +280,13 @@ export function setupLayout({
 
     body.querySelectorAll('.sum-row').forEach(r => {
       if (!r.dataset.st) return;
-      r.addEventListener('click', () => goStep(+r.dataset.st));
+      r.addEventListener('click', () => {
+        if (r.dataset.st === 'size') {
+          openSizePicker();
+        } else {
+          goStep(+r.dataset.st);
+        }
+      });
     });
     $('#btnEdit')?.addEventListener('click', () => goStep(0));
     $('#qMinus')?.addEventListener('click', () => {
@@ -376,15 +382,16 @@ export function setupLayout({
   });
 
   function setupMobileSizeAnimation() {
-    mobileSizeChosen = true;
+    mobileSizeChosen = false;
     const state = getState();
     if (state && !state.size) state.size = 'med';
 
     const builder = document.getElementById('builder');
-    const stageHost = document.getElementById('stageHost');
     const selector = document.getElementById('mobileSizeSelector');
 
-    if (builder) builder.classList.remove('picking-size');
+    if (!mobileSizeChosen) {
+      if (builder) builder.classList.add('picking-size');
+    }
 
     if (selector) {
       selector.style.display = 'flex';
@@ -420,25 +427,42 @@ export function setupLayout({
 
         if (builder) builder.classList.remove('picking-size');
 
-        const scaleMap = { small: 0.84, med: 1.0, large: 1.14 };
-        if (gsap && stageHost) {
-          gsap.to(stageHost, {
-            scale: scaleMap[sz] || 1,
-            duration: 0.55,
-            ease: 'back.out(1.5)',
-            onUpdate: () => window.__forno_place_wheel?.(),
-            onComplete: () => window.__forno_place_wheel?.()
-          });
+        const pzScale = document.querySelector('.pz-scale');
+        if (gsap && pzScale) {
+          gsap.set(pzScale, { scale: 1 });
+        }
+
+        if (typeof window.__forno_start_wheel_track === 'function') {
+          window.__forno_start_wheel_track(850);
+        } else if (typeof window.__forno_place_wheel === 'function') {
+          window.__forno_place_wheel();
         }
 
         if (curStep === 6) renderSummary();
-        toast(`SIZE: ${sz.toUpperCase()} 🍕`);
       };
     });
 
     setTimeout(() => {
       window.__forno_place_wheel?.();
     }, 60);
+  }
+
+  function openSizePicker() {
+    mobileSizeChosen = false;
+    const builder = document.getElementById('builder');
+    if (builder) builder.classList.add('picking-size');
+    const state = getState();
+    const circleBtns = document.querySelectorAll('.ms-circle-btn');
+    circleBtns.forEach(b => {
+      const isCur = b.dataset.size === (state?.size || 'med');
+      b.classList.toggle('active', isCur);
+      b.setAttribute('aria-pressed', isCur ? 'true' : 'false');
+    });
+    if (typeof window.__forno_start_wheel_track === 'function') {
+      window.__forno_start_wheel_track(600);
+    } else {
+      window.__forno_place_wheel?.();
+    }
   }
 
   function setupMobileLivePrice() {
@@ -520,7 +544,8 @@ export function setupLayout({
       const el = typeof target === 'string' ? document.querySelector(target) : target;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const absoluteTop = rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0) + offset;
+      const appliedOffset = target === '#builder' ? 0 : offset;
+      const absoluteTop = rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0) + appliedOffset;
       const l = getLenis ? getLenis() : window.__forno_lenis;
       if (l && typeof l.scrollTo === 'function') {
         l.scrollTo(absoluteTop, { immediate: false, duration: 1.1 });
@@ -535,7 +560,10 @@ export function setupLayout({
     }
 
     $('#ctaBuild')?.addEventListener('click', goBuilder);
-    $$('.nav-links button').forEach(b => b.addEventListener('click', () => scrollToTarget(b.dataset.go, -40)));
+    $$('.nav-links button').forEach(b => b.addEventListener('click', () => {
+      const target = b.dataset.go;
+      scrollToTarget(target, target === '#builder' ? 0 : -40);
+    }));
 
     const closeMobileMenu = () => {
       document.body.classList.remove('mm-open');
@@ -551,7 +579,8 @@ export function setupLayout({
     $$('#mMenu button[data-go]').forEach(b => {
       b.addEventListener('click', () => {
         closeMobileMenu();
-        scrollToTarget(b.dataset.go, -40);
+        const target = b.dataset.go;
+        scrollToTarget(target, target === '#builder' ? 0 : -40);
       });
     });
 
@@ -579,7 +608,7 @@ export function setupLayout({
         id: 'builderPin',
         trigger: '#builder',
         start: 'top top',
-        end: () => '+=' + (window.innerWidth > 980 ? 3000 : (window.innerHeight < 580 ? 1200 : 2200)),
+        end: () => '+=' + (window.innerWidth > 980 ? 7000 : (window.innerHeight < 580 ? 1600 : 7000)),
         pin: true,
         pinSpacing: true,
         anticipatePin: 1,
@@ -717,6 +746,7 @@ export function setupLayout({
     heroFX,
     getCurStep: () => curStep,
     getMaxReached: () => maxReached,
-    setMaxReached: (m) => { maxReached = m; }
+    setMaxReached: (m) => { maxReached = m; },
+    openSizePicker
   };
 }

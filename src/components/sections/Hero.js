@@ -1,17 +1,37 @@
 // src/components/sections/Hero.js
-export const Hero = () => (
-  <section id="hero">
-    <video
-      id="heroVideo"
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="metadata"
-      poster="/images/pOriginal.webp"
-    >
-      <source src="/hero.mp4" type="video/mp4" />
-    </video>
+"use client";
+
+import { useEffect, useRef } from 'react';
+
+export const Hero = () => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (vid) {
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Power saver or background tab interruption silently absorbed
+        });
+      }
+    }
+  }, []);
+
+  return (
+    <section id="hero">
+      <video
+        ref={videoRef}
+        id="heroVideo"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        poster="/images/pOriginal.webp"
+      >
+        <source src="/hero.mp4" type="video/mp4" />
+      </video>
     <div className="hero-shade"></div>
     <div id="heroDust"></div>
     <div className="hero-grid hero-grid-centered">
@@ -61,6 +81,7 @@ export const Hero = () => (
     </div>
     <div className="h-scroll">SCROLL</div>
   </section>
-);
+  );
+};
 
 export default Hero;
