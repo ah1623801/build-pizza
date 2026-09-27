@@ -192,6 +192,37 @@ export async function GET(request) {
       return NextResponse.json(data, { headers: getRateLimitHeaders(limitResult, limit) });
     }
 
+    const phone = searchParams.get('phone');
+    if (phone) {
+      const limit = 60;
+      const limitResult = checkRateLimit(`get_order_phone_${ip}`, { limit, windowMs: 60 * 1000 });
+      if (!limitResult.allowed) {
+        return NextResponse.json(
+          { error: 'Too many requests. Please wait a moment.' },
+          { status: 429, headers: getRateLimitHeaders(limitResult, limit) }
+        );
+      }
+
+      const cleanPhone = phone.replace(/[^\d+]/g, '').trim();
+      if (cleanPhone.length < 7 || cleanPhone.length > 20) {
+        return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 });
+      }
+
+      const { data, error } = await supabaseServer
+        .from('orders')
+        .select('order_number, order_status, payment_status, total, items, created_at')
+        .eq('customer_phone', cleanPhone)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error || !data) {
+        return NextResponse.json({ error: 'No active order found for this phone number' }, { status: 404 });
+      }
+
+      return NextResponse.json(data, { headers: getRateLimitHeaders(limitResult, limit) });
+    }
+
     // Require admin session to list all orders
     const limit = 60; // 60 req/min for admin dashboard
     const limitResult = checkRateLimit(`get_orders_admin_${ip}`, { limit, windowMs: 60 * 1000 });
@@ -205,16 +236,6 @@ export async function GET(request) {
     const authResult = await verifyAdmin(request);
     if (!authResult.authorized) {
       return NextResponse.json({ error: authResult.error || 'Unauthorized to view all orders' }, { status: 401 });
-    }
-
-    // تصفير بيانات الطلبات والإجماليات لمرة واحدة بناءً على طلب المستخدم
-    if (global.__forno_orders_reset_pending !== false) {
-      global.__forno_orders_reset_pending = false;
-      try {
-        await supabaseServer.from('orders').delete().neq('order_number', '____NONE____');
-      } catch (e) {
-        console.error('Failed to reset orders:', e);
-      }
     }
 
     const { data, error } = await supabaseServer

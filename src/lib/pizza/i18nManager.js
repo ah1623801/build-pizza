@@ -145,6 +145,12 @@ export function applyTranslations() {
   if ($('#savedDrawerTitle')) $('#savedDrawerTitle').textContent = t('savedTitle');
   if ($('#savedBuild')) $('#savedBuild').textContent = t('savedBuildNew');
 
+  // Oven Modal
+  if ($('#revealBox h2')) $('#revealBox h2').innerHTML = lang === 'ar' ? 'بيتزتك<br/>جاهزة للتقديم.' : 'YOUR PIZZA<br/>IS READY.';
+  if ($('#btnCartAdd')) $('#btnCartAdd').textContent = t('addToCart');
+  if ($('#btnSave')) $('#btnSave').textContent = t('saveRecipe');
+  if ($('#btnAnother')) $('#btnAnother').textContent = t('orderAgain');
+
   // Footer
   if ($('#footerDesc')) $('#footerDesc').textContent = t('footerDesc');
   if ($('#footerHoursTitle')) $('#footerHoursTitle').textContent = t('footerHoursTitle');

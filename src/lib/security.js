@@ -103,7 +103,7 @@ export function safeJsonParse(raw, fallback = null) {
  */
 export function isSafeOrderNumber(orderNo) {
   if (!orderNo || typeof orderNo !== 'string') return false;
-  return /^FN-\d{6,16}$/i.test(orderNo.trim());
+  return /^(FN|ORD|FORNO)-\d{3,16}$/i.test(orderNo.trim());
 }
 
 /**

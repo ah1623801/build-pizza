@@ -81,19 +81,11 @@ export function getClientIp(request) {
 }
 
 /**
- * Checks rate limit for a specific identifier.
- * @param {string} identifier - Unique key (e.g. `auth_${ip}`)
- * @param {object} options - { limit: number, windowMs: number }
+ * Hybrid Sliding Window Rate Limiter:
+ * Operates fast in-memory locally with LRU eviction, and broadcasts atomic updates to Upstash Redis when configured.
+ * @param {string} identifier - Unique tracking key
+ * @param {{ limit?: number, windowMs?: number }} [options]
  * @returns {{ allowed: boolean, remaining: number, resetTime: number, limit: number }}
- */
-/**
- * Hybrid Rate Limiter: يشتغل In-Memory محلياً، ويدعم التوزيع التلقائي في السيرفرليس
- */
-/**
- * Hybrid Rate Limiter: يشتغل In-Memory محلياً، ويدعم التوزيع التلقائي في السيرفرليس
- */
-/**
- * Hybrid Rate Limiter: يشتغل In-Memory محلياً، ويدعم التوزيع التلقائي في السيرفرليس
  */
 export function checkRateLimit(identifier, { limit = 10, windowMs = 60 * 1000 } = {}) {
   const now = Date.now();

@@ -772,6 +772,7 @@ function persistCart() {
           activeCustomerOrder = orderToTrack;
           try {
             localStorage.setItem('forno_active_order', JSON.stringify(orderToTrack));
+            if (phone) localStorage.setItem('forno_customer_phone', phone);
           } catch (e) {}
 
           // إرسال إشعار فوري لجميع التابات المفتوحة (بما فيها الداشبورد) لسماع الطلب فورياً
@@ -842,9 +843,25 @@ function persistCart() {
 
   async function restoreActiveOrderIfAny() {
     try {
-      const raw = localStorage.getItem('forno_active_order');
-      if (!raw) return;
-      const cached = JSON.parse(raw);
+      let raw = localStorage.getItem('forno_active_order');
+      let cached = null;
+      if (raw) {
+        try { cached = JSON.parse(raw); } catch (e) {}
+      }
+
+      if (!cached || !cached.order_number) {
+        const savedPhone = localStorage.getItem('forno_customer_phone');
+        if (savedPhone) {
+          const phoneRes = await fetch(`/api/orders?phone=${encodeURIComponent(savedPhone)}`);
+          if (phoneRes.ok) {
+            const phoneData = await phoneRes.json();
+            if (phoneData && phoneData.order_number && phoneData.order_status !== 'completed') {
+              cached = phoneData;
+            }
+          }
+        }
+      }
+
       if (!cached || !cached.order_number) return;
 
       activeCustomerOrder = cached;

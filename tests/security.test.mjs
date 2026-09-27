@@ -33,9 +33,12 @@ describe('Security & Input Sanitization Suite', () => {
   });
 
   it('should validate order numbers format', () => {
+    assert.equal(isSafeOrderNumber('FN-123456'), true);
+    assert.equal(isSafeOrderNumber('FN-987654321'), true);
     assert.equal(isSafeOrderNumber('ORD-12345'), true);
     assert.equal(isSafeOrderNumber('FORNO-999'), true);
     assert.equal(isSafeOrderNumber('ORD-<script>'), false);
+    assert.equal(isSafeOrderNumber('FN-abc'), false);
   });
 
   it('should safely parse JSON with fallback', () => {

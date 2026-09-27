@@ -563,9 +563,11 @@ export function setupLayout({
     }
 
     $('#ctaBuild')?.addEventListener('click', goBuilder);
-    $$('.nav-links button').forEach(b => b.addEventListener('click', () => {
+    $$('[data-go]').forEach(b => b.addEventListener('click', () => {
       const target = b.dataset.go;
-      scrollToTarget(target, target === '#builder' ? 0 : -40);
+      if (target) {
+        scrollToTarget(target, target === '#builder' ? 0 : -40);
+      }
     }));
 
     const closeMobileMenu = () => {
