@@ -312,12 +312,13 @@ export default function MenuTab({
               {items.map((it) => (
                 <tr key={it.id} style={{ borderBottom: "1px solid rgba(243, 233, 220, 0.05)" }}>
                   <td style={{ padding: "10px" }}>
-                    {it.image_url ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={it.image_url} alt="" style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
-                    ) : (
-                      <span style={{ fontSize: "9px", color: "#9a8b7a" }}>NO IMG</span>
-                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={it.image_url || "/ico.webp"}
+                      alt=""
+                      style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(243,233,220,0.15)" }}
+                      onError={(e) => { e.currentTarget.src = "/ico.webp"; }}
+                    />
                   </td>
                   <td style={{ padding: "10px" }}>
                     {(() => {

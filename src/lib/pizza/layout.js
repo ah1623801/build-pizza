@@ -351,8 +351,9 @@ export function setupLayout({
           onComplete: () => window.__forno_place_wheel?.()
         });
       } else if (isMobilePortrait) {
+        const isTallPhone = window.innerHeight >= 800;
         gsap.to(stageHost, {
-          left: '60%', top: '-2vh', right: 'auto',
+          left: '60%', top: isTallPhone ? '2vh' : '-2vh', right: 'auto',
           xPercent: -50, yPercent: 0, x: '50vw', y: 0,
           scale: 1, rotation: 35, duration: 0.65, ease: 'power2.out',
           force3D: true,
@@ -431,6 +432,8 @@ export function setupLayout({
         if (gsap && pzScale) {
           gsap.set(pzScale, { scale: 1 });
         }
+
+        updateResponsiveLayout();
 
         if (typeof window.__forno_start_wheel_track === 'function') {
           window.__forno_start_wheel_track(850);
@@ -616,19 +619,21 @@ export function setupLayout({
       });
     }
 
-    // 🍕 تثبيت المنيو وسحب الكروت أفقياً على شاشات الكمبيوتر بسلاسة فائقة ومتوافقة مع Lenis
+    // 🍕 تثبيت المنيو وسحب الكروت أفقياً على كل الشاشات (Full Screen Pinned Menu with Touch Swipe Sync)
     const track = $('#menuTrack');
     const menuEl = document.getElementById('menu');
-    if (track && menuEl && window.innerWidth > 980) {
-      gsap.to(track, {
-        x: () => -Math.max(0, track.scrollWidth - window.innerWidth + 100),
+    if (track && menuEl) {
+      const getMaxTrack = () => Math.max(0, track.scrollWidth - window.innerWidth + (window.innerWidth < 650 ? 50 : 100));
+
+      const menuTween = gsap.to(track, {
+        x: () => -getMaxTrack(),
         ease: 'none',
         scrollTrigger: {
           id: 'menuPin',
           trigger: '#menu',
           start: 'top top',
-          end: () => '+=' + Math.max(1600, track.scrollWidth - window.innerWidth + 200),
-          scrub: 0.25, // استجابة سلسة وفورية دون تأخير أو ثِقل مزعج
+          end: () => '+=' + Math.max(1400, getMaxTrack() * (window.innerWidth <= 980 ? 1.15 : 1.35)),
+          scrub: 0.2, // استجابة سلسة وفورية دون تأخير
           pin: true,
           pinSpacing: true,
           anticipatePin: 1,
@@ -639,18 +644,97 @@ export function setupLayout({
           }
         }
       });
-    } else if (track) {
+
+      const menuST = menuTween.scrollTrigger;
+
+      // سحب المنتجات بالأصبع (Swipe) يمين وشمال على الموبايل والتابلت وحسابه في سكرول المنيو
       const menuView = track.closest('.menu-view');
       if (menuView) {
-        menuView.addEventListener('scroll', () => {
-          const bar = $('#menuBar');
-          if (bar) {
-            const maxScroll = menuView.scrollWidth - menuView.clientWidth;
-            if (maxScroll > 0) {
-              bar.style.width = ((menuView.scrollLeft / maxScroll) * 100) + '%';
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartScroll = 0;
+        let isHorizontalSwipe = false;
+        let gestureDecided = false;
+
+        menuView.addEventListener('touchstart', (e) => {
+          if (!menuST || !e.touches || !e.touches[0]) return;
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          touchStartScroll = window.scrollY || document.documentElement.scrollTop || 0;
+          isHorizontalSwipe = false;
+          gestureDecided = false;
+        }, { passive: true });
+
+        menuView.addEventListener('touchmove', (e) => {
+          if (!menuST || !e.touches || !e.touches[0]) return;
+          const touch = e.touches[0];
+          const dx = touch.clientX - touchStartX;
+          const dy = touch.clientY - touchStartY;
+
+          if (!gestureDecided) {
+            if (Math.hypot(dx, dy) > 6) {
+              gestureDecided = true;
+              if (Math.abs(dx) > Math.abs(dy)) {
+                isHorizontalSwipe = true;
+              }
             }
           }
-        }, { passive: true });
+
+          if (isHorizontalSwipe) {
+            if (e.cancelable) e.preventDefault();
+            const maxTrack = getMaxTrack();
+            if (maxTrack <= 0) return;
+            const triggerDistance = menuST.end - menuST.start;
+            const scrollDelta = -(dx / maxTrack) * triggerDistance;
+            const targetY = Math.max(menuST.start, Math.min(menuST.end, touchStartScroll + scrollDelta));
+
+            const lenis = window.__forno_lenis;
+            if (lenis && typeof lenis.scrollTo === 'function') {
+              lenis.scrollTo(targetY, { immediate: true });
+            } else {
+              window.scrollTo(0, targetY);
+            }
+            if (ScrollTrigger) ScrollTrigger.update();
+          }
+        }, { passive: false });
+
+        // دعم السحب بالماوس للكمبيوتر والـ DevTools
+        let isMouseDown = false;
+        let mouseStartX = 0;
+        let mouseStartScroll = 0;
+
+        menuView.addEventListener('pointerdown', (e) => {
+          if (e.pointerType === 'touch') return;
+          if (e.target.closest('button') || e.target.closest('a')) return;
+          if (!menuST) return;
+          isMouseDown = true;
+          mouseStartX = e.clientX;
+          mouseStartScroll = window.scrollY || document.documentElement.scrollTop || 0;
+        });
+
+        window.addEventListener('pointermove', (e) => {
+          if (!isMouseDown || !menuST) return;
+          const dx = e.clientX - mouseStartX;
+          if (Math.abs(dx) > 4) {
+            const maxTrack = getMaxTrack();
+            if (maxTrack <= 0) return;
+            const triggerDistance = menuST.end - menuST.start;
+            const scrollDelta = -(dx / maxTrack) * triggerDistance;
+            const targetY = Math.max(menuST.start, Math.min(menuST.end, mouseStartScroll + scrollDelta));
+
+            const lenis = window.__forno_lenis;
+            if (lenis && typeof lenis.scrollTo === 'function') {
+              lenis.scrollTo(targetY, { immediate: true });
+            } else {
+              window.scrollTo(0, targetY);
+            }
+            if (ScrollTrigger) ScrollTrigger.update();
+          }
+        });
+
+        const stopMouse = () => { isMouseDown = false; };
+        window.addEventListener('pointerup', stopMouse);
+        window.addEventListener('pointercancel', stopMouse);
       }
     }
 

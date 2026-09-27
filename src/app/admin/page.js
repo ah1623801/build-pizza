@@ -212,10 +212,30 @@ export default function AdminPage() {
     };
   }, []);
 
-  // Realtime subscription + fallback sync for cashier orders (شغال دايماً طول ما الأدمن مسجل)
+  const handleResetOrders = async () => {
+    if (!confirm("⚠️ هل أنت متأكد من تصفير وحذف جميع بيانات الطلبات والإجماليات في الداشبورد بالكامل؟\nسيتم حذف جميع الطلبات وإعادة الإجماليات إلى 0.")) {
+      return;
+    }
+    try {
+      const res = await fetch("/api/orders", { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setOrders([]);
+        previousOrdersCountRef.current = 0;
+        alert("تم تصفير جميع الطلبات والإجماليات بنجاح! ✓");
+      } else {
+        alert(data.error || "فشل تصفير الطلبات");
+      }
+    } catch (e) {
+      alert("حدث خطأ أثناء تصفير الطلبات");
+    }
+  };
+
+  // Realtime subscription + BroadcastChannel + Storage + high-speed sync for cashier orders
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    // 1. Supabase Realtime WebSocket Listener
     let channel = null;
     if (isSupabaseLive) {
       try {
@@ -237,20 +257,48 @@ export default function AdminPage() {
       }
     }
 
-    // Relaxed background polling safety-net (every 10s)
-    const syncTimer = setInterval(() => {
-      if (document.visibilityState === "visible") {
+    // 2. BroadcastChannel: Instant zero-latency cross-tab notification (<5ms!)
+    let bc = null;
+    try {
+      bc = new BroadcastChannel("forno_orders_channel");
+      bc.onmessage = (msg) => {
+        if (msg.data?.type === "NEW_ORDER") {
+          playOrderAlertChime();
+          loadOrders();
+        }
+      };
+    } catch (e) {}
+
+    // 3. Storage Event: Fires across browser tabs immediately on new order ping
+    const handleStorage = (e) => {
+      if (e.key === "forno_new_order_ping") {
+        playOrderAlertChime();
         loadOrders();
       }
-    }, 10000);
+    };
+    window.addEventListener("storage", handleStorage);
+
+    // 4. Focus Event: Instant sync when switching back to dashboard tab
+    const handleFocus = () => {
+      loadOrders();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    // 5. Active fast polling fallback: checks every 2.5s (2500ms)
+    const syncTimer = setInterval(() => {
+      loadOrders();
+    }, 2500);
 
     return () => {
       clearInterval(syncTimer);
       if (channel && isSupabaseLive) {
         supabaseClient.removeChannel(channel);
       }
+      if (bc) bc.close();
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", handleFocus);
     };
-  }, [isAuthenticated, activeTab]);
+  }, [isAuthenticated]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -632,9 +680,9 @@ export default function AdminPage() {
 
   const pendingCount = orders.filter((o) => o.payment_status === "pending").length;
   const totalRevenue = orders
-    .filter((o) => o.payment_status === "paid")
-    .reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
-  const paidOrdersCount = orders.filter((o) => o.payment_status === "paid").length;
+    .filter((o) => o.payment_status === "paid" || o.order_status === "completed")
+    .reduce((sum, o) => sum + (Number(o.total ?? o.total_price ?? 0)), 0);
+  const paidOrdersCount = orders.filter((o) => o.payment_status === "paid" || o.order_status === "completed").length;
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0705", color: "#f3e9dc", fontFamily: "'Inter', sans-serif", paddingBottom: "60px" }}>
@@ -820,6 +868,8 @@ export default function AdminPage() {
             orders={orders}
             onUpdateStatus={handleUpdateOrderStatus}
             onSelectReceipt={(url) => setSelectedReceiptModal(url)}
+            onResetOrders={handleResetOrders}
+            onRefreshOrders={loadOrders}
           />
         )}
 

@@ -542,97 +542,91 @@ export function icoTomato() {
 }
 
 export function icoMozzarella() {
-  const [gBall, dBall] = GR('#ffffff', '#fcf8ec', '#e8ddbe');
-  const [gSlice, dSlice] = GR('#fffdf7', '#f7eed2', '#dece9e');
-  return mkSVG(
-    100,
-    '<defs>' +
-      dBall +
-      dSlice +
-    '</defs>' +
-    '<ellipse cx="50" cy="74" rx="28" ry="8" fill="rgba(0,0,0,0.3)"/>' +
-    '<circle cx="44" cy="48" r="26" fill="url(#' + gBall + ')"/>' +
-    '<circle cx="44" cy="48" r="26" fill="none" stroke="rgba(215,195,150,0.4)" stroke-width="1.5"/>' +
-    '<ellipse cx="58" cy="54" rx="20" ry="17" fill="url(#' + gSlice + ')" transform="rotate(18 58 54)"/>' +
-    '<ellipse cx="58" cy="54" rx="20" ry="17" fill="none" stroke="rgba(200,180,135,0.45)" stroke-width="1.5" transform="rotate(18 58 54)"/>' +
-    '<path d="M 48 52 Q 56 46 66 52 M 52 58 Q 60 54 68 60" fill="none" stroke="rgba(210,185,135,0.5)" stroke-width="2" stroke-linecap="round"/>' +
-    '<path d="M 38 28 C 44 24 50 30 46 36 C 42 40 36 38 34 34 Z" fill="#4ea642"/>' +
-    '<path d="M 36 33 L 44 28" stroke="#7ad96e" stroke-width="1.2" stroke-linecap="round"/>' +
-    '<ellipse cx="38" cy="38" rx="8" ry="4" fill="rgba(255,255,255,0.85)" transform="rotate(-20 38 38)"/>'
-  );
+  const [gBall, dBall] = GR('#ffffff', '#fcf6e8', '#ecdcb9');
+  const [gSlice, dSlice] = GR('#ffffff', '#f7edd2', '#dfcaa0');
+  let s = '<defs>' + dBall + dSlice + '</defs>';
+  // كرة موتزاريلا بيضاء نقية في الخلف
+  s += '<circle cx="58" cy="46" r="22" fill="url(#' + gBall + ')"/>';
+  s += '<circle cx="58" cy="46" r="22" fill="none" stroke="#7a5c28" stroke-width="2.2"/>';
+  // شريحة موتزاريلا دائرية سميكة مقطوعة في الأمام
+  s += '<ellipse cx="38" cy="56" rx="20" ry="16" fill="url(#' + gSlice + ')" transform="rotate(-12 38 56)"/>';
+  s += '<ellipse cx="38" cy="56" rx="20" ry="16" fill="none" stroke="#7a5c28" stroke-width="2.2" transform="rotate(-12 38 56)"/>';
+  // ثنايا قوام الجبنة الطازجة ولمعة كريمية
+  s += '<path d="M 28 54 Q 38 60 48 53" fill="none" stroke="#d5be8e" stroke-width="2" stroke-linecap="round"/>';
+  s += '<ellipse cx="34" cy="50" rx="9" ry="4" fill="rgba(255,255,255,0.85)" transform="rotate(-18 34 50)"/>';
+  s += '<ellipse cx="54" cy="38" rx="8" ry="4" fill="rgba(255,255,255,0.75)" transform="rotate(15 54 38)"/>';
+  // ورقة ريحان إيطالية خضراء صغيرة لإبراز الموتزاريلا
+  s += '<path d="M 46 36 C 42 26 55 24 58 31 C 61 38 51 40 46 36 Z" fill="#4ea638" stroke="#256e18" stroke-width="1.8"/>';
+  return mkSVG(100, s);
 }
 
 export function icoExtraCheese() {
-  const [gMelt, dMelt] = GR('#ffe38f', '#f5be38', '#d69418');
-  let shreds = '';
-  const strands = [
-    { x: 30, y: 44, w: 24, h: 5.5, a: -25, c: '#ffeeb5' },
-    { x: 48, y: 40, w: 28, h: 6, a: 15, c: '#fcc744' },
-    { x: 62, y: 46, w: 22, h: 5, a: -35, c: '#ffa826' },
-    { x: 26, y: 56, w: 26, h: 5.5, a: 20, c: '#fce392' },
-    { x: 44, y: 52, w: 32, h: 6.5, a: -8, c: '#ffb930' },
-    { x: 64, y: 58, w: 24, h: 5, a: 30, c: '#fff2c2' },
-    { x: 34, y: 66, w: 28, h: 6, a: -12, c: '#f7aa23' },
-    { x: 54, y: 64, w: 26, h: 5.5, a: 18, c: '#ffe49e' },
-    { x: 46, y: 72, w: 22, h: 5, a: 5, c: '#ffa21c' },
-  ];
-  strands.forEach(s => {
-    shreds += '<rect x="' + (s.x - s.w/2) + '" y="' + (s.y - s.h/2) + '" width="' + s.w + '" height="' + s.h + '" rx="2.8" fill="' + s.c + '" stroke="rgba(180,120,20,0.3)" stroke-width="1" transform="rotate(' + s.a + ' ' + s.x + ' ' + s.y + ')"/>';
-  });
-  return mkSVG(
-    100,
-    '<defs>' +
-      dMelt +
-    '</defs>' +
-    '<ellipse cx="50" cy="76" rx="32" ry="8" fill="rgba(0,0,0,0.35)"/>' +
-    '<path d="M 24 64 Q 36 76 50 74 Q 68 76 76 64 Q 68 56 50 58 Q 32 56 24 64 Z" fill="url(#' + gMelt + ')"/>' +
-    shreds +
-    '<ellipse cx="40" cy="46" rx="6" ry="2.5" fill="rgba(255,255,255,0.65)" transform="rotate(-15 40 46)"/>' +
-    '<ellipse cx="56" cy="56" rx="5" ry="2" fill="rgba(255,255,255,0.6)" transform="rotate(10 56 56)"/>'
-  );
+  const [gCheese, dCheese] = GR('#ffe066', '#fca311', '#d47600');
+  let s = '<defs>' + dCheese + '</defs>';
+  // قطعة جبنة كبيرة غنية وسايحة مع قطرات الجبنة النازلة (Extra Melting Cheese)
+  // رأس المثلث
+  s += '<path d="M 24 64 L 52 24 L 78 36 L 82 56 C 78 62 70 58 64 64 C 58 70 54 82 48 82 C 44 82 42 74 38 72 C 34 70 30 76 26 74 C 22 72 20 66 24 64 Z" fill="url(#' + gCheese + ')"/>';
+  s += '<path d="M 24 64 L 52 24 L 78 36 L 82 56 C 78 62 70 58 64 64 C 58 70 54 82 48 82 C 44 82 42 74 38 72 C 34 70 30 76 26 74 C 22 72 20 66 24 64 Z" fill="none" stroke="#663300" stroke-width="2.5" stroke-linejoin="round"/>';
+  // الوجه العلوي الفاتح للجبنة
+  s += '<polygon points="24,64 52,24 78,36 50,70" fill="#fff3a8" stroke="#663300" stroke-width="2.2" stroke-linejoin="round"/>';
+  // عيون وثقوب الجبنة الواضحة
+  s += '<ellipse cx="38" cy="52" rx="4" ry="3" fill="#cf7a00"/>';
+  s += '<ellipse cx="60" cy="48" rx="5" ry="3.5" fill="#cf7a00"/>';
+  s += '<ellipse cx="68" cy="58" rx="4" ry="2.8" fill="#cf7a00"/>';
+  // لمعة الجبنة السايحة
+  s += '<path d="M 32 60 L 46 28" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round"/>';
+  s += '<circle cx="48" cy="78" r="3" fill="#ffe066" stroke="#663300" stroke-width="1.5"/>';
+  return mkSVG(100, s);
 }
 
 export function icoFourCheese() {
-  const [gWedge, dWedge] = GR('#ffe17d', '#f7be34', '#c98918');
-  return mkSVG(
-    100,
-    '<defs>' +
-      dWedge +
-    '</defs>' +
-    '<ellipse cx="52" cy="74" rx="30" ry="7" fill="rgba(0,0,0,0.35)"/>' +
-    '<path d="M 22 62 L 72 34 L 78 52 L 28 72 Z" fill="url(#' + gWedge + ')"/>' +
-    '<path d="M 22 62 L 56 22 L 72 34 L 28 72 Z" fill="#ffeaa3"/>' +
-    '<path d="M 72 34 L 56 22 L 78 52 Z" fill="#d9931c" opacity="0.4"/>' +
-    '<circle cx="38" cy="50" r="4.5" fill="#d49017"/>' +
-    '<circle cx="54" cy="42" r="3.2" fill="#d49017"/>' +
-    '<circle cx="48" cy="62" r="5" fill="#d49017"/>' +
-    '<circle cx="64" cy="54" r="3.8" fill="#d49017"/>' +
-    '<path d="M 24 40 L 36 34 L 38 46 L 26 48 Z" fill="#f4ebd0"/>' +
-    '<path d="M 28 38 Q 32 44 36 38" stroke="#3b7a70" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
-    '<polygon points="56,70 76,64 74,56" fill="#fcf3d7" stroke="#caa246" stroke-width="1"/>' +
-    '<circle cx="30" cy="66" r="8" fill="#ffffff" stroke="rgba(200,180,135,0.4)" stroke-width="1"/>'
-  );
+  const [gSide, dSide] = GR('#ffbe0b', '#fb8500', '#d95a00');
+  let s = '<defs>' + dSide + '</defs>';
+  // مثلث الجبنة الكلاسيكي الأيقوني الأكثر شهرة في العالم (Classic Swiss Cheese 🧀)
+  // الوجه الجانبي الغني
+  s += '<polygon points="46,74 80,44 86,58 46,86" fill="url(#' + gSide + ')" stroke="#592500" stroke-width="2.5" stroke-linejoin="round"/>';
+  // الوجه الأمامي المثلث
+  s += '<polygon points="18,60 46,74 46,86 18,68" fill="#e88900" stroke="#592500" stroke-width="2.5" stroke-linejoin="round"/>';
+  // الوجه العلوي الفاتح
+  s += '<polygon points="18,60 54,26 80,44 46,74" fill="#ffea75" stroke="#592500" stroke-width="2.5" stroke-linejoin="round"/>';
+  // ثقوب وعيون الجبنة السويسرية الكبيرة والواضحة جداً بعمق 3D
+  // ثقب أمامي
+  s += '<ellipse cx="32" cy="68" rx="5.5" ry="3.5" fill="#b35900"/>';
+  s += '<ellipse cx="31" cy="67.5" rx="4.5" ry="2.5" fill="#8f4300"/>';
+  // ثقوب على الوجه العلوي
+  s += '<ellipse cx="38" cy="50" rx="6" ry="4" fill="#e0b838"/>';
+  s += '<ellipse cx="37" cy="49" rx="5" ry="3" fill="#cca025"/>';
+  s += '<ellipse cx="58" cy="40" rx="5" ry="3.5" fill="#e0b838"/>';
+  // ثقوب على الوجه الجانبي
+  s += '<ellipse cx="64" cy="60" rx="6" ry="4" fill="#b35900"/>';
+  s += '<ellipse cx="63" cy="59.5" rx="5" ry="3" fill="#8f4300"/>';
+  s += '<ellipse cx="76" cy="52" rx="4" ry="2.5" fill="#b35900"/>';
+  s += '<ellipse cx="54" cy="74" rx="4.5" ry="3" fill="#b35900"/>';
+  // لمعات إضاءة نقية تبرز الجبنة
+  s += '<line x1="22" y1="59" x2="48" y2="30" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round"/>';
+  return mkSVG(100, s);
 }
 
 export function icoSmokedCheese() {
-  const [gRind, dRind] = GR('#914a1f', '#6e3110', '#471c08');
-  const [gInside, dInside] = GR('#fcedc5', '#edd398', '#d1ad69');
-  return mkSVG(
-    100,
-    '<defs>' +
-      dRind +
-      dInside +
-    '</defs>' +
-    '<ellipse cx="50" cy="74" rx="26" ry="7" fill="rgba(0,0,0,0.4)"/>' +
-    '<path d="M 32 36 C 32 26 44 22 50 22 C 56 22 68 26 68 36 C 68 44 74 52 74 62 C 74 72 64 76 50 76 C 36 76 26 72 26 62 C 26 52 32 44 32 36 Z" fill="url(#' + gRind + ')"/>' +
-    '<path d="M 33 38 Q 50 44 67 38" fill="none" stroke="#2b1104" stroke-width="3" stroke-linecap="round"/>' +
-    '<path d="M 33 38 Q 50 44 67 38" fill="none" stroke="#d49348" stroke-width="1" stroke-linecap="round"/>' +
-    '<path d="M 50 40 L 68 60 C 66 68 56 74 50 74 L 50 40 Z" fill="url(#' + gInside + ')"/>' +
-    '<path d="M 50 40 L 68 60 C 66 68 56 74 50 74 L 50 40 Z" fill="none" stroke="#632b0d" stroke-width="1.6"/>' +
-    '<line x1="34" y1="52" x2="44" y2="58" stroke="#3b1605" stroke-width="2" stroke-linecap="round" opacity="0.6"/>' +
-    '<line x1="32" y1="62" x2="42" y2="68" stroke="#3b1605" stroke-width="2" stroke-linecap="round" opacity="0.6"/>' +
-    '<ellipse cx="40" cy="30" rx="6" ry="3" fill="rgba(255,220,180,0.3)" transform="rotate(-15 40 30)"/>'
-  );
+  const [gRind, dRind] = GR('#8c3e10', '#632506', '#3b1202');
+  const [gBody, dBody] = GR('#ffe382', '#f5b738', '#cc8614');
+  let s = '<defs>' + dRind + dBody + '</defs>';
+  // قطعة جبنة مدخنة مميزة: قشرة بنية مدخنة عريضة على القوس الخارجي وجبنة ذهبية من الداخل مع ثقوب
+  // الوجه الجانبي مع القشرة المدخنة المميّزة
+  s += '<path d="M 22 62 L 78 36 C 84 46 86 60 76 74 L 22 62 Z" fill="url(#' + gBody + ')"/>';
+  // القشرة المدخنة المحمصة الداكنة
+  s += '<path d="M 78 36 C 88 50 88 66 76 74 L 72 82 C 88 74 94 52 82 28 Z" fill="url(#' + gRind + ')" stroke="#300d00" stroke-width="2.2"/>';
+  // حدود القطعة
+  s += '<path d="M 22 62 L 78 36 C 84 46 86 60 76 74 Z" fill="none" stroke="#4a1e05" stroke-width="2.4" stroke-linejoin="round"/>';
+  // خطوط تدخين خشبية أصلية
+  s += '<path d="M 74 46 C 78 54 78 64 72 70" fill="none" stroke="#e09030" stroke-width="1.8"/>';
+  // ثقوب جبنة شهية
+  s += '<ellipse cx="46" cy="56" rx="5" ry="3.5" fill="#b87208"/>';
+  s += '<ellipse cx="62" cy="50" rx="4.5" ry="3" fill="#b87208"/>';
+  s += '<ellipse cx="58" cy="64" rx="4" ry="2.8" fill="#b87208"/>';
+  // لمعة ناعمة
+  s += '<line x1="28" y1="60" x2="68" y2="42" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>';
+  return mkSVG(100, s);
 }
 
 export function icoShred(w) {

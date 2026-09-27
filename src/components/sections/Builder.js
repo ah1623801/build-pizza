@@ -1,6 +1,38 @@
 // src/components/sections/Builder.js
 export const Builder = () => (
   <section id="builder" className="picking-size">
+    {/* لوجو القسم فوق على الشمال لكل الأجهزة */}
+    <div
+      className="builder-logo logo"
+      role="button"
+      tabIndex={0}
+      aria-label="FORNO Pizza Home"
+      onClick={() => {
+        if (typeof window !== 'undefined') {
+          const el = document.querySelector('#hero');
+          if (el) {
+            const absoluteTop = el.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+            if (window.__forno_lenis && typeof window.__forno_lenis.scrollTo === 'function') {
+              window.__forno_lenis.scrollTo(absoluteTop, { immediate: false, duration: 1.1 });
+            } else {
+              window.scrollTo({ top: Math.max(0, absoluteTop), behavior: 'smooth' });
+            }
+          }
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (typeof window !== 'undefined') {
+            const el = document.querySelector('#hero');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      }}
+    >
+      FORNO<span>.</span>
+    </div>
+
     <div className="b-head" data-rev="true">
       <h2 id="builderHeading">CREATE YOUR OWN <em>PIZZA</em></h2>
     </div>
@@ -11,15 +43,15 @@ export const Builder = () => (
         <div id="mobileSizeSelector" className="mob-size-wrap">
           <div className="ms-title" id="chooseSizeTitle">CHOOSE PIZZA SIZE</div>
           <div className="ms-circles" role="group" aria-label="Select Pizza Size">
-            <button type="button" className="ms-circle-btn" data-size="small" aria-label="Small Pizza (25cm)" aria-pressed="false">
+            <button type="button" className="ms-circle-btn" data-size="small" aria-label="Small Pizza (24)" aria-pressed="false">
               <b>S</b>
         
             </button>
-            <button type="button" className="ms-circle-btn active" data-size="med" aria-label="Medium Pizza (30cm)" aria-pressed="true">
+            <button type="button" className="ms-circle-btn active" data-size="med" aria-label="Medium Pizza (30)" aria-pressed="true">
               <b>M</b>
     
             </button>
-            <button type="button" className="ms-circle-btn" data-size="large" aria-label="Large Pizza (35cm)" aria-pressed="false">
+            <button type="button" className="ms-circle-btn" data-size="large" aria-label="Large Pizza (36)" aria-pressed="false">
               <b>L</b>
     
             </button>

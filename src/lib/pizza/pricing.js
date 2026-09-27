@@ -4,9 +4,9 @@
 import { DOUGH, SAUCE, CHEESE, MEAT, VEG, EXTRAS } from './config';
 
 export const SIZES = [
-  { id: 'small', name: 'SMALL (24 CM)', desc: 'Personal size · Light bite', scale: 0.85 },
-  { id: 'med', name: 'MEDIUM (30 CM)', desc: 'Standard size · 2 Persons (Our Signature)', scale: 1.0 },
-  { id: 'large', name: 'LARGE (36 CM)', desc: 'Party size · 3-4 Persons', scale: 1.15 }
+  { id: 'small', name: 'SMALL (24)', desc: 'Personal size · Light bite', scale: 0.85 },
+  { id: 'med', name: 'MEDIUM (30)', desc: 'Standard size · 2 Persons (Our Signature)', scale: 1.0 },
+  { id: 'large', name: 'LARGE (36)', desc: 'Party size · 3-4 Persons', scale: 1.15 }
 ];
 
 export function getIngPrice(item, size = 'med') {

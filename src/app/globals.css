@@ -218,6 +218,7 @@ em{font-style:normal;color:var(--ember)}
   aspect-ratio: 1;
   position: relative;
   z-index: 2;
+  touch-action: pan-y !important;
   transition: top 0.65s cubic-bezier(0.16, 1, 0.3, 1),
               left 0.65s cubic-bezier(0.16, 1, 0.3, 1),
               right 0.65s cubic-bezier(0.16, 1, 0.3, 1),
@@ -225,9 +226,9 @@ em{font-style:normal;color:var(--ember)}
               width 0.65s cubic-bezier(0.16, 1, 0.3, 1);
 }
 /* pizza stage */
-.pz{width:100%;height:100%;position:relative}
-.pz-scale{position:absolute;inset:0}
-.pz-rot{position:absolute;inset:0;transform-origin:50% 50% !important;transition:none !important;will-change:transform}
+.pz{width:100%;height:100%;position:relative;touch-action:pan-y !important}
+.pz-scale{position:absolute;inset:0;touch-action:pan-y !important}
+.pz-rot{position:absolute;inset:0;transform-origin:50% 50% !important;transition:none !important;will-change:transform;touch-action:pan-y !important}
 .ly{position:absolute;inset:0;pointer-events:none}
 .l-dough img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
 .l-sauce{inset:5%}
@@ -292,88 +293,67 @@ em{font-style:normal;color:var(--ember)}
 .mq-in{display:flex;gap:60px;white-space:nowrap;font-family:var(--disp);font-size:20px;letter-spacing:.15em;color:var(--mut);width:max-content;animation:mq 26s linear infinite}
 .mq-in i{color:var(--ember);font-style:normal}
 @keyframes mq{to{transform:translateX(-50%)}}
-/* ---------- MENU ---------- */
-#menu{position:relative;background:var(--bg)}
-.menu-pin{height:100vh;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;padding:clamp(70px,10vh,110px) 0 30px}
-.m-head{padding:0 6vw}
-.m-head h2{font-size:clamp(34px,4.6vw,70px);line-height:1.02}
-#menuTabs{display:flex;gap:10px;padding:26px 6vw;overflow-x:auto;scrollbar-width:none}
-#menuTabs button{flex:0 0 auto;font-size:10px;font-weight:800;letter-spacing:.3em;padding:11px 20px;border-radius:99px;border:1px solid var(--line);color:var(--mut);transition:.3s}
+/* ---------- MENU (UNIVERSAL FULLSCREEN PINNED CAROUSEL) ---------- */
+#menu{position:relative;background:var(--bg);min-height:100vh;min-height:var(--apph, 100svh)}
+.menu-pin{
+  height:100vh !important;
+  height:var(--apph, 100svh) !important;
+  width:100%;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:space-between !important;
+  overflow:hidden !important;
+  padding:clamp(36px, 5.5vh, 65px) 0 clamp(14px, 2vh, 24px) !important;
+  box-sizing:border-box !important;
+}
+.m-head{padding:0 5vw;flex-shrink:0}
+.m-head .kicker{
+  font-size:clamp(12px, 1.6vh, 15px) !important;
+  letter-spacing:0.35em !important;
+  margin-bottom:8px !important;
+}
+.m-head h2{font-size:clamp(28px,4.5vh,56px);line-height:1.12}
+#menuTabs{display:flex;gap:clamp(8px, 1.2vw, 14px);padding:clamp(12px, 1.8vh, 20px) 5vw clamp(12px, 1.8vh, 20px);overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+#menuTabs button{flex:0 0 auto;font-size:clamp(10.5px, 1.35vh, 13px);font-weight:800;letter-spacing:.25em;padding:clamp(10px, 1.3vh, 13px) clamp(18px, 2vw, 26px);border-radius:99px;border:1px solid var(--line);color:var(--mut);transition:.3s}
 #menuTabs button.on{background:var(--ember);border-color:var(--ember);color:#1a0c04}
-.menu-view{overflow:hidden;padding-left:6vw}
-#menuTrack{display:flex;gap:26px;width:max-content;padding:10px 6vw 30px 0;will-change:transform;transform:translateZ(0)}
-.mcard{width:min(420px,32vw);border:1px solid var(--line);border-radius:26px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.25));padding:22px 24px;position:relative;overflow:hidden;transition:border-color .3s;display:flex;flex-direction:column;will-change:transform;transform:translateZ(0)}
+.menu-view{flex:1 1 auto !important;min-height:0 !important;display:flex !important;align-items:center !important;overflow:hidden !important;padding-left:5vw !important;width:100% !important}
+#menuTrack{display:flex;align-items:center;gap:clamp(14px, 1.8vw, 24px);width:max-content;padding:clamp(6px, 1vh, 14px) 5vw clamp(6px, 1vh, 14px) 0;will-change:transform;transform:translateZ(0)}
+.mcard{
+  width:clamp(300px, 28vw, 400px);
+  height:auto !important;
+  min-height:clamp(470px, 63vh, 630px);
+  max-height:clamp(490px, 66vh, 670px);
+  border:1px solid var(--line);
+  border-radius:clamp(22px, 2.6vh, 30px);
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.25));
+  padding:clamp(20px, 2.6vh, 30px) clamp(20px, 2vw, 26px);
+  position:relative;
+  overflow:hidden;
+  transition:border-color .3s;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  will-change:transform;
+  transform:translateZ(0);
+  box-sizing:border-box;
+}
 .mcard:hover{border-color:rgba(255,122,46,.55)}
-.mimg{width:min(200px, 18vh, 65%);aspect-ratio:1;border-radius:50%;overflow:hidden;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.6);margin:6px auto 16px;flex-shrink:0}
+.mimg{width:clamp(165px, 22vh, 230px);aspect-ratio:1;border-radius:50%;overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.6);margin:2px auto clamp(8px, 1.4vh, 16px);flex-shrink:0}
 .mimg img{width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1)}
 .mcard:hover .mimg img{transform:scale(1.09) rotate(4deg)}
-.mnum{font-family:var(--disp);font-size:110px;color:transparent;-webkit-text-stroke:1px rgba(255,179,71,.4);text-align:center;line-height:1;padding:40px 0}
-.mcat{font-size:9px;letter-spacing:.35em;color:var(--ember);font-weight:800}
-.mcard h3{font-size:clamp(20px, 2.2vw, 28px);margin:6px 0 10px}
-.mings{list-style:none;display:flex;flex-wrap:wrap;align-items:flex-start;align-content:flex-start;gap:6px;margin-bottom:16px;min-height:28px}
-.mings li{display:inline-flex;align-items:center;justify-content:center;height:26px;box-sizing:border-box;font-size:10px;line-height:1;letter-spacing:.06em;border:1px solid var(--line);background:rgba(255,255,255,.03);padding:0 11px;border-radius:99px;color:var(--mut);white-space:nowrap;opacity:1 !important;transform:none !important;transition:border-color .25s, color .25s, background .25s}
+.mnum{font-family:var(--disp);font-size:80px;color:transparent;-webkit-text-stroke:1px rgba(255,179,71,.4);text-align:center;line-height:1;padding:20px 0}
+.mcat{font-size:clamp(8.5px, 1.1vh, 10px);letter-spacing:.3em;color:var(--ember);font-weight:800}
+.mcard h3{font-size:clamp(20px, 2.5vh, 28px);margin:clamp(4px, 0.7vh, 8px) 0 clamp(8px, 1.2vh, 12px);flex-shrink:0}
+.mings{list-style:none;display:flex;flex-wrap:wrap;align-items:flex-start;align-content:flex-start;gap:6px;margin-bottom:clamp(10px, 1.4vh, 18px);min-height:clamp(32px, 4vh, 52px)}
+.mings li{display:inline-flex;align-items:center;justify-content:center;height:clamp(24px, 2.8vh, 28px);box-sizing:border-box;font-size:clamp(9px, 1.1vh, 10.5px);line-height:1;letter-spacing:.06em;border:1px solid var(--line);background:rgba(255,255,255,.03);padding:0 11px;border-radius:99px;color:var(--mut);white-space:nowrap;opacity:1 !important;transform:none !important;transition:border-color .25s, color .25s, background .25s}
 .mcard:hover .mings li{border-color:rgba(255,122,46,.45);color:var(--ink);background:rgba(255,122,46,.06)}
-.mrow{display:flex;align-items:center;justify-content:space-between;margin-top:auto !important;padding-top:10px}
-.mprice{font-family:var(--disp);font-size:24px;color:var(--gold)}
-.mbtn{font-size:10px;font-weight:800;letter-spacing:.25em;padding:12px 20px;border-radius:99px;background:var(--ember);color:#1a0c04;opacity:1 !important;transform:none !important;transition:background .25s, transform .2s}
+.mrow{display:flex;align-items:center;justify-content:space-between;margin-top:auto !important;padding-top:12px;flex-shrink:0}
+.mprice{font-family:var(--disp);font-size:clamp(22px, 2.8vh, 30px);color:var(--gold)}
+.mbtn{font-size:clamp(9.5px, 1.2vh, 11px);font-weight:800;letter-spacing:.2em;padding:clamp(10px, 1.3vh, 14px) clamp(16px, 1.8vw, 24px);border-radius:99px;background:var(--ember);color:#1a0c04;opacity:1 !important;transform:none !important;transition:background .25s, transform .2s}
 .mbtn:hover{background:var(--ember2);transform:scale(1.04)}
-.menu-bar{height:2px;background:var(--line);margin:0 6vw;border-radius:2px;overflow:hidden}
+.menu-bar{height:2px;background:var(--line);margin:0 5vw;border-radius:2px;overflow:hidden;flex-shrink:0}
 #menuBar{display:block;height:100%;width:0;background:var(--ember)}
 
-/* تطويل وتحسين تناسق كروت المنيو على شاشات الكمبيوتر واللابتوب */
-@media (min-width: 981px) {
-  .menu-pin {
-    padding: clamp(45px, 6.5vh, 75px) 0 20px;
-  }
-  #menuTabs {
-    padding: 16px 6vw 24px;
-  }
-  .mcard {
-    width: min(390px, 28vw);
-    min-height: clamp(520px, 58vh, 590px);
-    padding: 30px 28px 24px;
-    border-radius: 30px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-  .mimg {
-    width: min(220px, 21vh, 68%);
-    margin: 8px auto 22px;
-  }
-  .mcard h3 {
-    font-size: clamp(23px, 2.3vw, 30px);
-    margin: 8px 0 14px;
-  }
-  .mings {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    align-content: flex-start;
-    gap: 8px;
-    margin-bottom: 24px;
-    min-height: 60px;
-  }
-  .mings li {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 28px;
-    font-size: 11px;
-    line-height: 1;
-    padding: 0 13px;
-    border-radius: 99px;
-  }
-  .mrow {
-    padding-top: 18px;
-    border-top: 1px solid rgba(243, 233, 220, 0.08);
-  }
-  .mprice {
-    font-size: 26px;
-  }
-  .mbtn {
-    font-size: 11px;
-    padding: 13px 24px;
-  }
-}
 /* ---------- CONTACT ---------- */
 #contact{padding:120px 6vw;background:radial-gradient(900px 500px at 20% 20%,rgba(255,110,40,.08),transparent 60%),var(--bg2)}
 .c-grid{display:grid;grid-template-columns:1fr 1fr;gap:6vw;position:relative}
@@ -810,7 +790,7 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
   transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1), left 0.4s cubic-bezier(0.16, 1, 0.3, 1), right 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease, opacity 0.3s ease;
 }
 #wheelRot{position:absolute;inset:0}
-.wi{position:absolute;--ws:54px;width:var(--ws);height:var(--ws);margin:calc(var(--ws)/-2);pointer-events:auto;touch-action:pan-y;cursor:pointer}
+.wi{position:absolute;--ws:54px;width:var(--ws);height:var(--ws);margin:calc(var(--ws)/-2);pointer-events:auto;touch-action:none;cursor:pointer}
 /* ---------- WHEEL v3: أيقونات كود، من غير خطوط ---------- */
 .wg-arc{display:none}
 .wi-in{border:1px solid rgba(243,233,220,.08);background:rgba(16,10,7,.72);box-shadow:0 8px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);transition:box-shadow .25s,border-color .25s}
@@ -822,7 +802,7 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
   #wheelBake{box-shadow:none}
   #wheelBake{display:inline-flex}
   #rail{display:none!important}
-  .stage-wrap{touch-action:none !important;user-select:none;-webkit-user-select:none}
+  .stage-wrap{touch-action:pan-y !important;user-select:none;-webkit-user-select:none}
 }
 /* مقاس وسطي ومريح للتابلت (650px+) */
 @media (min-width: 650px) {
@@ -906,11 +886,16 @@ body.mm-open #mMenuOverlay{opacity:1;pointer-events:auto}
 .m-menu-head .logo span{color:var(--ember)}
 #mMenuClose{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--ink);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .m-menu-links{display:flex;flex-direction:column;gap:6px;width:100%}
-.m-menu-links button{display:flex;width:100%;align-items:center;justify-content:flex-start;text-align:left;font-family:var(--disp);font-size:21px;letter-spacing:.06em;color:var(--ink);padding:14px 0;border-bottom:1px solid var(--line);background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:color .25s,transform .2s}
-.m-menu-links button:hover{color:var(--ember2);transform:translateX(4px)}
+.m-menu-links button{display:flex;width:100%;align-items:center;justify-content:flex-start;text-align:left;font-family:var(--disp);font-size:21px;letter-spacing:.06em;color:var(--ink) !important;padding:14px 0;border-bottom:1px solid var(--line);background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:color .25s,transform .2s;outline:none !important;-webkit-tap-highlight-color:transparent;}
+@media (hover: hover) and (pointer: fine) {
+  .m-menu-links button:hover{color:var(--ember2) !important;transform:translateX(4px)}
+  body.lang-ar .m-menu-links button:hover{transform:translateX(-4px)}
+}
+.m-menu-links button:active{color:var(--ember2) !important}
+.m-menu-links button:focus,
+.m-menu-links button:focus-visible{outline:none !important;color:var(--ink) !important;transform:none !important}
 body.lang-ar .m-menu-links button{text-align:right;justify-content:flex-end}
-body.lang-ar .m-menu-links button:hover{transform:translateX(-4px)}
-#mMenu #mmSaved{color:var(--ember2);font-size:18px;display:flex;justify-content:space-between;align-items:center;border-bottom:none;margin-top:10px}
+#mMenu #mmSaved{color:var(--ember2) !important;font-size:18px;display:flex;justify-content:space-between;align-items:center;border-bottom:none;margin-top:10px}
 #mmSavedCount{font-family:var(--body);font-size:11px;font-weight:800;background:var(--ember);color:#1a0c04;border-radius:99px;padding:3px 9px}
 @media (max-width: 980px), (max-width: 1100px) and (orientation: portrait) {
   .nav-links { display: none !important; }
@@ -926,16 +911,10 @@ body.lang-ar .m-menu-links button:hover{transform:translateX(-4px)}
 
 
 /* ---------- FIXES PACK ---------- */
-#wheelBake{display:none;position:absolute;left:4vw;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;padding:10px 18px;font-size:9px;letter-spacing:.2em;max-width:44vw;justify-content:center}
-#mPrice{    top: 87vh !important}
-@media(max-width:980px){#wheelBake{display:inline-flex}}
+#wheelBake{display:none;align-items:center;justify-content:center;}
+@media(max-width:980px){#wheelBake{display:flex !important;}}
 #mMenuClose{position:absolute;top:24px;right:20px;width:40px;height:40px;color:var(--ink);font-size:17px;display:flex;align-items:center;justify-content:center;z-index:5;}
 body.mm-open #burgerBtn{opacity:0;pointer-events:none}
-@media(max-width:980px) and (max-height:640px){
-  #mPrice{bottom:calc(52px + env(safe-area-inset-bottom));padding:8px 14px}
-  #mPriceVal{font-size:15px}
-  #wheelBake{padding:9px 14px}
-}
 
 
 .wi-in svg{width:78%;height:78%;margin:auto;display:block}
@@ -945,63 +924,68 @@ body.mm-open #burgerBtn{opacity:0;pointer-events:none}
 .pz.cooked .l-dough::before{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:3;background:radial-gradient(circle at 50% 50%,rgba(0,0,0,0) 58%,rgba(255,176,64,.26) 78%,rgba(255,140,40,.12) 90%,rgba(0,0,0,0) 97%);mix-blend-mode:screen}
 
 @media(max-width:980px){
-  .menu-pin{padding:70px 0 26px; height: auto !important; min-height: unset !important; overflow: visible !important}
-  .m-head{padding:0 5vw}
-  .m-head h2{font-size:clamp(26px,7.4vw,44px)}
-  #menuTabs{padding:14px 5vw;gap:8px}
-  #menuTabs button{padding:9px 16px;font-size:9px}
-  .menu-view{
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    scroll-snap-type: x proximity !important;
-    scroll-behavior: smooth !important;
-    overscroll-behavior-x: contain;
-    padding: 0 5vw 16px !important;
-    touch-action: pan-x pan-y !important;
-    scrollbar-width: none;
+  .menu-pin{
+    height: 100vh !important;
+    height: var(--apph, 100svh) !important;
+    padding: clamp(28px, 4.5vh, 48px) 0 clamp(10px, 1.8vh, 18px) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
   }
-  .menu-view::-webkit-scrollbar { display: none; }
+  .m-head{padding:0 5vw}
+  .m-head .kicker{font-size:11px !important; letter-spacing:0.3em !important; margin-bottom:6px !important}
+  .m-head h2{font-size:clamp(26px,6.5vw,38px) !important; line-height: 1.15 !important}
+  #menuTabs{padding:12px 5vw 14px;gap:8px}
+  #menuTabs button{padding:9px 18px;font-size:10px !important}
+  .menu-view{
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    padding-left: 5vw !important;
+    width: 100% !important;
+    touch-action: pan-y !important;
+  }
   #menuTrack{
     display: flex !important;
-    gap: 16px !important;
-    padding: 8px 0 20px 0 !important;
+    gap: 14px !important;
+    padding: 4px 5vw 8px 0 !important;
     width: max-content !important;
-    touch-action: pan-x pan-y !important;
     will-change: transform;
     transform: translateZ(0);
   }
   .mcard {
-    scroll-snap-align: start;
-    flex: 0 0 min(310px, 80vw) !important;
-    width: min(310px, 80vw) !important;
+    flex: 0 0 min(315px, 84vw) !important;
+    width: min(315px, 84vw) !important;
     height: auto !important;
-    min-height: 480px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    will-change: transform;
-    transform: translateZ(0);
+    min-height: clamp(440px, 64vh, 560px) !important;
+    max-height: clamp(460px, 67vh, 590px) !important;
+    padding: 20px 18px !important;
+    border-radius: 24px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
   }
-
   .mimg {
-    width: clamp(140px, 20svh, 190px);
-    aspect-ratio: 1;
-    margin: 4px auto 14px;
-    flex-shrink: 0;
+    width: clamp(160px, 22svh, 200px) !important;
+    height: clamp(160px, 22svh, 200px) !important;
+    aspect-ratio: 1 !important;
+    margin: 4px auto 10px !important;
+    flex-shrink: 0 !important;
   }
-
   .mrow {
     margin-top: auto !important;
-    padding-top: 10px;
+    padding-top: 10px !important;
   }
   .mnum{font-size:70px;padding:24px 0}
-  .mcard h3{font-size:22px;margin:6px 0 8px}
-  .mings{min-height:22px;margin-bottom:12px;gap:5px}
-  .mings li{opacity:1 !important;transform:none !important;font-size:9px;padding:4px 8px}
-  
-  .mprice{font-size:20px}
-  .mbtn{opacity:1 !important;transform:none !important;padding:10px 16px;font-size:9px}
+  .mcard h3{font-size:21px !important;margin:4px 0 8px !important}
+  .mings{min-height:32px !important;margin-bottom:12px !important;gap:5px !important}
+  .mings li{font-size:9.5px !important;height:24px !important;padding:0 9px !important}
+  .mprice{font-size:22px !important}
+  .mbtn{padding:10px 18px !important;font-size:9.5px !important}
   .menu-bar{margin:0 5vw}
 }
 
@@ -1012,36 +996,252 @@ body.mm-open #burgerBtn{opacity:0;pointer-events:none}
 
 
 
-#mPrice, #wheelBake {
-  display: inline-flex !important;
+/* ---------- BUILDER TOP-LEFT LOGO (DESKTOP, TABLET, MOBILE) ---------- */
+.builder-logo {
+  display: block !important;
+  position: absolute !important;
+  top: 22px !important;
+  left: 4vw !important;
+  font-family: var(--disp) !important;
+  font-size: 28px !important;
+  letter-spacing: 0.05em !important;
+  color: var(--ink) !important;
+  z-index: 80 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.builder-logo span {
+  color: var(--ember) !important;
+}
+.builder-logo:hover {
+  transform: scale(1.05);
 }
 
-/* إظهارهم فقط في الشاشات الصغيرة (الموبايل والتابلت) */
-@media (max-width: 980px) {
-  #mPrice, #wheelBake {
-    display: flex !important;
+@media (min-width: 650px) and (max-width: 1150px) {
+  .builder-logo {
+    top: 20px !important;
+    left: 4vw !important;
+    font-size: 26px !important;
+  }
+}
+
+@media (max-width: 980px) and (orientation: landscape) and (max-height: 580px) {
+  .builder-logo {
+    display: block !important;
     position: absolute !important;
+    top: 14px !important;
     left: 16px !important;
-    z-index: 60;
+    font-size: 22px !important;
+    z-index: 80 !important;
   }
-  #mPrice {
-    bottom: calc(58px + env(safe-area-inset-bottom)) !important;
+}
+
+/* ---------- TALL PHONES ONLY (e.g. iPhone 16 / 15 Pro / Galaxy Tall Ratios) ---------- */
+@media (max-width: 600px) and (min-height: 800px) and (orientation: portrait) {
+  .stage-wrap {
+    padding-top: clamp(10px, 2vh, 24px) !important;
   }
+  #stageHost {
+    margin-top: clamp(10px, 2vh, 24px) !important;
+  }
+  #builder.picking-size #stageHost {
+    top: clamp(95px, 11vh, 125px) !important;
+  }
+}
+
+/* ---------- BUILDER ACTIONS: DESKTOP & LARGE SCREENS ---------- */
+@media (min-width: 981px) {
   #wheelBake {
-    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    bottom: 28px !important;
+    left: 4vw !important;
+    right: auto !important;
+    top: auto !important;
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    background: #1a0f08 !important;
+    border: 2px solid var(--ember) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 18px rgba(255, 122, 46, 0.4) !important;
+    z-index: 75 !important;
+    cursor: pointer !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+  }
+  #wheelBake:hover {
+    transform: scale(1.08) !important;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.9), 0 0 24px rgba(255, 122, 46, 0.6) !important;
+  }
+  #wheelBake .wb-oven-icon {
+    display: block !important;
+    width: 40px !important;
+    height: 40px !important;
+    margin: 0 !important;
+  }
+  #wheelBake span {
+    display: none !important;
+  }
+
+  .mob-floating-cart {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    bottom: 28px !important;
+    left: calc(4vw + 78px) !important;
+    right: auto !important;
+    top: auto !important;
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 50% !important;
+    background: #1a0f08 !important;
+    border: 2px solid var(--ember) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 18px rgba(255, 122, 46, 0.3) !important;
+    z-index: 75 !important;
+    cursor: pointer !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+  }
+  .mob-floating-cart:hover {
+    transform: scale(1.08) !important;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.9), 0 0 24px rgba(255, 122, 46, 0.5) !important;
+  }
+
+  #mPrice {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    bottom: 104px !important;
+    left: 4vw !important;
+    right: auto !important;
+    top: auto !important;
+    padding: 10px 24px !important;
+    background: rgba(16, 10, 7, 0.94) !important;
+    border: none !important;
     border-radius: 999px !important;
-    padding: 10px 18px !important;
-    font-size: 9px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 122, 46, 0.35) !important;
+    z-index: 75 !important;
+  }
+  #mPriceVal {
+    font-size: 24px !important;
+    font-weight: 800 !important;
+    font-family: var(--disp) !important;
+  }
+}
+
+/* ---------- BUILDER ACTIONS: MOBILE PORTRAIT ---------- */
+@media (max-width: 649px) and (orientation: portrait) {
+  .b-head {
+    display: block !important;
+    position: absolute !important;
+    top: 12px !important;
+    left: 10px !important;
+    right: 10px !important;
+    text-align: center !important;
+    pointer-events: none !important;
+    z-index: 60 !important;
+    margin: 0 !important;
+  }
+  .b-head h2 {
+    font-size: clamp(18px, 5.2vw, 24px) !important;
+    letter-spacing: 2px !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+    line-height: 1.15 !important;
+  }
+
+    .builder-logo {
+        z-index: 65 !important;
+        font-size: 27px !important;
+        display: block !important;
+        position: absolute !important;
+        top: 58px !important;
+        left: 17% !important;
+        transform: translateX(-50%) !important;
+      }
+
+  /* نقل الأزرار والسعر بنفس الشكل والحجم تحت على الشمال */
+  .mob-floating-cart {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+    left: 14px !important;
+    right: auto !important;
+    top: auto !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background: #1a0f08 !important;
+    border: 1.5px solid var(--ember) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 122, 46, 0.3) !important;
+    z-index: 75 !important;
+    cursor: pointer !important;
+  }
+
+  #wheelBake {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+    left: 68px !important;
+    right: auto !important;
+    top: auto !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    background: #1a0f08 !important;
+    border: 1.5px solid var(--ember) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 122, 46, 0.4) !important;
+    z-index: 75 !important;
+    cursor: pointer !important;
+  }
+  #wheelBake .wb-oven-icon {
+    display: block !important;
+    width: 30px !important;
+    height: 30px !important;
+    margin: 0 !important;
+  }
+  #wheelBake span {
+    display: none !important;
+  }
+
+  #mPrice {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+    left: 14px !important;
+    right: auto !important;
+    top: auto !important;
+    padding: 7px 16px !important;
+    background: rgba(16, 10, 7, 0.94) !important;
+    border: none !important;
+    border-radius: 999px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 122, 46, 0.35) !important;
+    z-index: 75 !important;
+  }
+  #mPriceVal {
+    font-size: 19px !important;
+    font-weight: 800 !important;
+    font-family: var(--disp) !important;
   }
 }
 
 .wb-oven-icon {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
-  margin-right: 8px;
-  display: inline-block;
-  vertical-align: middle;
+  margin: 0;
+  display: block;
   flex-shrink: 0;
 }
 
@@ -1116,21 +1316,7 @@ html.lenis, html.lenis body {
 
 
 
-/* حل تداخل السعر وزرار البناء في الموبايل */
-@media (max-width: 980px) {
-  #mPrice {
-    top: auto !important;
-    bottom: calc(40px + env(safe-area-inset-bottom)) !important;
-    left: 16px !important;
-    z-index: 65 !important;
-  }
-  #wheelBake {
-    top: auto !important;
-    bottom: calc(16px + env(safe-area-inset-bottom)) !important;
-    left: 16px !important;
-    z-index: 65 !important;
-  }
-}
+
 
 
 
@@ -1525,26 +1711,7 @@ html.lenis, html.lenis body {
   transition: all 0.25s ease;
 }
 
-/* في حالة الموبايل بالطول: أيقونة الكارت فوق السعر */
-@media (max-width: 649px) and (orientation: portrait) {
-  .mob-floating-cart {
-    display: flex !important;
-    position: absolute !important;
-    left: 16px !important;
-    right: auto !important;
-    bottom: calc(120px + env(safe-area-inset-bottom)) !important;
-    width: 48px !important;
-    height: 48px !important;
-  }
-  #mPrice {
-    bottom: calc(64px + env(safe-area-inset-bottom)) !important;
-    left: 16px !important;
-  }
-  #wheelBake {
-    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
-    left: 16px !important;
-  }
-}
+
 
 .mob-floating-cart:active {
   transform: scale(0.92);
@@ -1666,6 +1833,14 @@ textarea:-webkit-autofill:active {
   #builder {
     padding: 10px 4vw !important;
     overflow: hidden !important;
+  }
+  .builder-logo {
+    display: block !important;
+    position: absolute !important;
+    top: 14px !important;
+    left: 16px !important;
+    font-size: 22px !important;
+    z-index: 80 !important;
   }
   #rail, .panel {
     display: none !important;
@@ -1848,6 +2023,97 @@ textarea:-webkit-autofill:active {
     right: 0 !important;
     transform: none !important;
   }
+
+  /* ---------- MENU FOR LANDSCAPE TABLET (iPad Mini 1024x768, etc.) ---------- */
+  .menu-pin {
+    height: 100vh !important;
+    height: var(--apph, 100svh) !important;
+    overflow: hidden !important;
+    padding: clamp(14px, 2.5vh, 26px) 0 clamp(10px, 1.8vh, 18px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+  .m-head {
+    padding: 0 4vw !important;
+    flex-shrink: 0 !important;
+  }
+  .m-head h2 {
+    font-size: clamp(22px, 3.4vh, 34px) !important;
+  }
+  #menuTabs {
+    padding: 6px 4vw 10px !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+  #menuTabs button {
+    padding: 7px 15px !important;
+    font-size: 8.5px !important;
+  }
+  .menu-view {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    padding-left: 4vw !important;
+    width: 100% !important;
+    touch-action: pan-y !important;
+  }
+  #menuTrack {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding: 4px 4vw 8px 0 !important;
+    width: max-content !important;
+    will-change: transform !important;
+    transform: translateZ(0);
+  }
+  .mcard {
+    flex: 0 0 330px !important;
+    width: 330px !important;
+    height: auto !important;
+    min-height: clamp(480px, 66vh, 540px) !important;
+    max-height: clamp(500px, 69vh, 560px) !important;
+    padding: 22px 22px !important;
+    border-radius: 26px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+  .mimg {
+    width: clamp(160px, 22vh, 195px) !important;
+    height: clamp(160px, 22vh, 195px) !important;
+    margin: 2px auto 12px !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6) !important;
+  }
+  .mcard h3 {
+    font-size: 22px !important;
+    margin: 4px 0 8px !important;
+  }
+  .mings {
+    min-height: 36px !important;
+    margin-bottom: 12px !important;
+    gap: 6px !important;
+  }
+  .mings li {
+    font-size: 10px !important;
+    height: 24px !important;
+    padding: 0 10px !important;
+  }
+  .mrow {
+    margin-top: auto !important;
+    padding-top: 10px !important;
+  }
+  .mprice {
+    font-size: 24px !important;
+  }
+  .mbtn {
+    padding: 10px 20px !important;
+    font-size: 10px !important;
+  }
 }
 /* ================= 3. التابلت بالطول فقط من 650px لـ 1150px (يشمل iPad Mini و iPad Pro 13 وممنوع يلمس الموبايل) ================= */
 @media (min-width: 650px) and (max-width: 1150px) and (orientation: portrait) {
@@ -1895,53 +2161,76 @@ textarea:-webkit-autofill:active {
   .wg-label {
     font-size: 11px !important;
   }
-  /* كبر بيك بيتزا */
+  /* زر البيك للتابلت: أيقونة الفرن فقط بدون كلام مدور ومكبر */
   #wheelBake {
-    display: inline-flex !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
     bottom: 24px !important;
     left: 28px !important;
     right: auto !important;
-    width: 170px !important;
-    height: 50px !important;
-    padding: 0 20px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 13px !important;
-    font-weight: 800 !important;
-    letter-spacing: 2px !important;
-    border-radius: 999px !important;
+    top: auto !important;
+    width: 58px !important;
+    height: 58px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: #1a0f08 !important;
+    border: 1.5px solid var(--ember) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 16px rgba(255,122,46,0.4) !important;
     z-index: 70 !important;
+    cursor: pointer !important;
   }
-  /* كبر السعر وبدون بوردر */
-  #mPrice {
-    display: inline-flex !important;
-    bottom: 88px !important;
-    left: 28px !important;
-    right: auto !important;
-    padding: 12px 26px !important;
-    z-index: 70 !important;
+  #wheelBake .wb-oven-icon {
+    display: block !important;
+    width: 36px !important;
+    height: 36px !important;
+    margin: 0 !important;
   }
-  #mPriceVal {
-    font-size: 24px !important;
-    font-family: var(--disp) !important;
+  #wheelBake span {
+    display: none !important;
   }
-  /* أيقونة الكارت فوقيهم ومتوسطنة فوق زر البيك */
+
+  /* أيقونة الكارت بجانب زر البيك */
   .mob-floating-cart {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     position: absolute !important;
-    bottom: 199px !important;
-    left: px !important; /* 28px + (170 - 56) / 2 = 85px */
+    bottom: 24px !important;
+    left: 98px !important;
     right: auto !important;
     top: auto !important;
-    width: 56px !important;
-    height: 56px !important;
+    width: 58px !important;
+    height: 58px !important;
     border-radius: 50% !important;
     background: #1a0f08 !important;
     border: 1.5px solid var(--ember) !important;
     box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px rgba(255,122,46,0.3) !important;
     z-index: 70 !important;
+  }
+
+  /* كبر السعر وبدون بوردر فوق الأزرار */
+  #mPrice {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    bottom: 92px !important;
+    left: 28px !important;
+    right: auto !important;
+    top: auto !important;
+    padding: 10px 24px !important;
+    background: rgba(16, 10, 7, 0.94) !important;
+    border: none !important;
+    border-radius: 999px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 122, 46, 0.35) !important;
+    z-index: 70 !important;
+  }
+  #mPriceVal {
+    font-size: 24px !important;
+    font-family: var(--disp) !important;
+    font-weight: 800 !important;
   }
 
   /* تموضع البيتزا على اليمين بزاوية 15 درجة زي الـ iPad Mini تماماً */
@@ -1980,6 +2269,103 @@ textarea:-webkit-autofill:active {
   #builder.picking-size #drawerBtn {
     opacity: 0 !important;
     pointer-events: none !important;
+  }
+
+  /* ---------- MENU FOR PORTRAIT TABLET (iPad Pro 13 1032x1376) ---------- */
+  .menu-pin {
+    height: 100vh !important;
+    height: var(--apph, 100svh) !important;
+    min-height: 0 !important;
+    padding: clamp(38px, 5vh, 60px) 0 clamp(16px, 2.2vh, 30px) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+  .m-head {
+    padding: 0 5vw !important;
+    flex-shrink: 0 !important;
+  }
+  .m-head .kicker {
+    font-size: 13px !important;
+    letter-spacing: 0.35em !important;
+    margin-bottom: 8px !important;
+  }
+  .m-head h2 {
+    font-size: clamp(34px, 4.4vw, 54px) !important;
+    line-height: 1.12 !important;
+  }
+  #menuTabs {
+    padding: 14px 5vw 18px !important;
+    gap: 12px !important;
+    flex-shrink: 0 !important;
+  }
+  #menuTabs button {
+    padding: 11px 22px !important;
+    font-size: 12px !important;
+  }
+  .menu-view {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    padding: 0 0 0 5vw !important;
+    width: 100% !important;
+    touch-action: pan-y !important;
+  }
+  #menuTrack {
+    display: flex !important;
+    align-items: center !important;
+    gap: 24px !important;
+    padding: 10px 5vw 20px 0 !important;
+    width: max-content !important;
+    will-change: transform !important;
+    transform: translateZ(0);
+  }
+  .mcard {
+    flex: 0 0 clamp(350px, 34vw, 420px) !important;
+    width: clamp(350px, 34vw, 420px) !important;
+    height: auto !important;
+    min-height: clamp(540px, 60vh, 700px) !important;
+    max-height: clamp(560px, 65vh, 740px) !important;
+    padding: 28px 26px !important;
+    border-radius: 30px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+  }
+  .mimg {
+    width: clamp(180px, 20vh, 240px) !important;
+    height: clamp(180px, 20vh, 240px) !important;
+    margin: 4px auto 16px !important;
+  }
+  .mcard h3 {
+    font-size: 26px !important;
+    margin: 6px 0 12px !important;
+  }
+  .mings {
+    min-height: 44px !important;
+    margin-bottom: 18px !important;
+    gap: 7px !important;
+  }
+  .mings li {
+    font-size: 11px !important;
+    height: 28px !important;
+    padding: 0 12px !important;
+  }
+  .mrow {
+    margin-top: auto !important;
+    padding-top: 14px !important;
+  }
+  .mprice {
+    font-size: 26px !important;
+  }
+  .mbtn {
+    padding: 12px 24px !important;
+    font-size: 11px !important;
   }
 }
 
@@ -2331,39 +2717,41 @@ body.lang-ar a {
 .tracker-top-badge {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 14px;
-  background: rgba(255, 122, 46, 0.12);
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(255, 122, 46, 0.1);
   border: 1px solid rgba(255, 122, 46, 0.35);
   border-radius: 99px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 1.5px;
   color: var(--gold);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .live-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #ff7a2e;
   box-shadow: 0 0 10px #ff7a2e;
-  animation: livePulse 1.5s infinite;
+  animation: livePulse 1.6s infinite ease-in-out;
 }
 
 @keyframes livePulse {
-  0% { transform: scale(0.9); opacity: 0.6; box-shadow: 0 0 4px #ff7a2e; }
-  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 14px #ff7a2e; }
-  100% { transform: scale(0.9); opacity: 0.6; box-shadow: 0 0 4px #ff7a2e; }
+  0% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 4px #ff7a2e; }
+  50% { transform: scale(1.35); opacity: 1; box-shadow: 0 0 16px #ff7a2e; }
+  100% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 4px #ff7a2e; }
 }
 
 .tracker-order-num {
   font-family: var(--disp);
-  font-size: 28px;
-  letter-spacing: 1.5px;
+  font-size: 32px;
+  letter-spacing: 2px;
   color: var(--ember2);
   margin: 0 0 4px;
+  text-shadow: 0 2px 10px rgba(255, 122, 46, 0.2);
 }
 
 .tracker-order-sub {
@@ -2371,7 +2759,7 @@ body.lang-ar a {
   font-weight: 800;
   letter-spacing: 1.5px;
   color: var(--mut);
-  margin: 0 0 24px;
+  margin: 0 0 26px;
   text-transform: uppercase;
 }
 
@@ -2379,30 +2767,31 @@ body.lang-ar a {
 .order-stepper-wrap {
   position: relative;
   width: 100%;
-  margin: 10px 0 28px;
-  padding: 0 15px;
+  margin: 8px 0 28px;
+  padding: 0 18px;
   box-sizing: border-box;
 }
 
 .stepper-line-bg {
   position: absolute;
-  top: 24px;
-  left: 45px;
-  right: 45px;
+  top: 25px;
+  left: 48px;
+  right: 48px;
   height: 4px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 99px;
   z-index: 1;
   overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .stepper-line-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff7a2e 0%, #e8b04b 60%, #57a84f 100%);
+  background: linear-gradient(90deg, #ff7a2e 0%, #f6ad55 50%, #10b981 100%);
   border-radius: 99px;
   width: 0%;
   transition: width 0.9s cubic-bezier(0.25, 1, 0.5, 1);
-  box-shadow: 0 0 12px rgba(255, 122, 46, 0.6);
+  box-shadow: 0 0 14px rgba(255, 122, 46, 0.75);
 }
 
 .stepper-nodes {
@@ -2417,46 +2806,75 @@ body.lang-ar a {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: 75px;
+  width: 80px;
+  position: relative;
 }
 
 .step-icon-circle {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: #140d08;
-  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: #150e09;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .step-node .step-icon {
-  font-size: 20px;
-  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(243, 233, 220, 0.4);
+  transition: all 0.4s ease;
 }
 
 .step-node .step-check {
   display: none;
-  font-size: 18px;
-  font-weight: 900;
+  align-items: center;
+  justify-content: center;
   color: #fff;
+  animation: checkPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* Active Node */
 .step-node.active .step-icon-circle {
   border-color: #ff7a2e;
-  background: radial-gradient(circle, rgba(255, 122, 46, 0.28) 0%, #170d07 80%);
-  box-shadow: 0 0 22px rgba(255, 122, 46, 0.7);
-  transform: scale(1.15);
+  background: radial-gradient(circle, rgba(255, 122, 46, 0.32) 0%, #170d07 82%);
+  box-shadow: 0 0 24px rgba(255, 122, 46, 0.7), 0 4px 14px rgba(0, 0, 0, 0.6);
+  transform: scale(1.14);
 }
 
 .step-node.active .step-icon {
-  transform: scale(1.1);
-  animation: nodeFloat 2s ease-in-out infinite;
+  color: #ff944d;
+  animation: nodeFloat 2.2s ease-in-out infinite;
+}
+
+.step-node.active::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 122, 46, 0.4);
+  pointer-events: none;
+  animation: activeRingPulse 2s infinite ease-out;
+}
+
+@keyframes activeRingPulse {
+  0% { transform: translateX(-50%) scale(0.9); opacity: 0.8; }
+  100% { transform: translateX(-50%) scale(1.35); opacity: 0; }
 }
 
 @keyframes nodeFloat {
@@ -2466,10 +2884,10 @@ body.lang-ar a {
 
 /* Completed Node */
 .step-node.completed .step-icon-circle {
-  border-color: #57a84f;
-  background: linear-gradient(135deg, #57a84f, #3b7c35);
-  box-shadow: 0 0 16px rgba(87, 168, 79, 0.6);
-  transform: scale(1.05);
+  border-color: #10b981;
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.65), 0 4px 12px rgba(0, 0, 0, 0.5);
+  transform: scale(1.06);
 }
 
 .step-node.completed .step-icon {
@@ -2477,38 +2895,51 @@ body.lang-ar a {
 }
 
 .step-node.completed .step-check {
-  display: block;
+  display: flex;
 }
 
 .step-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 1.2px;
   color: var(--mut);
   text-transform: uppercase;
-  transition: color 0.4s ease;
+  transition: color 0.4s ease, transform 0.3s ease;
 }
 
 .step-node.active .step-label {
-  color: #ff7a2e;
+  color: #ff944d;
+  text-shadow: 0 0 10px rgba(255, 122, 46, 0.4);
 }
 
 .step-node.completed .step-label {
-  color: #7cc46a;
+  color: #34d399;
 }
 
 /* Status Card */
 .tracker-status-card {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 122, 46, 0.25);
+  background: rgba(22, 14, 9, 0.82);
+  border: 1px solid rgba(255, 122, 46, 0.28);
   border-radius: 18px;
-  padding: 18px 20px;
+  padding: 18px 22px;
   margin-bottom: 20px;
   text-align: left;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.tracker-status-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 122, 46, 0.6), transparent);
 }
 
 .tracker-card-head {
@@ -2516,10 +2947,11 @@ body.lang-ar a {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  gap: 10px;
 }
 
 .tracker-card-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--mut);
   letter-spacing: 1.5px;
   font-weight: 800;
@@ -2527,33 +2959,125 @@ body.lang-ar a {
 }
 
 .tracker-badge {
-  font-size: 10px;
-  padding: 4px 12px;
+  font-size: 11px;
+  padding: 5px 14px;
   border-radius: 99px;
-  background: rgba(255, 122, 46, 0.15);
+  background: rgba(255, 122, 46, 0.16);
   color: var(--ember2);
   border: 1px solid var(--ember);
   font-weight: 900;
   letter-spacing: 1px;
   transition: all 0.4s ease;
+  white-space: nowrap;
 }
 
 .tracker-card-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink);
   line-height: 1.6;
   margin: 0;
+  font-weight: 500;
 }
 
+/* ---------- WHATSAPP QUICK CONFIRMATION BUTTON ---------- */
 .whatsapp-track-btn {
-  width: 100%;
-  margin-bottom: 12px;
-  background: #25D366;
-  color: #fff;
-  border: none;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  font-weight: 900;
-  gap: 8px;
+  width: 100%;
+  padding: 13px 20px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #25D366 0%, #1ebe5d 55%, #128c7e 100%);
+  color: #ffffff !important;
+  text-decoration: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.38), 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.whatsapp-track-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transform: skewX(-22deg);
+  animation: waShine 3.5s infinite ease-in-out;
+}
+
+@keyframes waShine {
+  0% { left: -100%; }
+  35%, 100% { left: 160%; }
+}
+
+.whatsapp-track-btn:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 30px rgba(37, 211, 102, 0.55), 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  filter: brightness(1.05);
+}
+
+.whatsapp-track-btn:active {
+  transform: translateY(0) scale(0.99);
+  filter: brightness(0.96);
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+}
+
+.wa-icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+[dir="rtl"] .wa-icon-wrap {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+.wa-btn-text {
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  line-height: 1;
+}
+
+.wa-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  opacity: 0.9;
+  transition: transform 0.25s ease;
+}
+
+[dir="rtl"] .wa-arrow {
+  margin-left: 0;
+  margin-right: auto;
+  transform: rotate(180deg);
+}
+
+.whatsapp-track-btn:hover .wa-arrow {
+  transform: translateX(4px);
+}
+
+[dir="rtl"] .whatsapp-track-btn:hover .wa-arrow {
+  transform: rotate(180deg) translateX(4px);
 }
 
 /* Completed Celebratory Screen */

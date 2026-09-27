@@ -4,20 +4,164 @@
 import { useState, useMemo } from "react";
 import { escapeHtml } from "@/lib/security";
 
-export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
+// إزالة أي ذكر لكلمة cm وتنسيق اسم المنتج
+export function cleanItemName(name) {
+  if (!name) return "";
+  return String(name)
+    .replace(/\s*\bcm\b/gi, "")
+    .replace(/\(\s*(\d+)\s*\)/g, "($1)")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+// استخراج وترتيب المكونات بالإنجليزية كنص عادي بدون أيقونات وبدون كلمة cm
+export function parseItemIngredients(it) {
+  if (!it) return [];
+  const parts = [];
+
+  if (it.snap && typeof it.snap === "object") {
+    // 1. الحجم بالإنجليزية وبدون كلمة cm نهائياً
+    const szMap = { small: "Small (24)", med: "Medium (30)", large: "Large (36)" };
+    if (it.snap.size) {
+      parts.push(szMap[it.snap.size] || String(it.snap.size).replace(/\s*\bcm\b/gi, ""));
+    }
+
+    // 2. العجينة بالإنجليزية
+    if (it.snap.dough) {
+      const dMap = {
+        thin: "Thin Crust",
+        classic: "Classic Crust",
+        thick: "Thick Crust",
+        cheese: "Cheese Stuffed Crust"
+      };
+      parts.push(dMap[it.snap.dough] || `${it.snap.dough} Crust`);
+    }
+
+    // 3. الصلصة بالإنجليزية
+    if (it.snap.sauce) {
+      const sMap = {
+        tomato: "Tomato Sauce",
+        spicy: "Spicy Tomato Sauce",
+        bbq: "BBQ Sauce",
+        garlic: "White Garlic Sauce"
+      };
+      parts.push(sMap[it.snap.sauce] || `${it.snap.sauce} Sauce`);
+    }
+
+    // 4. الجبنة بالإنجليزية
+    if (it.snap.cheese) {
+      const cMap = {
+        mozzarella: "Mozzarella",
+        extra: "Extra Cheese",
+        four: "Four Cheese",
+        smoked: "Smoked Cheese"
+      };
+      parts.push(cMap[it.snap.cheese] || it.snap.cheese);
+    }
+
+    // 5. اللحوم بالإنجليزية
+    if (it.snap.meats && typeof it.snap.meats === "object") {
+      const mMap = {
+        pepperoni: "Pepperoni",
+        beef: "Ground Beef",
+        chicken: "Seasoned Chicken",
+        sausage: "Italian Sausage"
+      };
+      Object.entries(it.snap.meats).forEach(([m, amt]) => {
+        const extra = amt === "more" ? " (+Extra)" : amt === "less" ? " (Light)" : "";
+        parts.push((mMap[m] || m) + extra);
+      });
+    }
+
+    // 6. الخضروات بالإنجليزية
+    if (Array.isArray(it.snap.vegs)) {
+      const vMap = {
+        olives: "Black Olives",
+        mushroom: "Mushrooms",
+        onion: "Red Onions",
+        greenPepper: "Green Peppers",
+        jalapeno: "Jalapeños",
+        basil: "Fresh Basil"
+      };
+      it.snap.vegs.forEach((v) => {
+        parts.push(vMap[v] || v);
+      });
+    }
+
+    // 7. الإضافات بالإنجليزية
+    if (Array.isArray(it.snap.extras)) {
+      const xMap = {
+        extraCheese: "Extra Cheese",
+        chili: "Chili Flakes",
+        garlic: "Garlic Sauce",
+        truffle: "Truffle Oil",
+        bbqDrizzle: "BBQ Drizzle"
+      };
+      it.snap.extras.forEach((x) => {
+        parts.push(xMap[x] || x);
+      });
+    }
+  }
+
+  // Fallback for raw text without cm
+  if (parts.length === 0) {
+    const raw = it.ingredients_text || it.meta || (Array.isArray(it.ingredients) ? it.ingredients.join(" · ") : it.ingredients) || (Array.isArray(it.ing) ? it.ing.join(" · ") : "");
+    if (raw) {
+      const cleanRaw = String(raw).replace(/\s*\bcm\b/gi, "");
+      const items = cleanRaw.split(/[·|,]+/).map((s) => s.trim()).filter(Boolean);
+      items.forEach((p) => parts.push(p));
+    }
+  }
+
+  return parts;
+}
+
+// عرض المكونات كنص عادي مرتب بدون أيقونات
+export function IngredientChips({ item }) {
+  const parts = parseItemIngredients(item);
+  if (!parts || parts.length === 0) return null;
+
+  return (
+    <div style={{ fontSize: "11px", color: "rgba(243, 233, 220, 0.72)", lineHeight: "1.5", marginTop: "4px" }}>
+      {parts.join(" · ")}
+    </div>
+  );
+}
+
+// دالة نصية للإيصال وتصدير CSV
+function getItemIngredients(it) {
+  const parts = parseItemIngredients(it);
+  return parts.join(" · ");
+}
+
+export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt, onResetOrders, onRefreshOrders }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterView, setFilterView] = useState("all"); // 'all' | 'pending' | 'kitchen' | 'archived'
 
+  // فلترة فورية تدعم البحث برقم الطلب (مع # أو بدونها)، اسم العميل، رقم الهاتف، أو العنوان
   const filteredOrders = useMemo(() => {
     if (!searchQuery.trim()) return orders;
-    const q = searchQuery.toLowerCase().trim();
-    return orders.filter(
-      (o) =>
-        (o.order_number && o.order_number.toLowerCase().includes(q)) ||
-        (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
-        (o.customer_phone && o.customer_phone.includes(q)) ||
-        (o.customer_address && o.customer_address.toLowerCase().includes(q))
-    );
+    const rawQ = searchQuery.toLowerCase().trim();
+    const cleanQ = rawQ.replace(/^#/, "").trim();
+    const qNoSpace = cleanQ.replace(/\s+/g, "");
+
+    return orders.filter((o) => {
+      const orderNum = String(o.order_number || o.id || "").toLowerCase();
+      const custName = String(o.customer_name || o.name || "").toLowerCase();
+      const custPhone = String(o.customer_phone || o.phone || "").replace(/\s+/g, "");
+      const custAddress = String(o.customer_address || "").toLowerCase();
+
+      const matchOrderNum = orderNum.includes(cleanQ) || orderNum.includes(rawQ);
+      const matchName = custName.includes(rawQ);
+      const matchPhone = qNoSpace ? custPhone.includes(qNoSpace) : false;
+      const matchAddress = custAddress.includes(rawQ);
+
+      const matchItems = (o.items || []).some((it) =>
+        String(it.name || "").toLowerCase().includes(rawQ)
+      );
+
+      return matchOrderNum || matchName || matchPhone || matchAddress || matchItems;
+    });
   }, [orders, searchQuery]);
 
   const pendingOrders = filteredOrders.filter((o) => o.payment_status === "pending");
@@ -28,6 +172,11 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
     (o) => o.order_status === "completed" || o.payment_status === "rejected"
   );
 
+  // حساب إجمالي المبالغ للطلبات المعروضة حالياً
+  const filteredTotalValue = useMemo(() => {
+    return filteredOrders.reduce((acc, o) => acc + (Number(o.total ?? o.total_price ?? 0)), 0);
+  }, [filteredOrders]);
+
   // 1. طباعة إيصال / بون مطبخ حراري مع تطهير XSS
   const handlePrintTicket = (ord) => {
     const printWindow = window.open("", "_blank", "width=400,height=600");
@@ -35,15 +184,18 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
 
     const itemsHtml = (ord.items || [])
       .map(
-        (it) => `
-        <div style="margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 6px;">
-          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
-            <span>${escapeHtml(it.name)} × ${Math.max(1, parseInt(it.qty, 10) || 1)}</span>
-            <span>EGP ${(Number(it.unit) || 0) * (Math.max(1, parseInt(it.qty, 10) || 1))}</span>
+        (it) => {
+          const ings = getItemIngredients(it);
+          return `
+          <div style="margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
+              <span>${escapeHtml(cleanItemName(it.name))} × ${Math.max(1, parseInt(it.qty, 10) || 1)}</span>
+              <span>EGP ${(Number(it.unit) || 0) * (Math.max(1, parseInt(it.qty, 10) || 1))}</span>
+            </div>
+            ${ings ? `<div style="font-size: 11px; color: #111; margin-top: 4px; background: #f5f5f5; padding: 4px 6px; border-radius: 4px; line-height: 1.3;"><b>Ingredients:</b> ${escapeHtml(ings)}</div>` : ""}
           </div>
-          ${it.meta ? `<div style="font-size: 11px; color: #555; margin-top: 2px;">${escapeHtml(it.meta)}</div>` : ""}
-        </div>
-      `
+        `;
+        }
       )
       .join("");
 
@@ -133,9 +285,15 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
       return `"${str}"`;
     };
 
-    const headers = ["Order #", "Date", "Customer Name", "Phone", "Address", "Items Count", "Total (EGP)", "Payment Method", "Payment Status", "Order Status"];
+    const headers = ["Order #", "Date", "Customer Name", "Phone", "Address", "Items & Ingredients", "Items Count", "Total (EGP)", "Payment Method", "Payment Status", "Order Status"];
     const rows = orders.map((o) => {
       const itemsCount = (o.items || []).reduce((acc, it) => acc + (it.qty || 1), 0);
+      const itemsDetailed = (o.items || [])
+        .map((it) => {
+          const ings = getItemIngredients(it);
+          return `${cleanItemName(it.name)} (x${it.qty || 1})${ings ? ` [${ings}]` : ""}`;
+        })
+        .join(" | ");
       const safeDate = o.created_at ? new Date(o.created_at).toISOString().replace("T", " ").slice(0, 19) : "";
       return [
         sanitizeCsvField(o.order_number),
@@ -143,6 +301,7 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
         sanitizeCsvField(o.customer_name),
         sanitizeCsvField(o.customer_phone),
         sanitizeCsvField(o.customer_address),
+        sanitizeCsvField(itemsDetailed),
         itemsCount,
         Number(o.total) || 0,
         sanitizeCsvField(o.payment_method),
@@ -262,6 +421,11 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
             ARCHIVED ({archivedOrders.length})
           </button>
 
+          <div style={{ background: "rgba(87,168,79,0.15)", border: "1px solid rgba(87,168,79,0.4)", borderRadius: "99px", padding: "7px 16px", color: "#57a84f", fontSize: "11px", fontWeight: "900", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <span>💰 TOTAL:</span>
+            <span style={{ color: "#fff" }}>EGP {filteredTotalValue.toLocaleString()}</span>
+          </div>
+
           <button
             onClick={handleExportCSV}
             style={{
@@ -281,6 +445,34 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
           >
             📥 EXPORT CSV
           </button>
+
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.35)", padding: "7px 14px", borderRadius: "99px", fontSize: "11px", fontWeight: "800", color: "#25D366" }}>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#25D366", boxShadow: "0 0 8px #25D366" }}></span>
+            <span>LIVE SYNC</span>
+          </div>
+
+          {onResetOrders && (
+            <button
+              onClick={onResetOrders}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 16px",
+                borderRadius: "99px",
+                fontSize: "11px",
+                fontWeight: "800",
+                cursor: "pointer",
+                border: "1px solid rgba(194,43,26,0.6)",
+                background: "rgba(194,43,26,0.15)",
+                color: "#ff8b7a",
+                transition: "all 0.2s ease"
+              }}
+              title="Zero out all orders and metrics"
+            >
+              🗑️ RESET ALL ORDERS
+            </button>
+          )}
         </div>
       </div>
 
@@ -326,19 +518,29 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
                   </div>
 
                   <div style={{ fontSize: "12px", marginBottom: "12px", lineHeight: "1.6" }}>
-                    <b style={{ color: "#fff" }}>{ord.customer_name}</b> ({ord.customer_phone})<br />
-                    <span style={{ color: "#9a8b7a" }}>📍 {ord.customer_address}</span>
+                    <div style={{ fontSize: "14px", fontWeight: "800", color: "#fff" }}>{ord.customer_name}</div>
+                    {ord.customer_phone && (
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#ffb347", background: "rgba(255,179,71,0.12)", padding: "2px 8px", borderRadius: "6px", display: "inline-block", marginTop: "3px" }}>
+                        📞 {ord.customer_phone}
+                      </span>
+                    )}
+                    {ord.customer_address && (
+                      <div style={{ color: "#9a8b7a", marginTop: "3px" }}>📍 {ord.customer_address}</div>
+                    )}
                   </div>
 
-                  {/* قائمة المنتجات */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "10px", padding: "10px", marginBottom: "12px", maxHeight: "140px", overflowY: "auto", fontSize: "11px" }}>
+                  {/* قائمة المنتجات مع المكونات بالإنجليزية ومرتبة كنص عادي بدون أيقونات */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "12px", padding: "12px", marginBottom: "12px", maxHeight: "240px", overflowY: "auto", fontSize: "11px" }}>
                     {ord.items?.map((it, idx) => (
-                      <div key={idx} style={{ marginBottom: "6px", borderBottom: "1px dashed rgba(255,255,255,0.05)", paddingBottom: "4px" }}>
-                        <b style={{ color: "#fff" }}>{it.name}</b> × {it.qty} = <span style={{ color: "#e8b04b" }}>EGP {it.unit * it.qty}</span>
-                        {it.meta && <div style={{ fontSize: "9px", color: "#9a8b7a" }}>{it.meta}</div>}
+                      <div key={idx} style={{ marginBottom: "10px", borderBottom: idx < (ord.items.length - 1) ? "1px dashed rgba(255,255,255,0.08)" : "none", paddingBottom: "8px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <b style={{ color: "#fff", fontSize: "12px" }}>{cleanItemName(it.name)}</b>
+                          <span style={{ color: "#e8b04b", fontWeight: "bold" }}>× {it.qty} = EGP {(Number(it.unit) || 0) * (it.qty || 1)}</span>
+                        </div>
+                        <IngredientChips item={it} />
                       </div>
                     ))}
-                    <div style={{ textAlign: "right", fontWeight: "900", color: "#ffb347", fontSize: "13px", marginTop: "6px" }}>
+                    <div style={{ textAlign: "right", fontWeight: "900", color: "#ffb347", fontSize: "14px", marginTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "6px" }}>
                       TOTAL: EGP {ord.total}
                     </div>
                   </div>
@@ -409,8 +611,26 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
                     </div>
                   </div>
                   <div style={{ fontSize: "11px", color: "#9a8b7a", marginBottom: "10px" }}>
-                    Customer: <b style={{ color: "#fff" }}>{ord.customer_name}</b> | Phone: {ord.customer_phone}<br />
-                    Total: <b style={{ color: "#ffb347" }}>EGP {ord.total}</b>
+                    <div style={{ fontSize: "13px", fontWeight: "800", color: "#fff" }}>{ord.customer_name}</div>
+                    {ord.customer_phone && (
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#ffb347", background: "rgba(255,179,71,0.12)", padding: "2px 7px", borderRadius: "5px", display: "inline-block", marginTop: "2px" }}>
+                        📞 {ord.customer_phone}
+                      </span>
+                    )}
+                    <div style={{ marginTop: "4px" }}>Total: <b style={{ color: "#ffb347" }}>EGP {ord.total}</b></div>
+                  </div>
+
+                  {/* قائمة المكونات لتحضير الأوردر في المطبخ كنص عادي مرتب بدون أيقونات وبدون cm */}
+                  <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "10px", padding: "10px", marginBottom: "12px", maxHeight: "220px", overflowY: "auto", fontSize: "11px" }}>
+                    {ord.items?.map((it, idx) => (
+                      <div key={idx} style={{ marginBottom: "8px", borderBottom: idx < (ord.items.length - 1) ? "1px dashed rgba(255,255,255,0.06)" : "none", paddingBottom: "6px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <b style={{ color: "#fff", fontSize: "12px" }}>{cleanItemName(it.name)}</b>
+                          <span style={{ color: "#e8b04b", fontWeight: "bold" }}>× {it.qty}</span>
+                        </div>
+                        <IngredientChips item={it} />
+                      </div>
+                    ))}
                   </div>
                   
                   <div style={{ display: "flex", gap: "6px" }}>
@@ -464,9 +684,38 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt }) {
                 ) : (
                   archivedOrders.map((o) => (
                     <tr key={o.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                      <td style={{ padding: "12px 14px", fontWeight: "bold" }}>#{o.order_number}</td>
-                      <td style={{ padding: "12px 14px" }}>{o.customer_name}</td>
-                      <td style={{ padding: "12px 14px", color: "#e8b04b" }}>EGP {o.total}</td>
+                      <td style={{ padding: "12px 14px" }}>
+                        <span style={{ fontFamily: "Impact", fontSize: "16px", color: "#ffb347" }}>#{o.order_number}</span>
+                      </td>
+                      <td style={{ padding: "12px 14px", minWidth: "260px" }}>
+                        <div style={{ fontSize: "14px", fontWeight: "800", color: "#ffffff", letterSpacing: "0.5px" }}>
+                          {o.customer_name}
+                        </div>
+                        {o.customer_phone && (
+                          <div style={{ marginTop: "4px" }}>
+                            <span style={{ fontSize: "11px", fontWeight: "700", color: "#ffb347", background: "rgba(255,179,71,0.12)", border: "1px solid rgba(255,179,71,0.25)", padding: "2px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <span>📞</span>
+                              <span>{o.customer_phone}</span>
+                            </span>
+                          </div>
+                        )}
+                        {o.customer_address && (
+                          <div style={{ fontSize: "10.5px", color: "#9a8b7a", marginTop: "3px" }}>
+                            📍 {o.customer_address}
+                          </div>
+                        )}
+                        <div style={{ marginTop: "8px" }}>
+                          {(o.items || []).map((it, idx) => (
+                            <div key={idx} style={{ marginTop: "4px", paddingBottom: "4px", borderBottom: idx < (o.items.length - 1) ? "1px dashed rgba(255,255,255,0.06)" : "none" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px" }}>
+                                <span style={{ color: "#fff", fontWeight: "700" }}>• {cleanItemName(it.name)} <span style={{ color: "#e8b04b" }}>× {it.qty || 1}</span></span>
+                              </div>
+                              <IngredientChips item={it} />
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 14px", color: "#e8b04b", fontSize: "13px", fontWeight: "bold" }}>EGP {o.total}</td>
                       <td style={{ padding: "12px 14px", textTransform: "uppercase" }}>{o.payment_status}</td>
                       <td style={{ padding: "12px 14px", textTransform: "uppercase" }}>{o.order_status}</td>
                       <td style={{ padding: "12px 14px" }}>

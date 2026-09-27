@@ -207,6 +207,16 @@ export async function GET(request) {
       return NextResponse.json({ error: authResult.error || 'Unauthorized to view all orders' }, { status: 401 });
     }
 
+    // تصفير بيانات الطلبات والإجماليات لمرة واحدة بناءً على طلب المستخدم
+    if (global.__forno_orders_reset_pending !== false) {
+      global.__forno_orders_reset_pending = false;
+      try {
+        await supabaseServer.from('orders').delete().neq('order_number', '____NONE____');
+      } catch (e) {
+        console.error('Failed to reset orders:', e);
+      }
+    }
+
     const { data, error } = await supabaseServer
       .from('orders')
       .select('*')
@@ -443,6 +453,25 @@ export async function PATCH(request) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true, order: data });
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const authResult = await verifyAdmin(request);
+    if (!authResult.authorized) {
+      return NextResponse.json({ error: authResult.error || 'Unauthorized' }, { status: 401 });
+    }
+
+    const { error } = await supabaseServer
+      .from('orders')
+      .delete()
+      .neq('order_number', '____NONE____');
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, message: 'All orders and totals reset successfully' });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

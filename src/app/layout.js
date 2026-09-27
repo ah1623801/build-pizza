@@ -36,6 +36,13 @@ export const metadata = {
   title: `${siteConfig.name} — ${siteConfig.tagline}`,
   description: siteConfig.description,
   manifest: '/manifest.json',
+  alternates: {
+    canonical: siteConfig.url,
+    languages: {
+      'en': `${siteConfig.url}?lang=en`,
+      'ar': `${siteConfig.url}?lang=ar`,
+    },
+  },
   openGraph: {
     title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
@@ -50,6 +57,7 @@ export const metadata = {
       },
     ],
     locale: 'en_US',
+    alternateLocale: ['ar_EG'],
     type: 'website',
   },
   twitter: {

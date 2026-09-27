@@ -92,7 +92,7 @@ export const translations = {
     couponPlaceholder: "e.g. FORNO10",
     subtotal: "SUBTOTAL:",
     discount: "DISCOUNT:",
-    whatsappConfirm: "💬 CONFIRM ON WHATSAPP",
+    whatsappConfirm: "CONFIRM ON WHATSAPP",
     orderReceivedMsg: "THANK YOU! YOUR WOOD-FIRED ORDER IS RECEIVED.",
     orderStatusLabel: "STATUS:",
 
@@ -209,7 +209,7 @@ export const translations = {
     couponPlaceholder: "مثال: FORNO10",
     subtotal: "المجموع الفرعي:",
     discount: "الخصم:",
-    whatsappConfirm: "💬 تأكيد الطلب عبر واتساب",
+    whatsappConfirm: "تأكيد الطلب عبر واتساب",
     orderReceivedMsg: "شكراً لك! تم استلام طلبك وبانتظار بدء التجهيز.",
     orderStatusLabel: "حالة الطلب:",
 

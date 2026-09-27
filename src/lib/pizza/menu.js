@@ -34,9 +34,9 @@ export function resolvePizzaImage(it) {
     margherita: IMG.pMarg,
     original: IMG.pOriginal,
     diablo: IMG.pOriginal,
-    bread: IMG.table,
-    cola: IMG.table,
-    lava: IMG.table
+    bread: '/ico.webp',
+    cola: '/ico.webp',
+    lava: '/ico.webp'
   };
 
   const id = String(it.item_id || it.id || '').toLowerCase().trim();
@@ -58,7 +58,7 @@ export function resolvePizzaImage(it) {
     }
   }
 
-  return IMG.pOriginal;
+  return it.simple ? '/ico.webp' : (IMG.pOriginal || '/ico.webp');
 }
 
 export async function syncMenuFromServer() {
@@ -136,7 +136,7 @@ export function renderMenu({ onAddToCart } = {}) {
 
     return (
       '<article class="mcard" data-id="' + safeId + '">' +
-      (safeImg ? '<div class="mimg"><img loading="lazy" src="' + safeImg + '" style="' + (it.imgF ? 'filter:' + it.imgF : '') + '" alt="' + safeName + '" onerror="this.onerror=null;this.src=\'/images/fire.webp\';"></div>' : '<div class="mnum">0' + (n + 1) + '</div>') +
+      (safeImg ? '<div class="mimg"><img loading="lazy" src="' + safeImg + '" style="' + (it.imgF ? 'filter:' + it.imgF : '') + '" alt="' + safeName + '" onerror="this.onerror=null;this.src=\'/ico.webp\';"></div>' : '<div class="mnum">0' + (n + 1) + '</div>') +
       '<span class="mcat">' + safeCat + '</span><h3>' + safeName + '</h3>' +
       '<ul class="mings">' + safeIngs + '</ul>' +
       '<div class="mrow"><span class="mprice" data-p="' + safePrice + '">' + currencyText + ' ' + safePrice + '</span>' +

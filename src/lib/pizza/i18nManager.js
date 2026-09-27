@@ -132,7 +132,12 @@ export function applyTranslations() {
   if ($('#ckCoupon')) $('#ckCoupon').placeholder = t('couponPlaceholder');
   if ($('#subtotalLabel')) $('#subtotalLabel').textContent = t('subtotal');
   if ($('#discountLabel')) $('#discountLabel').textContent = t('discount');
-  if ($('#whatsappConfirmBtn')) $('#whatsappConfirmBtn').textContent = t('whatsappConfirm');
+  const waBtnText = $('#whatsappConfirmBtn .wa-btn-text');
+  if (waBtnText) {
+    waBtnText.textContent = t('whatsappConfirm');
+  } else if ($('#whatsappConfirmBtn')) {
+    $('#whatsappConfirmBtn').textContent = t('whatsappConfirm');
+  }
   if ($('#trackOrderRecvMsg')) $('#trackOrderRecvMsg').textContent = t('orderReceivedMsg');
   if ($('#trackStatusLabel')) $('#trackStatusLabel').textContent = t('orderStatusLabel');
 

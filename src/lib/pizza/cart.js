@@ -178,7 +178,7 @@ function persistCart() {
         st.applySnapshot(item.snap, 0);
         st.cookifyInstant();
       } else {
-        const safeImg = escapeHtml(item.img || '');
+        const safeImg = escapeHtml(item.img || '/ico.webp');
         prev.innerHTML = '<img class="ci-img" src="' + safeImg + '" alt="">';
       }
       row.appendChild(prev);
@@ -733,7 +733,15 @@ function persistCart() {
       placeOrderBtn.textContent = 'SENDING ORDER...';
 
       try {
-        const orderItems = JSON.parse(JSON.stringify(cart));
+        const orderItems = cart.map((c) => {
+          const itemCopy = JSON.parse(JSON.stringify(c));
+          const fullMeta = c.kind === 'pizza' ? summarize(c.snap) : (c.meta || (c.ing || []).join(' · '));
+          itemCopy.meta = fullMeta;
+          itemCopy.ingredients = fullMeta;
+          itemCopy.ingredients_text = fullMeta;
+          if (!itemCopy.img) itemCopy.img = '/ico.webp';
+          return itemCopy;
+        });
         const totalAmount = cart.reduce((a, c) => a + c.unit * c.qty, 0);
 
         const fd = new FormData();
@@ -765,6 +773,19 @@ function persistCart() {
           try {
             localStorage.setItem('forno_active_order', JSON.stringify(orderToTrack));
           } catch (e) {}
+
+          // إرسال إشعار فوري لجميع التابات المفتوحة (بما فيها الداشبورد) لسماع الطلب فورياً
+          if (typeof window !== 'undefined') {
+            try {
+              const bc = new BroadcastChannel('forno_orders_channel');
+              bc.postMessage({ type: 'NEW_ORDER', order: data.order });
+              bc.close();
+            } catch (e) {}
+            try {
+              localStorage.setItem('forno_new_order_ping', Date.now().toString());
+            } catch (e) {}
+          }
+
           showCustomerTracking(orderToTrack);
         } else {
           toast(data.error || 'FAILED TO PLACE ORDER');
