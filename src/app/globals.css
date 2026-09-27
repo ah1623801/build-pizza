@@ -822,7 +822,7 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
   #wheelBake{box-shadow:none}
   #wheelBake{display:inline-flex}
   #rail{display:none!important}
-  .stage-wrap{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+  .stage-wrap{touch-action:none !important;user-select:none;-webkit-user-select:none}
 }
 /* مقاس وسطي ومريح للتابلت (650px+) */
 @media (min-width: 650px) {
@@ -1006,7 +1006,7 @@ body.mm-open #burgerBtn{opacity:0;pointer-events:none}
 }
 
 /* ---------- WI: مربع مثالي = دايرة مثالية ---------- */
-.wi{--ws:54px;position:absolute;width:var(--ws);height:var(--ws);aspect-ratio:1/1;margin:calc(var(--ws)/-2);pointer-events:auto;touch-action:pan-y;cursor:pointer}
+.wi{--ws:54px;position:absolute;width:var(--ws);height:var(--ws);aspect-ratio:1/1;margin:calc(var(--ws)/-2);pointer-events:auto;touch-action:none;cursor:pointer}
 .wi-in{width:100%;height:100%;aspect-ratio:1/1;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:rgba(16,10,7,.72);border:1px solid rgba(243,233,220,.08)}
 @media(min-width:600px) and (max-width:980px){.wi{--ws:66px}}
 
@@ -1919,8 +1919,6 @@ textarea:-webkit-autofill:active {
     left: 28px !important;
     right: auto !important;
     padding: 12px 26px !important;
-    border: none !important; /* شيل البوردر اللي على السعر */
-    border-radius: 999px !important;
     z-index: 70 !important;
   }
   #mPriceVal {
@@ -1933,8 +1931,8 @@ textarea:-webkit-autofill:active {
     align-items: center !important;
     justify-content: center !important;
     position: absolute !important;
-    bottom: 154px !important;
-    left: 85px !important; /* 28px + (170 - 56) / 2 = 85px */
+    bottom: 199px !important;
+    left: px !important; /* 28px + (170 - 56) / 2 = 85px */
     right: auto !important;
     top: auto !important;
     width: 56px !important;

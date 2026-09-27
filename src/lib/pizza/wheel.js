@@ -166,12 +166,78 @@ export function setupWheel({
   wrap.addEventListener(
     'touchmove',
     (e) => {
-      if (drag && downEl && e.cancelable) {
+      if (drag && e.cancelable) {
         e.preventDefault();
       }
     },
     { passive: false }
   );
+
+  let audioCtx = null;
+  function getAudioCtx() {
+    if (typeof window === 'undefined') return null;
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+  }
+
+  const unlockAudio = () => {
+    getAudioCtx();
+    window.removeEventListener('pointerdown', unlockAudio);
+    window.removeEventListener('touchstart', unlockAudio);
+  };
+  window.addEventListener('pointerdown', unlockAudio, { passive: true });
+  window.addEventListener('touchstart', unlockAudio, { passive: true });
+
+  let lastTickA = 0;
+  function checkWheelTick(currentA, currentVel = 0) {
+    if (!builderInView || document.hidden || !isWheelActive()) return;
+    const ovenScene = document.getElementById('ovenScene');
+    if (ovenScene && ovenScene.classList.contains('on')) return;
+    if (document.getElementById('builder')?.classList.contains('picking-size')) return;
+
+    const STEP = 16.36; // صوت تكة ميكانيكية عند كل عنصر (360 / 22)
+    if (Math.abs(currentA - lastTickA) >= STEP) {
+      lastTickA = currentA;
+      playTick(Math.min(2.5, Math.abs(currentVel) / 250));
+    }
+  }
+
+  function playTick(intensity = 1) {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx || ctx.state !== 'running') return;
+      const now = ctx.currentTime;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1150 + Math.random() * 200, now);
+      filter.Q.setValueAtTime(3.5, now);
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(360, now);
+      osc.frequency.exponentialRampToValueAtTime(70, now + 0.02);
+
+      const vol = Math.min(0.09, 0.025 + intensity * 0.035);
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.02);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.022);
+    } catch (e) {}
+  }
 
   wrap.addEventListener('pointermove', (e) => {
     if (!drag) return;
@@ -186,12 +252,15 @@ export function setupWheel({
     A += d;
     lastA = a;
     lastT = t;
+    checkWheelTick(A, vel);
   });
 
   wrap.addEventListener('pointerdown', (e) => {
+    getAudioCtx();
     if (!isWheelActive()) return;
     const ovenScene = document.getElementById('ovenScene');
     if (ovenScene && ovenScene.classList.contains('on')) return;
+    if (e.target.closest('button') || e.target.closest('#mobileFloatingCart') || e.target.closest('#mobileSizeSelector') || e.target.closest('#mPrice')) return;
     drag = true;
     moved = 0;
     vel = 0;
@@ -239,6 +308,9 @@ export function setupWheel({
     if (!drag) {
       vel *= Math.pow(0.0025, dt);
       A += (AUTO + vel) * dt;
+      if (Math.abs(vel) > 10) {
+        checkWheelTick(A, vel);
+      }
     }
 
     rot.style.transform = `rotate(${A}deg)`;
@@ -274,7 +346,7 @@ export function setupWheel({
 
     let factor = 1.22;
     if (isPortrait) {
-      factor = isMobilePhone ? 1.18 : 1.09;
+      factor = isMobilePhone ? 1.18 : 1;
     }
 const S = Math.min(document.querySelector('#stageHost .pz-rot')?.offsetWidth || hr.width, hr.width, hr.height) * factor;
     wheel.style.width = S + 'px';

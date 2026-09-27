@@ -139,10 +139,10 @@ export const translations = {
     // Builder
     builderHead: "صمّم بيتزتك بنفسك",
     chooseSize: "اختر حجم البيتزا",
-    sizeSmall: "صغير — 25سم",
-    sizeMed: "وسط — 30سم",
-    sizeLarge: "كبير — 35سم",
-    bakeBtn: "اخبز البيتزا 🍕",
+    sizeSmall: "صغير",
+    sizeMed: "وسط",
+    sizeLarge: "كبير",
+    bakeBtn: "اخبز البيتزا",
     currency: "ج.م",
 
     // Wheel Labels
