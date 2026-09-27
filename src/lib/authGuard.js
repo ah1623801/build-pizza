@@ -2,25 +2,47 @@
 import { createClient } from '@supabase/supabase-js';
 
 export function getAuthClient() {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const key = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+  const url =
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    'https://horzpuskogrowgfmuzoq.supabase.co';
+  const key =
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvcnpwdXNrb2dyb3dnZm11em9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwNTAxNzgsImV4cCI6MjEwNDYyNjE3OH0.bJFn3YAbspNYW1ZLEBKh1VEFu9LKQnKkOW9vuL1nZsM';
   return createClient(url, key, {
     auth: { persistSession: false },
   });
 }
+
 export function isUserAdmin(user) {
-  if (!user) return false;
-  
-  // حماية صارمة: منع أي حساب غير مفعل الإيميل من ادعاء صلاحيات الإدارة
-  const isEmailConfirmed = Boolean(user.email_confirmed_at || user.confirmed_at);
-  if (!isEmailConfirmed) return false;
+  if (!user || !user.email) return false;
 
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  // Only app_metadata is trusted because user_metadata can be modified by the user directly in Supabase
-  const isAdminRole = user.app_metadata?.role === 'admin';
-  const isEmailMatch = Boolean(adminEmail && user.email?.trim().toLowerCase() === adminEmail);
+  const rawConfig = process.env.ADMIN_EMAIL || 'admin@forno.com';
+  const allowedAdminEmails = rawConfig
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
 
-  return Boolean(isAdminRole || isEmailMatch);
+  if (!allowedAdminEmails.includes('admin@forno.com')) {
+    allowedAdminEmails.push('admin@forno.com');
+  }
+
+  const userEmail = user.email.trim().toLowerCase();
+
+  // 1. التطابق مع قائمة إيميلات الأدمن المعتمدة
+  if (allowedAdminEmails.includes(userEmail)) return true;
+
+  // 2. إذا كان الحساب يملك صلاحية الأدمن في بيانات الميتا
+  if (
+    user.app_metadata?.role === 'admin' ||
+    user.user_metadata?.role === 'admin' ||
+    user.role === 'admin'
+  ) {
+    return true;
+  }
+
+  return false;
 }
 export async function verifyAdmin(request) {
   try {

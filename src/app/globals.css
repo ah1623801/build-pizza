@@ -2115,6 +2115,17 @@ textarea:-webkit-autofill:active {
     font-size: 10px !important;
   }
 }
+
+/* ================= 2.1 شاشات الكمبيوتر واللابتوب فقط (Desktop / PC View Only) ================= */
+@media (min-width: 981px) and (orientation: landscape), (min-width: 981px) and (hover: hover) and (pointer: fine) {
+  #stageHost {
+    top: 61% !important; /* تنزيل البيتزا والعجلة لتحت شوية على الكمبيوتر لإعطاء راحة بصرية ومسافة أنيقة تحت العنوان */
+  }
+  #builder.picking-size #stageHost {
+    top: 58% !important;
+  }
+}
+
 /* ================= 3. التابلت بالطول فقط من 650px لـ 1150px (يشمل iPad Mini و iPad Pro 13 وممنوع يلمس الموبايل) ================= */
 @media (min-width: 650px) and (max-width: 1150px) and (orientation: portrait) {
   .nav-links, #rail, .panel, .desktop-size-bar, #savedBtn, .cb-txt {

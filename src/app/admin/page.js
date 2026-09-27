@@ -595,6 +595,7 @@ export default function AdminPage() {
               type="email"
               placeholder="admin@forno.com"
               value={email}
+              autoComplete="email"
               onChange={(e) => setEmail(e.target.value)}
               required
               style={{
@@ -619,6 +620,7 @@ export default function AdminPage() {
               type="password"
               placeholder="••••••••"
               value={password}
+              autoComplete="current-password"
               onChange={(e) => setPassword(e.target.value)}
               required
               style={{

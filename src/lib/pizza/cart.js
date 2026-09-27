@@ -7,6 +7,7 @@ import { DOUGH, SAUCE, CHEESE, MEAT, VEG, EXTRAS } from './config';
 import { PizzaStage } from './stage';
 import { t } from '@/lib/i18n';
 import { supabaseClient, isSupabaseLive } from '@/lib/supabaseClient';
+import { compressImage } from '@/lib/imageCompressor';
 
 export function summarize(s) {
   const parts = [];
@@ -660,10 +661,15 @@ function persistCart() {
 
   const receiptInput = $('#receiptInput');
   if (receiptInput) {
-    receiptInput.onchange = (e) => {
+    receiptInput.onchange = async (e) => {
       const file = e.target.files[0];
       if (file) {
-        receiptFileBlob = file;
+        try {
+          const res = await compressImage(file, { maxWidth: 1200, maxHeight: 1600, quality: 0.85 });
+          receiptFileBlob = res.file;
+        } catch {
+          receiptFileBlob = file;
+        }
         const reader = new FileReader();
         reader.onload = (ev) => {
           const previewImg = $('#receiptPreviewImg');
@@ -671,7 +677,7 @@ function persistCart() {
           if ($('#receiptPreviewWrap')) $('#receiptPreviewWrap').style.display = 'block';
           if ($('#btnSelectReceipt')) $('#btnSelectReceipt').style.display = 'none';
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(receiptFileBlob);
       }
     };
   }

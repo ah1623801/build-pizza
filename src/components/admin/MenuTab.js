@@ -1,7 +1,9 @@
 // src/components/admin/MenuTab.js
 "use client";
 
+import { useState, useEffect } from "react";
 import { parseBilingual } from "@/lib/i18n";
+import { compressImage, formatBytes } from "@/lib/imageCompressor";
 
 export default function MenuTab({
   items,
@@ -17,6 +19,44 @@ export default function MenuTab({
   onEditItem,
   onCancelEdit,
 }) {
+  const [compressing, setCompressing] = useState(false);
+  const [compressionStats, setCompressionStats] = useState(null);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setCompressionStats(null);
+    }
+  }, [imageFile]);
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCompressing(true);
+    setCompressionStats(null);
+    try {
+      // ضغط وتصغير الصورة تلقائياً لسرعة التحميل وتوفير مساحة التخزين بصيغة WebP
+      const result = await compressImage(file, {
+        maxWidth: 1000,
+        maxHeight: 1000,
+        quality: 0.82,
+      });
+
+      setImageFile(result.file);
+      if (result.savedPercent > 0) {
+        setCompressionStats({
+          original: formatBytes(result.originalSize),
+          compressed: formatBytes(result.compressedSize),
+          savedPercent: result.savedPercent,
+        });
+      }
+    } catch (err) {
+      console.warn("Compression fallback:", err);
+      setImageFile(file);
+    } finally {
+      setCompressing(false);
+    }
+  };
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Add / Edit Product Form */}
@@ -211,15 +251,19 @@ export default function MenuTab({
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setImageFile(e.target.files[0])}
+                onChange={handleImageChange}
                 style={{ display: "none" }}
               />
-              {imageFile ? (
+              {compressing ? (
+                <div style={{ width: "54px", height: "54px", borderRadius: "50%", background: "rgba(255,122,46,0.15)", border: "2px dashed #ff7a2e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
+                  ⏳
+                </div>
+              ) : imageFile ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={URL.createObjectURL(imageFile)}
                   alt="Preview"
-                  style={{ width: "54px", height: "54px", borderRadius: "50%", objectFit: "cover", border: "2px solid #ff7a2e", boxShadow: "0 0 15px rgba(255,122,46,0.4)" }}
+                  style={{ width: "54px", height: "54px", borderRadius: "50%", objectFit: "cover", border: "2px solid #57a84f", boxShadow: "0 0 15px rgba(87,168,79,0.4)" }}
                 />
               ) : formData.image_url ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -236,17 +280,28 @@ export default function MenuTab({
 
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: "12px", fontWeight: "800", color: "#f3e9dc", letterSpacing: "1px" }}>
-                  {imageFile ? imageFile.name : formData.image_url ? "CHANGE CURRENT IMAGE" : "CLICK TO UPLOAD IMAGE"}
+                  {compressing
+                    ? "COMPRESSING IMAGE..."
+                    : imageFile
+                    ? imageFile.name
+                    : formData.image_url
+                    ? "CHANGE CURRENT IMAGE"
+                    : "CLICK TO UPLOAD IMAGE"}
                 </div>
                 <div style={{ fontSize: "10px", color: "#9a8b7a", marginTop: "3px" }}>
-                  PNG, JPG or WEBP (Recommended 500x500px)
+                  {compressing
+                    ? "Converting to lightweight WebP..."
+                    : " PNG, JPG or WEBP (Recommended 500x500px)"}
                 </div>
               </div>
 
               <span style={{ padding: "8px 16px", borderRadius: "99px", background: "rgba(255,122,46,0.15)", border: "1px solid #ff7a2e", color: "#ffb347", fontSize: "10px", fontWeight: "900", letterSpacing: "1px" }}>
-                BROWSE
+                {compressing ? "..." : "BROWSE"}
               </span>
             </label>
+
+            {/* Compression Feedback Banner */}
+        
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px" }}>

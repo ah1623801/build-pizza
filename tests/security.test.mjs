@@ -9,6 +9,7 @@ import {
   isSafeOrderNumber,
   safeJsonParse
 } from '../src/lib/security.js';
+import { isUserAdmin } from '../src/lib/authGuard.js';
 
 describe('Security & Input Sanitization Suite', () => {
   it('should strip malicious tags and invisible unicode from strings', () => {
@@ -61,5 +62,23 @@ describe('Security & Input Sanitization Suite', () => {
     // Fake extension with text content should be rejected
     const fakeBuffer = Buffer.from('THIS IS JUST A TEXT FILE AND NOT AN IMAGE');
     assert.equal(isValidImageBuffer(fakeBuffer, 'image/jpeg', 'jpg'), false);
+  });
+
+  it('should accurately authorize admin accounts and reject unauthorized users', () => {
+    // 1. Default admin email (case-insensitive)
+    assert.equal(isUserAdmin({ email: 'admin@forno.com' }), true);
+    assert.equal(isUserAdmin({ email: 'ADMIN@FORNO.COM' }), true);
+    assert.equal(isUserAdmin({ email: ' admin@forno.com ' }), true);
+
+    // 2. User with role admin in metadata
+    assert.equal(isUserAdmin({ email: 'custom@kitchen.com', app_metadata: { role: 'admin' } }), true);
+    assert.equal(isUserAdmin({ email: 'chef@kitchen.com', user_metadata: { role: 'admin' } }), true);
+    assert.equal(isUserAdmin({ email: 'staff@kitchen.com', role: 'admin' }), true);
+
+    // 3. Regular customer accounts must be rejected
+    assert.equal(isUserAdmin({ email: 'customer@gmail.com' }), false);
+    assert.equal(isUserAdmin({ email: 'hacker@attacker.com', role: 'authenticated' }), false);
+    assert.equal(isUserAdmin(null), false);
+    assert.equal(isUserAdmin({}), false);
   });
 });

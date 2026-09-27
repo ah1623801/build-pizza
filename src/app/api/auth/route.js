@@ -11,31 +11,61 @@ function getCookieSecurityOptions(maxAge = 60 * 60 * 24 * 7) {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge,
   };
 }
 
-// 1. فحص الجلسة وصلاحية المدير
+// 1. فحص الجلسة وصلاحية المدير مع دعم التجديد التلقائي
 export async function GET(request) {
   try {
     const token = request.cookies.get('admin_token')?.value;
-    if (!token) return NextResponse.json({ authenticated: false });
+    const refreshToken = request.cookies.get('admin_refresh')?.value;
 
     const authClient = getAuthClient();
-    const { data: { user }, error } = await authClient.auth.getUser(token);
-    if (error || !user || !isUserAdmin(user)) {
-      // تنظيف الكوكي غير الصالحة فوراً
-      const res = NextResponse.json({ authenticated: false });
-      res.cookies.set('admin_token', '', getCookieSecurityOptions(0));
-      return res;
+
+    if (token) {
+      const {
+        data: { user },
+        error,
+      } = await authClient.auth.getUser(token);
+      if (!error && user && isUserAdmin(user)) {
+        return NextResponse.json({ authenticated: true, email: user.email });
+      }
     }
 
-    return NextResponse.json({ authenticated: true, email: user.email });
+    // إذا انتهت صلاحية التوكن الأساسي (ساعة) وموجود Refresh Token صالح، نجدد الجلسة بسلاسة
+    if (refreshToken) {
+      const { data, error } = await authClient.auth.refreshSession({
+        refresh_token: refreshToken,
+      });
+      if (!error && data?.session && data?.user && isUserAdmin(data.user)) {
+        const res = NextResponse.json({ authenticated: true, email: data.user.email });
+        res.cookies.set(
+          'admin_token',
+          data.session.access_token,
+          getCookieSecurityOptions(data.session.expires_in || 3600)
+        );
+        if (data.session.refresh_token) {
+          res.cookies.set(
+            'admin_refresh',
+            data.session.refresh_token,
+            getCookieSecurityOptions(60 * 60 * 24 * 30)
+          );
+        }
+        return res;
+      }
+    }
+
+    const res = NextResponse.json({ authenticated: false });
+    res.cookies.set('admin_token', '', getCookieSecurityOptions(0));
+    res.cookies.set('admin_refresh', '', getCookieSecurityOptions(0));
+    return res;
   } catch {
     const res = NextResponse.json({ authenticated: false });
     res.cookies.set('admin_token', '', getCookieSecurityOptions(0));
+    res.cookies.set('admin_refresh', '', getCookieSecurityOptions(0));
     return res;
   }
 }
