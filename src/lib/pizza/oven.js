@@ -3,6 +3,7 @@
 
 import { DOUGH, SAUCE, CHEESE, MEAT, VEG, EXTRAS, IMG, F_DOUGH_C, F_SAUCE_C, F_TOP_C, F_VEG_C } from './config';
 import { PizzaStage } from './stage';
+import { t } from '../i18n';
 
 export function setupOven({
   getState,
@@ -64,7 +65,7 @@ export function setupOven({
     const lenis = getLenis ? getLenis() : null;
     try {
       if (!state.dough || !state.sauce || !state.cheese) {
-        toast('PLEASE SELECT DOUGH, SAUCE, AND CHEESE FIRST');
+        toast(t('pickDoughFirst') || 'PICK DOUGH, SAUCE & CHEESE FROM THE WHEEL FIRST 🍕', 5000);
         goStep(0);
         return;
       }

@@ -69,6 +69,13 @@ export function applyTranslations() {
     }
   });
 
+  // Marquee
+  $$('.mq-in').forEach((el) => {
+    el.innerHTML = lang === 'ar'
+      ? 'مخبوزة بفرن الحطب 450° <i>★</i> عجينة متخمرة 48 ساعة <i>★</i> جبنة موتزاريلا طبيعية <i>★</i> فروع القاهرة <i>★</i> فورنو بيتزا نابوليتان <i>★</i> مخبوزة بفرن الحطب 450° <i>★</i> عجينة متخمرة 48 ساعة <i>★</i> جبنة موتزاريلا طبيعية <i>★</i> فروع القاهرة <i>★</i> فورنو بيتزا نابوليتان <i>★</i>'
+      : 'WOOD-FIRED OVEN 450° <i>★</i> 48-HOUR FERMENTED DOUGH <i>★</i> REAL MOZZARELLA <i>★</i> CAIRO BRANCHES <i>★</i> FORNO NEAPOLITAN PIZZA <i>★</i> WOOD-FIRED OVEN 450° <i>★</i> 48-HOUR FERMENTED DOUGH <i>★</i> REAL MOZZARELLA <i>★</i> CAIRO BRANCHES <i>★</i> FORNO NEAPOLITAN PIZZA <i>★</i>';
+  });
+
   // Menu Section
   if ($('.menu-pin .m-head .kicker')) $('.menu-pin .m-head .kicker').textContent = t('menuKicker');
   if ($('.menu-pin .m-head h2')) {

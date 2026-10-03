@@ -4,9 +4,9 @@
 import { DOUGH, SAUCE, CHEESE, MEAT, VEG, EXTRAS } from './config';
 
 export const SIZES = [
-  { id: 'small', name: 'SMALL (24)', desc: 'Personal size · Light bite', scale: 0.85 },
-  { id: 'med', name: 'MEDIUM (30)', desc: 'Standard size · 2 Persons (Our Signature)', scale: 1.0 },
-  { id: 'large', name: 'LARGE (36)', desc: 'Party size · 3-4 Persons', scale: 1.15 }
+  { id: 'small', name: 'SMALL', desc: 'Personal size · Light bite', scale: 0.85 },
+  { id: 'med', name: 'MEDIUM', desc: 'Standard size · 2 Persons (Our Signature)', scale: 1.0 },
+  { id: 'large', name: 'LARGE', desc: 'Party size · 3-4 Persons', scale: 1.15 }
 ];
 
 export function getIngPrice(item, size = 'med') {
@@ -35,7 +35,7 @@ export function unitPrice(s) {
   for (const [id, q] of Object.entries(s.meats || {})) p += meatPrice(id, q, sz);
   for (const v of s.vegs || []) p += getIngPrice(VEG.find((x) => x.id === v), sz);
   for (const e of s.extras || []) p += getIngPrice(EXTRAS.find((x) => x.id === e), sz);
-  return Math.max(145, p);
+  return Math.max(Math.round(145 * baseScale), p);
 }
 
 export function baseHas(cat, id, combo) {
@@ -69,6 +69,19 @@ export function comboDelta(state, combo) {
   return d;
 }
 
+export function hasIngredients(s) {
+  if (!s) return false;
+  if (s.sauce) return true;
+  if (s.cheese) return true;
+  if (s.meats && Object.keys(s.meats).length > 0) return true;
+  if (Array.isArray(s.vegs) && s.vegs.length > 0) return true;
+  if (Array.isArray(s.extras) && s.extras.length > 0) return true;
+  if (s.dough === 'thick' || s.dough === 'cheese') return true;
+  return false;
+}
+
 export function effectiveUnit(state, combo) {
+  if (!state) return 0;
+  if (!combo && !hasIngredients(state)) return 0;
   return combo ? combo.basePrice + comboDelta(state, combo) : unitPrice(state);
 }

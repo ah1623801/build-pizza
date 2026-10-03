@@ -7,11 +7,35 @@ import { escapeHtml } from "@/lib/security";
 // إزالة أي ذكر لكلمة cm وتنسيق اسم المنتج
 export function cleanItemName(name) {
   if (!name) return "";
-  return String(name)
+  let str = String(name);
+  if (str.includes("||")) {
+    const parts = str.split("||").map((s) => s.trim());
+    str = parts[1] || parts[0];
+  }
+  return str
     .replace(/\s*\bcm\b/gi, "")
     .replace(/\(\s*(\d+)\s*\)/g, "($1)")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+// استخراج ملاحظات العميل للطلب إن وُجدت
+export function getOrderNotes(ord) {
+  if (!ord) return "";
+  if (ord.notes && typeof ord.notes === "string") return ord.notes.trim();
+  const noteItem = ord.items?.find((it) => it.kind === "note");
+  if (noteItem) return (noteItem.note || noteItem.name).replace(/^📝\s*ملاحظة العميل:\s*/, "").trim();
+  if (ord.customer_address && ord.customer_address.includes("[ملاحظة:")) {
+    const m = ord.customer_address.match(/\[ملاحظة:\s*([^\]]+)\]/);
+    if (m) return m[1].trim();
+  }
+  return "";
+}
+
+// تنظيف العنوان من الملاحظات المرفقة
+export function cleanCustomerAddress(addr) {
+  if (!addr) return "";
+  return addr.replace(/\s*\[ملاحظة:[^\]]+\]/g, "").trim();
 }
 
 // استخراج وترتيب المكونات بالإنجليزية كنص عادي بدون أيقونات وبدون كلمة cm
@@ -20,10 +44,10 @@ export function parseItemIngredients(it) {
   const parts = [];
 
   if (it.snap && typeof it.snap === "object") {
-    // 1. الحجم بالإنجليزية وبدون كلمة cm نهائياً
-    const szMap = { small: "Small (24)", med: "Medium (30)", large: "Large (36)" };
+    // 1. الحجم بالإنجليزية وبدون كلمة cm أو أرقام الأقطار
+    const szMap = { small: "Small", med: "Medium", large: "Large" };
     if (it.snap.size) {
-      parts.push(szMap[it.snap.size] || String(it.snap.size).replace(/\s*\bcm\b/gi, ""));
+      parts.push(szMap[it.snap.size] || String(it.snap.size).replace(/\s*\bcm\b/gi, "").replace(/\(\s*\d+\s*\)/g, ""));
     }
 
     // 2. العجينة بالإنجليزية
@@ -239,8 +263,14 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt, onR
           <div>
             <div><b>CUSTOMER:</b> ${escapeHtml(ord.customer_name)}</div>
             <div><b>PHONE:</b> ${escapeHtml(ord.customer_phone)}</div>
-            <div><b>ADDRESS:</b> ${escapeHtml(ord.customer_address)}</div>
+            <div><b>ADDRESS:</b> ${escapeHtml(cleanCustomerAddress(ord.customer_address))}</div>
             <div><b>PAYMENT:</b> ${escapeHtml(ord.payment_method?.toUpperCase())} (${escapeHtml(ord.payment_status?.toUpperCase())})</div>
+            ${(() => {
+              const notes = getOrderNotes(ord);
+              return notes
+                ? `<div style="margin-top: 6px; padding: 6px 8px; background: #fff8e1; border: 1px solid #ffd54f; border-radius: 4px; font-size: 11px;"><b>ORDER NOTES / ملاحظات:</b><br>${escapeHtml(notes)}</div>`
+                : "";
+            })()}
           </div>
           <div class="divider"></div>
           <div>
@@ -285,7 +315,7 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt, onR
       return `"${str}"`;
     };
 
-    const headers = ["Order #", "Date", "Customer Name", "Phone", "Address", "Items & Ingredients", "Items Count", "Total (EGP)", "Payment Method", "Payment Status", "Order Status"];
+    const headers = ["Order #", "Date", "Customer Name", "Phone", "Address", "Notes", "Items & Ingredients", "Items Count", "Total (EGP)", "Payment Method", "Payment Status", "Order Status"];
     const rows = orders.map((o) => {
       const itemsCount = (o.items || []).reduce((acc, it) => acc + (it.qty || 1), 0);
       const itemsDetailed = (o.items || [])
@@ -300,7 +330,8 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt, onR
         sanitizeCsvField(safeDate),
         sanitizeCsvField(o.customer_name),
         sanitizeCsvField(o.customer_phone),
-        sanitizeCsvField(o.customer_address),
+        sanitizeCsvField(cleanCustomerAddress(o.customer_address)),
+        sanitizeCsvField(getOrderNotes(o)),
         sanitizeCsvField(itemsDetailed),
         itemsCount,
         Number(o.total) || 0,
@@ -421,11 +452,6 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt, onR
             ARCHIVED ({archivedOrders.length})
           </button>
 
-          <div style={{ background: "rgba(87,168,79,0.15)", border: "1px solid rgba(87,168,79,0.4)", borderRadius: "99px", padding: "7px 16px", color: "#57a84f", fontSize: "11px", fontWeight: "900", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-            <span>💰 TOTAL:</span>
-            <span style={{ color: "#fff" }}>EGP {filteredTotalValue.toLocaleString()}</span>
-          </div>
-
           <button
             onClick={handleExportCSV}
             style={{
@@ -525,7 +551,12 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt, onR
                       </span>
                     )}
                     {ord.customer_address && (
-                      <div style={{ color: "#9a8b7a", marginTop: "3px" }}>📍 {ord.customer_address}</div>
+                      <div style={{ color: "#9a8b7a", marginTop: "3px" }}>📍 {cleanCustomerAddress(ord.customer_address)}</div>
+                    )}
+                    {getOrderNotes(ord) && (
+                      <div style={{ background: "rgba(255,179,71,0.15)", border: "1px dashed #ffb347", borderRadius: "8px", padding: "6px 10px", marginTop: "6px", color: "#ffb347", fontSize: "11px" }}>
+                        <b>📝 ملاحظات الطلب:</b> {getOrderNotes(ord)}
+                      </div>
                     )}
                   </div>
 
@@ -618,6 +649,11 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt, onR
                       </span>
                     )}
                     <div style={{ marginTop: "4px" }}>Total: <b style={{ color: "#ffb347" }}>EGP {ord.total}</b></div>
+                    {getOrderNotes(ord) && (
+                      <div style={{ background: "rgba(255,179,71,0.15)", border: "1px dashed #ffb347", borderRadius: "8px", padding: "6px 8px", marginTop: "6px", color: "#ffb347", fontSize: "11px" }}>
+                        <b>📝 ملاحظات المطبخ:</b> {getOrderNotes(ord)}
+                      </div>
+                    )}
                   </div>
 
                   {/* قائمة المكونات لتحضير الأوردر في المطبخ كنص عادي مرتب بدون أيقونات وبدون cm */}
@@ -634,22 +670,12 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt, onR
                   </div>
                   
                   <div style={{ display: "flex", gap: "6px" }}>
-                    {ord.order_status === "preparing" && (
-                      <button
-                        onClick={() => onUpdateStatus(ord.id, "paid", "ready")}
-                        style={{ flex: 1, padding: "10px", background: "#e8b04b", color: "#140d08", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
-                      >
-                        MARK READY
-                      </button>
-                    )}
-                    {ord.order_status === "ready" && (
-                      <button
-                        onClick={() => onUpdateStatus(ord.id, "paid", "completed")}
-                        style={{ flex: 1, padding: "10px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "10px", fontWeight: "900", cursor: "pointer" }}
-                      >
-                        COMPLETE ORDER ✓
-                      </button>
-                    )}
+                    <button
+                      onClick={() => onUpdateStatus(ord.id, "paid", "completed")}
+                      style={{ flex: 1, padding: "12px", background: "#57a84f", color: "#fff", border: "none", borderRadius: "99px", fontSize: "11px", fontWeight: "900", letterSpacing: "1px", cursor: "pointer" }}
+                    >
+                      COMPLETE ORDER ✓
+                    </button>
                   </div>
                 </div>
               ))}
@@ -701,7 +727,12 @@ export default function OrdersTab({ orders, onUpdateStatus, onSelectReceipt, onR
                         )}
                         {o.customer_address && (
                           <div style={{ fontSize: "10.5px", color: "#9a8b7a", marginTop: "3px" }}>
-                            📍 {o.customer_address}
+                            📍 {cleanCustomerAddress(o.customer_address)}
+                          </div>
+                        )}
+                        {getOrderNotes(o) && (
+                          <div style={{ fontSize: "10.5px", color: "#ffb347", marginTop: "4px", background: "rgba(255,179,71,0.1)", border: "1px dashed rgba(255,179,71,0.3)", padding: "3px 6px", borderRadius: "5px" }}>
+                            📝 <b>ملاحظة:</b> {getOrderNotes(o)}
                           </div>
                         )}
                         <div style={{ marginTop: "8px" }}>

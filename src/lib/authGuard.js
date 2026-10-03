@@ -5,12 +5,12 @@ export function getAuthClient() {
   const url =
     process.env.SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    'https://horzpuskogrowgfmuzoq.supabase.co';
+    '';
   const key =
     process.env.SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvcnpwdXNrb2dyb3dnZm11em9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwNTAxNzgsImV4cCI6MjEwNDYyNjE3OH0.bJFn3YAbspNYW1ZLEBKh1VEFu9LKQnKkOW9vuL1nZsM';
-  return createClient(url, key, {
+    '';
+  return createClient(url || 'https://placeholder.supabase.co', key || 'placeholder-key', {
     auth: { persistSession: false },
   });
 }
@@ -23,10 +23,6 @@ export function isUserAdmin(user) {
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-
-  if (!allowedAdminEmails.includes('admin@forno.com')) {
-    allowedAdminEmails.push('admin@forno.com');
-  }
 
   const userEmail = user.email.trim().toLowerCase();
 

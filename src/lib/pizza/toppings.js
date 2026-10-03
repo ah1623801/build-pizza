@@ -542,93 +542,147 @@ export function icoTomato() {
 }
 
 export function icoMozzarella() {
-  const [gBall, dBall] = GR('#ffffff', '#fcf6e8', '#ecdcb9');
-  const [gSlice, dSlice] = GR('#ffffff', '#f7edd2', '#dfcaa0');
-  let s = '<defs>' + dBall + dSlice + '</defs>';
-  // كرة موتزاريلا بيضاء نقية في الخلف
-  s += '<circle cx="58" cy="46" r="22" fill="url(#' + gBall + ')"/>';
-  s += '<circle cx="58" cy="46" r="22" fill="none" stroke="#7a5c28" stroke-width="2.2"/>';
-  // شريحة موتزاريلا دائرية سميكة مقطوعة في الأمام
-  s += '<ellipse cx="38" cy="56" rx="20" ry="16" fill="url(#' + gSlice + ')" transform="rotate(-12 38 56)"/>';
-  s += '<ellipse cx="38" cy="56" rx="20" ry="16" fill="none" stroke="#7a5c28" stroke-width="2.2" transform="rotate(-12 38 56)"/>';
-  // ثنايا قوام الجبنة الطازجة ولمعة كريمية
-  s += '<path d="M 28 54 Q 38 60 48 53" fill="none" stroke="#d5be8e" stroke-width="2" stroke-linecap="round"/>';
-  s += '<ellipse cx="34" cy="50" rx="9" ry="4" fill="rgba(255,255,255,0.85)" transform="rotate(-18 34 50)"/>';
-  s += '<ellipse cx="54" cy="38" rx="8" ry="4" fill="rgba(255,255,255,0.75)" transform="rotate(15 54 38)"/>';
-  // ورقة ريحان إيطالية خضراء صغيرة لإبراز الموتزاريلا
-  s += '<path d="M 46 36 C 42 26 55 24 58 31 C 61 38 51 40 46 36 Z" fill="#4ea638" stroke="#256e18" stroke-width="1.8"/>';
+  const [gSlice, dSlice] = GR('#ffffff', '#f5f0e6', '#e8dcc8');
+  let s = '<defs>' + dSlice + '</defs>';
+  
+  // بركة الشرش/الماء أسفل الشرائح
+  s += '<ellipse cx="50" cy="82" rx="38" ry="7" fill="#e8dcc8" opacity="0.4"/>';
+  s += '<ellipse cx="50" cy="82" rx="26" ry="4" fill="#ffffff" opacity="0.7"/>';
+  
+  // شريحة خلفية (الأبعد)
+  s += '<ellipse cx="62" cy="38" rx="22" ry="14" fill="url(#' + gSlice + ')" stroke="#d4c8b0" stroke-width="1.5"/>';
+  s += '<ellipse cx="58" cy="34" rx="8" ry="4" fill="#ffffff" opacity="0.8"/>';
+  s += '<path d="M 52 36 Q 62 40 70 38" fill="none" stroke="#e8dcc8" stroke-width="1.2" opacity="0.5"/>';
+  
+  // شريحة وسطى
+  s += '<ellipse cx="48" cy="52" rx="26" ry="16" fill="url(#' + gSlice + ')" stroke="#d4c8b0" stroke-width="1.5"/>';
+  s += '<ellipse cx="42" cy="48" rx="10" ry="5" fill="#ffffff" opacity="0.85"/>';
+  // ألياف/خيوط داخلية
+  s += '<path d="M 38 50 Q 48 54 58 52" fill="none" stroke="#e8dcc8" stroke-width="1.5" opacity="0.6"/>';
+  s += '<path d="M 40 56 Q 50 58 60 56" fill="none" stroke="#f0ead8" stroke-width="1.2" opacity="0.5"/>';
+  
+  // شريحة أمامية (الأقرب)
+  s += '<ellipse cx="54" cy="66" rx="24" ry="15" fill="url(#' + gSlice + ')" stroke="#d4c8b0" stroke-width="1.5"/>';
+  s += '<ellipse cx="48" cy="62" rx="9" ry="4.5" fill="#ffffff" opacity="0.9"/>';
+  // ألياف/خيوط داخلية
+  s += '<path d="M 44 64 Q 54 68 64 66" fill="none" stroke="#e8dcc8" stroke-width="1.5" opacity="0.6"/>';
+  s += '<path d="M 46 70 Q 56 72 66 70" fill="none" stroke="#f0ead8" stroke-width="1.2" opacity="0.5"/>';
+  s += '<path d="M 42 62 Q 52 66 62 64" fill="none" stroke="#e8dcc8" stroke-width="1" opacity="0.4"/>';
+  
+  // لمعان إضافي على الحواف
+  s += '<path d="M 36 60 C 34 64, 38 70, 42 72" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.6" stroke-linecap="round"/>';
+  
+  // قطرات شرش متساقطة
+  s += '<ellipse cx="42" cy="78" rx="2" ry="3" fill="#ffffff" stroke="#d4c8b0" stroke-width="1" opacity="0.8"/>';
+  s += '<ellipse cx="58" cy="80" rx="1.5" ry="2.5" fill="#ffffff" stroke="#d4c8b0" stroke-width="1" opacity="0.7"/>';
+  s += '<ellipse cx="66" cy="76" rx="1.8" ry="2.8" fill="#ffffff" stroke="#d4c8b0" stroke-width="1" opacity="0.8"/>';
+  
   return mkSVG(100, s);
 }
 
 export function icoExtraCheese() {
-  const [gCheese, dCheese] = GR('#ffe066', '#fca311', '#d47600');
-  let s = '<defs>' + dCheese + '</defs>';
-  // قطعة جبنة كبيرة غنية وسايحة مع قطرات الجبنة النازلة (Extra Melting Cheese)
-  // رأس المثلث
-  s += '<path d="M 24 64 L 52 24 L 78 36 L 82 56 C 78 62 70 58 64 64 C 58 70 54 82 48 82 C 44 82 42 74 38 72 C 34 70 30 76 26 74 C 22 72 20 66 24 64 Z" fill="url(#' + gCheese + ')"/>';
-  s += '<path d="M 24 64 L 52 24 L 78 36 L 82 56 C 78 62 70 58 64 64 C 58 70 54 82 48 82 C 44 82 42 74 38 72 C 34 70 30 76 26 74 C 22 72 20 66 24 64 Z" fill="none" stroke="#663300" stroke-width="2.5" stroke-linejoin="round"/>';
-  // الوجه العلوي الفاتح للجبنة
-  s += '<polygon points="24,64 52,24 78,36 50,70" fill="#fff3a8" stroke="#663300" stroke-width="2.2" stroke-linejoin="round"/>';
-  // عيون وثقوب الجبنة الواضحة
-  s += '<ellipse cx="38" cy="52" rx="4" ry="3" fill="#cf7a00"/>';
-  s += '<ellipse cx="60" cy="48" rx="5" ry="3.5" fill="#cf7a00"/>';
-  s += '<ellipse cx="68" cy="58" rx="4" ry="2.8" fill="#cf7a00"/>';
-  // لمعة الجبنة السايحة
-  s += '<path d="M 32 60 L 46 28" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round"/>';
-  s += '<circle cx="48" cy="78" r="3" fill="#ffe066" stroke="#663300" stroke-width="1.5"/>';
+  const [gBase, dBase] = GR('#ffcf33', '#f59e0b', '#d97706');
+  let s = '<defs>' + dBase + '</defs>';
+  
+  // قاعدة كومة الجبن المبشور
+  s += '<path d="M 15 70 C 20 40, 40 25, 50 25 C 60 25, 80 40, 85 70 C 85 80, 15 80, 15 70 Z" fill="url(#' + gBase + ')" stroke="#b45309" stroke-width="1.5"/>';
+  
+  // خيوط الجبن المبشور المتداخلة (شيدر/بروفولون)
+  const shreds = [
+    'M 25 65 Q 35 45 45 60', 'M 35 70 Q 45 35 55 55', 'M 45 75 Q 55 40 65 65',
+    'M 55 70 Q 65 45 75 60', 'M 20 55 Q 30 30 40 45', 'M 60 55 Q 70 30 80 45',
+    'M 30 50 Q 40 25 50 40', 'M 40 60 Q 50 30 60 50', 'M 50 65 Q 60 35 70 55',
+    'M 28 72 Q 38 52 48 68', 'M 52 72 Q 62 52 72 68', 'M 45 45 Q 55 25 65 40'
+  ];
+  
+  shreds.forEach((d, i) => {
+    const color = i % 3 === 0 ? '#fde047' : (i % 3 === 1 ? '#fbbf24' : '#f59e0b');
+    const width = 2.5 + Math.random() * 1.5;
+    s += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + width.toFixed(1) + '" stroke-linecap="round"/>';
+    // ظل بسيط لكل خصلة ليعطي عمقاً ثلاثي الأبعاد
+    s += '<path d="' + d + '" fill="none" stroke="#b45309" stroke-width="' + width.toFixed(1) + '" stroke-linecap="round" opacity="0.3" transform="translate(0 1)"/>';
+  });
+  
+  // خيوط جبنة ساقطة على الأطراف
+  s += '<path d="M 18 75 Q 22 80 20 85" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>';
+  s += '<path d="M 82 75 Q 78 80 80 85" fill="none" stroke="#fde047" stroke-width="3" stroke-linecap="round"/>';
+  
   return mkSVG(100, s);
 }
 
 export function icoFourCheese() {
-  const [gSide, dSide] = GR('#ffbe0b', '#fb8500', '#d95a00');
-  let s = '<defs>' + dSide + '</defs>';
-  // مثلث الجبنة الكلاسيكي الأيقوني الأكثر شهرة في العالم (Classic Swiss Cheese 🧀)
-  // الوجه الجانبي الغني
-  s += '<polygon points="46,74 80,44 86,58 46,86" fill="url(#' + gSide + ')" stroke="#592500" stroke-width="2.5" stroke-linejoin="round"/>';
-  // الوجه الأمامي المثلث
-  s += '<polygon points="18,60 46,74 46,86 18,68" fill="#e88900" stroke="#592500" stroke-width="2.5" stroke-linejoin="round"/>';
-  // الوجه العلوي الفاتح
-  s += '<polygon points="18,60 54,26 80,44 46,74" fill="#ffea75" stroke="#592500" stroke-width="2.5" stroke-linejoin="round"/>';
-  // ثقوب وعيون الجبنة السويسرية الكبيرة والواضحة جداً بعمق 3D
-  // ثقب أمامي
-  s += '<ellipse cx="32" cy="68" rx="5.5" ry="3.5" fill="#b35900"/>';
-  s += '<ellipse cx="31" cy="67.5" rx="4.5" ry="2.5" fill="#8f4300"/>';
-  // ثقوب على الوجه العلوي
-  s += '<ellipse cx="38" cy="50" rx="6" ry="4" fill="#e0b838"/>';
-  s += '<ellipse cx="37" cy="49" rx="5" ry="3" fill="#cca025"/>';
-  s += '<ellipse cx="58" cy="40" rx="5" ry="3.5" fill="#e0b838"/>';
-  // ثقوب على الوجه الجانبي
-  s += '<ellipse cx="64" cy="60" rx="6" ry="4" fill="#b35900"/>';
-  s += '<ellipse cx="63" cy="59.5" rx="5" ry="3" fill="#8f4300"/>';
-  s += '<ellipse cx="76" cy="52" rx="4" ry="2.5" fill="#b35900"/>';
-  s += '<ellipse cx="54" cy="74" rx="4.5" ry="3" fill="#b35900"/>';
-  // لمعات إضاءة نقية تبرز الجبنة
-  s += '<line x1="22" y1="59" x2="48" y2="30" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round"/>';
+  let s = '<defs>';
+  const [gMoz, dMoz] = GR('#ffffff', '#f4f1e8', '#dcd5c5'); s += dMoz;
+  const [gGorg, dGorg] = GR('#fcf6e8', '#e8d8b8', '#d1bc94'); s += dGorg;
+  const [gFont, dFont] = GR('#fde047', '#eab308', '#ca8a04'); s += dFont;
+  const [gParm, dParm] = GR('#fef08a', '#facc15', '#eab308'); s += dParm;
+  s += '</defs>';
+
+  // 1. الموتزاريلا (أعلى اليسار) - كرة بيضاء طازجة
+  s += '<circle cx="32" cy="32" r="16" fill="url(#' + gMoz + ')" stroke="#c4bcae" stroke-width="1.5"/>';
+  s += '<path d="M 22 26 C 28 22, 36 22, 40 26" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.9"/>';
+
+  // 2. الجورجونزولا (أعلى اليمين) - جبنة زرقاء بعروق
+  s += '<path d="M 60 20 C 75 18, 85 28, 82 42 C 78 52, 62 48, 55 38 C 50 28, 52 22, 60 20 Z" fill="url(#' + gGorg + ')" stroke="#b89e75" stroke-width="1.5"/>';
+  // العروق الزرقاء/الخضراء المميزة
+  s += '<path d="M 62 25 Q 68 30 65 38 M 72 24 Q 75 32 70 40 M 58 32 Q 65 35 62 42" fill="none" stroke="#4a6b8c" stroke-width="2" stroke-linecap="round" opacity="0.8"/>';
+  s += '<path d="M 68 28 Q 72 35 68 42" fill="none" stroke="#2d4a3e" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>';
+
+  // 3. الفونتينا (أسفل اليسار) - إسفين جبنة صفراء ناعمة
+  s += '<polygon points="15,60 45,55 35,85" fill="url(#' + gFont + ')" stroke="#a16207" stroke-width="1.5" stroke-linejoin="round"/>';
+  // قشرة الجبنة (الحافة الداكنة)
+  s += '<line x1="15" y1="60" x2="45" y2="55" stroke="#854d0e" stroke-width="3" stroke-linecap="round"/>';
+  s += '<polygon points="18,62 40,58 32,78" fill="#fef08a" opacity="0.4"/>';
+
+  // 4. البارميجيانو (أسفل اليمين) - إسفين جبنة قاسية ومحبة
+  s += '<polygon points="55,60 85,55 80,85 50,80" fill="url(#' + gParm + ')" stroke="#a16207" stroke-width="1.5" stroke-linejoin="round"/>';
+  // قشرة الجبنة
+  s += '<line x1="55" y1="60" x2="85" y2="55" stroke="#713f12" stroke-width="3" stroke-linecap="round"/>';
+  // البلورات الملحية (النقاط البيضاء) التي تميز البارميجيانو القديم
+  s += '<circle cx="60" cy="65" r="1" fill="#ffffff" opacity="0.8"/>';
+  s += '<circle cx="65" cy="70" r="1.5" fill="#ffffff" opacity="0.9"/>';
+  s += '<circle cx="72" cy="62" r="1" fill="#ffffff" opacity="0.7"/>';
+  s += '<circle cx="75" cy="75" r="1.2" fill="#ffffff" opacity="0.8"/>';
+  s += '<circle cx="62" cy="78" r="1" fill="#ffffff" opacity="0.9"/>';
+  s += '<circle cx="78" cy="68" r="1.5" fill="#ffffff" opacity="0.8"/>';
+  s += '<circle cx="58" cy="72" r="0.8" fill="#ffffff" opacity="0.7"/>';
+  
   return mkSVG(100, s);
 }
 
 export function icoSmokedCheese() {
-  const [gRind, dRind] = GR('#8c3e10', '#632506', '#3b1202');
-  const [gBody, dBody] = GR('#ffe382', '#f5b738', '#cc8614');
-  let s = '<defs>' + dRind + dBody + '</defs>';
-  // قطعة جبنة مدخنة مميزة: قشرة بنية مدخنة عريضة على القوس الخارجي وجبنة ذهبية من الداخل مع ثقوب
-  // الوجه الجانبي مع القشرة المدخنة المميّزة
-  s += '<path d="M 22 62 L 78 36 C 84 46 86 60 76 74 L 22 62 Z" fill="url(#' + gBody + ')"/>';
-  // القشرة المدخنة المحمصة الداكنة
-  s += '<path d="M 78 36 C 88 50 88 66 76 74 L 72 82 C 88 74 94 52 82 28 Z" fill="url(#' + gRind + ')" stroke="#300d00" stroke-width="2.2"/>';
-  // حدود القطعة
-  s += '<path d="M 22 62 L 78 36 C 84 46 86 60 76 74 Z" fill="none" stroke="#4a1e05" stroke-width="2.4" stroke-linejoin="round"/>';
-  // خطوط تدخين خشبية أصلية
-  s += '<path d="M 74 46 C 78 54 78 64 72 70" fill="none" stroke="#e09030" stroke-width="1.8"/>';
-  // ثقوب جبنة شهية
-  s += '<ellipse cx="46" cy="56" rx="5" ry="3.5" fill="#b87208"/>';
-  s += '<ellipse cx="62" cy="50" rx="4.5" ry="3" fill="#b87208"/>';
-  s += '<ellipse cx="58" cy="64" rx="4" ry="2.8" fill="#b87208"/>';
-  // لمعة ناعمة
-  s += '<line x1="28" y1="60" x2="68" y2="42" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>';
+  const [gRind, dRind] = GR('#c2410c', '#9a3412', '#7c2d12');
+  const [gInner, dInner] = GR('#fef08a', '#fde047', '#eab308');
+  let s = '<defs>' + dRind + dInner + '</defs>';
+
+  // خيوط دخان متصاعدة بنعومة
+  s += '<path d="M 45 15 C 40 8, 50 4, 48 0" fill="none" stroke="#d6d3d1" stroke-width="3" stroke-linecap="round" opacity="0.6"/>';
+  s += '<path d="M 55 18 C 62 10, 52 6, 58 2" fill="none" stroke="#e7e5e4" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>';
+  s += '<path d="M 38 20 C 32 12, 42 8, 35 4" fill="none" stroke="#d6d3d1" stroke-width="2" stroke-linecap="round" opacity="0.4"/>';
+
+  // الجزء السفلي من جبنة السكرمورتزا (الكمثرى)
+  s += '<path d="M 25 55 C 25 35, 75 35, 75 55 C 75 80, 65 90, 50 90 C 35 90, 25 80, 25 55 Z" fill="url(#' + gRind + ')" stroke="#431407" stroke-width="2"/>';
+  
+  // الجزء العلوي (العنق المربوط)
+  s += '<path d="M 38 35 C 38 22, 62 22, 62 35 C 62 45, 58 48, 50 48 C 42 48, 38 45, 38 35 Z" fill="url(#' + gRind + ')" stroke="#431407" stroke-width="2"/>';
+
+  // الحبل/الخيط التقليدي المربوط به الجبن
+  s += '<path d="M 36 44 C 45 48, 55 48, 64 44" fill="none" stroke="#e7e5e4" stroke-width="3" stroke-linecap="round"/>';
+  s += '<path d="M 36 46 C 45 50, 55 50, 64 46" fill="none" stroke="#d6d3d1" stroke-width="2" stroke-linecap="round"/>';
+  // العقدة والخيط المتدلي
+  s += '<circle cx="50" cy="47" r="2.5" fill="#e7e5e4" stroke="#a8a29e" stroke-width="1"/>';
+  s += '<path d="M 50 47 Q 55 55 52 62" fill="none" stroke="#e7e5e4" stroke-width="2" stroke-linecap="round"/>';
+
+  // مقطع جانبي يظهر لون الجبنة الداخلي الفاتح
+  s += '<path d="M 50 48 C 65 52, 72 65, 68 80 C 65 88, 55 90, 50 90 C 55 85, 58 70, 50 48 Z" fill="url(#' + gInner + ')" stroke="#a16207" stroke-width="1.5"/>';
+  s += '<path d="M 55 55 Q 62 65 58 78" fill="none" stroke="#fde047" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>';
+
+  // لمعان قشرة التدخين الغنية
+  s += '<path d="M 32 45 C 30 35, 40 28, 48 28" fill="none" stroke="#fb923c" stroke-width="3" stroke-linecap="round" opacity="0.7"/>';
+  s += '<path d="M 30 60 C 28 70, 35 82, 45 85" fill="none" stroke="#fb923c" stroke-width="4" stroke-linecap="round" opacity="0.5"/>';
+
   return mkSVG(100, s);
 }
-
 export function icoShred(w) {
   return w ? icoExtraCheese() : icoMozzarella();
 }

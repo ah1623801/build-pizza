@@ -21,7 +21,7 @@ export const STEPS = [
 const QORDER = ['less', 'normal', 'more'];
 
 let toastT = null;
-export function toast(msg) {
+export function toast(msg, duration = 4000) {
   const t = $('#toast');
   if (!t) return;
   t.classList.remove('show');
@@ -29,7 +29,7 @@ export function toast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastT);
-  toastT = setTimeout(() => t.classList.remove('show'), 2300);
+  toastT = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 export function updateBadge(state) {

@@ -179,7 +179,7 @@ export default function CategoriesTab({
                   const p = parseBilingual(c.name);
                   return (
                     <>
-                      <b>{p.en || c.name}</b> {p.ar && <b style={{ color: "#ffb347", marginLeft: "6px" }}>({p.ar})</b>}
+                      <b>{p.ar || p.en || c.name}</b>
                     </>
                   );
                 })()} <small style={{ color: "#9a8b7a" }}>({c.id})</small>

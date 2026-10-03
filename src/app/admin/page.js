@@ -7,6 +7,7 @@ import MenuTab from "@/components/admin/MenuTab";
 import CategoriesTab from "@/components/admin/CategoriesTab";
 import IngredientsTab from "@/components/admin/IngredientsTab";
 import MessagesTab from "@/components/admin/MessagesTab";
+// import CouponsTab from "@/components/admin/CouponsTab";
 import ReceiptModal from "@/components/admin/ReceiptModal";
 import { playOrderAlertChime, unlockAudioOnUserGesture } from "@/components/admin/audioNotification";
 import { formatBilingual, parseBilingual } from "@/lib/i18n";
@@ -31,17 +32,35 @@ export default function AdminPage() {
   const [selectedReceiptModal, setSelectedReceiptModal] = useState(null);
   const previousOrdersCountRef = useRef(0);
 
+  // Date & Period Filter State: all | today | yesterday | this_month | custom_date | custom_month
+  const [periodFilter, setPeriodFilter] = useState("all");
+  const [selectedCustomDate, setSelectedCustomDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedCustomMonth, setSelectedCustomMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isFilterModalOpen) {
+        setIsFilterModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFilterModalOpen]);
+
   // Dashboard Data
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
 
-  // Item Form (Bilingual: EN & AR)
+  // Item Form (Bilingual: EN & AR + 3 Pizza Sizes)
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     name_en: "",
     name_ar: "",
     item_id: "",
     price: "",
+    price_small: "",
+    price_large: "",
     is_simple: false,
     categories: [],
     ingredients_en: "",
@@ -122,11 +141,13 @@ export default function AdminPage() {
   const loadMenuData = async () => {
     try {
       const res = await fetch("/api/menu");
-      const data = await res.json();
-      if (data.categories) setCategories(data.categories);
-      if (data.items) setItems(data.items);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.categories && Array.isArray(data.categories)) setCategories(data.categories);
+        if (data.items && Array.isArray(data.items)) setItems(data.items);
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Menu data fetch error:", e);
     }
   };
 
@@ -146,6 +167,27 @@ export default function AdminPage() {
 
   // Customer Inquiries & Messages
   const [messages, setMessages] = useState([]);
+
+  // تم تعليق جزء الكوبونات (ctrl + ظ)
+  /*
+  const [coupons, setCoupons] = useState([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+
+  const loadCoupons = async () => {
+    try {
+      setLoadingCoupons(true);
+      const res = await fetch("/api/coupons");
+      if (res.ok) {
+        const data = await res.json();
+        setCoupons(Array.isArray(data.coupons) ? data.coupons : []);
+      }
+    } catch (e) {
+      console.error("Coupons fetch error:", e);
+    } finally {
+      setLoadingCoupons(false);
+    }
+  };
+  */
 
   const loadMessages = async () => {
     try {
@@ -199,6 +241,7 @@ export default function AdminPage() {
           loadMenuData();
           loadIngredientPrices();
           loadMessages();
+          // loadCoupons();
         }
       } catch (e) {
         console.error(e);
@@ -249,6 +292,13 @@ export default function AdminPage() {
                 playOrderAlertChime();
               }
               loadOrders();
+            }
+          )
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "messages" },
+            () => {
+              loadMessages();
             }
           )
           .subscribe();
@@ -383,6 +433,15 @@ export default function AdminPage() {
       formPayload.append("name", combinedName);
       formPayload.append("item_id", (formData.item_id || formData.name_en || "item").toLowerCase().replace(/\s+/g, "-"));
       formPayload.append("price", formData.price);
+      formPayload.append("price_small", formData.price_small || "");
+      formPayload.append("price_large", formData.price_large || "");
+      if (formData.price_small || formData.price_large) {
+        formPayload.append("size_prices", JSON.stringify({
+          small: Number(formData.price_small) || Math.round((Number(formData.price) || 0) * 0.85),
+          med: Number(formData.price) || 0,
+          large: Number(formData.price_large) || Math.round((Number(formData.price) || 0) * 1.25),
+        }));
+      }
       formPayload.append("is_simple", formData.is_simple);
       formPayload.append("categories", JSON.stringify(formData.categories));
       formPayload.append("ingredients", JSON.stringify(combinedIngs));
@@ -421,6 +480,8 @@ export default function AdminPage() {
       name_ar: "",
       item_id: "",
       price: "",
+      price_small: "",
+      price_large: "",
       is_simple: false,
       categories: [],
       ingredients_en: "",
@@ -680,11 +741,120 @@ export default function AdminPage() {
     );
   }
 
-  const pendingCount = orders.filter((o) => o.payment_status === "pending").length;
-  const totalRevenue = orders
-    .filter((o) => o.payment_status === "paid" || o.order_status === "completed")
-    .reduce((sum, o) => sum + (Number(o.total ?? o.total_price ?? 0)), 0);
-  const paidOrdersCount = orders.filter((o) => o.payment_status === "paid" || o.order_status === "completed").length;
+  // Robust Filter orders by selected time period (Cairo / UTC / Local ISO resilience)
+  const pad = (n) => String(n).padStart(2, "0");
+  const extractDateKeys = (rawDate) => {
+    if (!rawDate) return { localDay: "", localMonth: "", utcDay: "", utcMonth: "", rawDay: "", rawMonth: "" };
+    const str = String(rawDate).trim();
+    const rawDayMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const rawDay = rawDayMatch ? `${rawDayMatch[1]}-${rawDayMatch[2]}-${rawDayMatch[3]}` : "";
+    const rawMonth = rawDayMatch ? `${rawDayMatch[1]}-${rawDayMatch[2]}` : "";
+
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) {
+      return { localDay: rawDay, localMonth: rawMonth, utcDay: rawDay, utcMonth: rawMonth, rawDay, rawMonth };
+    }
+    const localDay = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const localMonth = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+    const utcDay = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+    const utcMonth = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`;
+    return { localDay, localMonth, utcDay, utcMonth, rawDay, rawMonth };
+  };
+
+  const filteredOrders = (() => {
+    if (!orders || orders.length === 0) return [];
+    if (periodFilter === "all") return orders;
+
+    const now = new Date();
+    const todayLocal = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const todayUtc = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`;
+    const thisMonthLocal = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+    const thisMonthUtc = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}`;
+
+    const yLocal = new Date(now);
+    yLocal.setDate(yLocal.getDate() - 1);
+    const yesterdayLocal = `${yLocal.getFullYear()}-${pad(yLocal.getMonth() + 1)}-${pad(yLocal.getDate())}`;
+
+    const yUtc = new Date(now);
+    yUtc.setUTCDate(yUtc.getUTCDate() - 1);
+    const yesterdayUtc = `${yUtc.getUTCFullYear()}-${pad(yUtc.getUTCMonth() + 1)}-${pad(yUtc.getUTCDate())}`;
+
+    return orders.filter((o) => {
+      const dateVal = o.created_at || o.createdAt || o.date || o.created_time;
+      if (!dateVal) return false;
+      const { localDay, localMonth, utcDay, utcMonth, rawDay, rawMonth } = extractDateKeys(dateVal);
+
+      if (periodFilter === "today") {
+        return (
+          localDay === todayLocal ||
+          utcDay === todayUtc ||
+          rawDay === todayLocal ||
+          rawDay === todayUtc ||
+          localDay === todayUtc ||
+          utcDay === todayLocal
+        );
+      }
+      if (periodFilter === "yesterday") {
+        return (
+          localDay === yesterdayLocal ||
+          utcDay === yesterdayUtc ||
+          rawDay === yesterdayLocal ||
+          rawDay === yesterdayUtc
+        );
+      }
+      if (periodFilter === "this_month") {
+        return (
+          localMonth === thisMonthLocal ||
+          utcMonth === thisMonthUtc ||
+          rawMonth === thisMonthLocal ||
+          rawMonth === thisMonthUtc
+        );
+      }
+      if (periodFilter === "custom_date") {
+        return (
+          localDay === selectedCustomDate ||
+          utcDay === selectedCustomDate ||
+          rawDay === selectedCustomDate
+        );
+      }
+      if (periodFilter === "custom_month") {
+        return (
+          localMonth === selectedCustomMonth ||
+          utcMonth === selectedCustomMonth ||
+          rawMonth === selectedCustomMonth
+        );
+      }
+      return true;
+    });
+  })();
+
+  const pendingCount = filteredOrders.filter((o) => o.payment_status === "pending").length;
+
+  // PAID REVENUE (الأرباح المدفوعة فقط مع استبعاد الملغي والمرفوض)
+  const paidOrders = filteredOrders.filter(
+    (o) => (o.payment_status === "paid" || o.order_status === "completed") &&
+           o.order_status !== "cancelled" &&
+           o.payment_status !== "rejected"
+  );
+  const paidRevenue = paidOrders.reduce((sum, o) => sum + (Number(o.total ?? o.total_price ?? 0)), 0);
+  const paidOrdersCount = paidOrders.length;
+
+  // إجمالي الكاش (Total Cash)
+  const cashPaidOrders = paidOrders.filter((o) => o.payment_method === "cash" || !o.payment_method);
+  const totalCash = cashPaidOrders.reduce((sum, o) => sum + (Number(o.total ?? o.total_price ?? 0)), 0);
+
+  // إجمالي المحافظ / فيزا / إنستاباي (Total Wallets & Online)
+  const walletPaidOrders = paidOrders.filter((o) =>
+    ["visa", "wallet", "vodafone", "instapay"].includes(String(o.payment_method).toLowerCase())
+  );
+  const totalWallets = walletPaidOrders.reduce((sum, o) => sum + (Number(o.total ?? o.total_price ?? 0)), 0);
+
+  // إجمالي العمليات المكنسلة (Total Cancelled Orders)
+  const cancelledOrders = filteredOrders.filter(
+    (o) => o.order_status === "cancelled" || o.payment_status === "rejected"
+  );
+  const cancelledCount = cancelledOrders.length;
+  const cancelledRevenue = cancelledOrders.reduce((sum, o) => sum + (Number(o.total ?? o.total_price ?? 0)), 0);
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0705", color: "#f3e9dc", fontFamily: "'Inter', sans-serif", paddingBottom: "60px" }}>
@@ -729,40 +899,653 @@ export default function AdminPage() {
 
       {/* Main Container */}
       <main style={{ maxWidth: "1300px", margin: "20px auto 0", padding: "0 4vw" }}>
-        {/* KPI Summary Overview */}
+        {activeTab === "orders" && (
+          <>
+            {/* Dashboard Toolbar with Slick Filter Trigger */}
+            <div style={{
+              display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          marginBottom: "24px",
+          paddingBottom: "16px",
+          borderBottom: "1px solid rgba(243, 233, 220, 0.08)",
+        }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              <h2 style={{ fontFamily: "var(--disp)", fontSize: "28px", letterSpacing: "1.5px", margin: 0, color: "#f3e9dc" }}>
+                EXECUTIVE OVERVIEW
+              </h2>
+              {periodFilter !== "all" && (
+                <span style={{
+                  fontSize: "10px",
+                  fontWeight: "900",
+                  letterSpacing: "1.5px",
+                  background: "rgba(255, 122, 46, 0.18)",
+                  color: "#ff7a2e",
+                  border: "1px solid rgba(255, 122, 46, 0.45)",
+                  padding: "4px 12px",
+                  borderRadius: "99px",
+                  textTransform: "uppercase",
+                  boxShadow: "0 0 14px rgba(255, 122, 46, 0.25)"
+                }}>
+                  ACTIVE FILTER ON
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: "12.5px", color: "#9a8b7a", marginTop: "5px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <span>Period:</span>
+              <b style={{ color: "#ffb347", letterSpacing: "0.5px" }}>
+                {periodFilter === "all" && "All Time (Complete Records)"}
+                {periodFilter === "today" && "Today's Orders"}
+                {periodFilter === "yesterday" && "Yesterday's Orders"}
+                {periodFilter === "this_month" && "Current Month"}
+                {periodFilter === "custom_date" && `Specific Date: ${selectedCustomDate}`}
+                {periodFilter === "custom_month" && `Specific Month: ${selectedCustomMonth}`}
+              </b>
+              {periodFilter !== "all" && (
+                <button
+                  type="button"
+                  onClick={() => setPeriodFilter("all")}
+                  style={{
+                    background: "rgba(194, 43, 26, 0.15)",
+                    border: "1px solid rgba(194, 43, 26, 0.35)",
+                    color: "#ff8b7a",
+                    fontSize: "10px",
+                    fontWeight: "800",
+                    padding: "3px 10px",
+                    borderRadius: "99px",
+                    cursor: "pointer",
+                    letterSpacing: "0.5px",
+                    marginLeft: "4px",
+                  }}
+                >
+                  RESET ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Filter Buttons + Slick Filter Trigger Button */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255, 255, 255, 0.02)", padding: "4px", borderRadius: "99px", border: "1px solid rgba(243, 233, 220, 0.08)" }}>
+              {[
+                { id: "all", label: "ALL TIME" },
+                { id: "today", label: "TODAY" },
+                { id: "yesterday", label: "YESTERDAY" },
+                { id: "this_month", label: "THIS MONTH" },
+              ].map((pill) => {
+                const isAct = periodFilter === pill.id;
+                return (
+                  <button
+                    key={pill.id}
+                    type="button"
+                    onClick={() => setPeriodFilter(pill.id)}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "99px",
+                      border: isAct ? "1.5px solid #ff7a2e" : "1px solid transparent",
+                      background: isAct ? "linear-gradient(135deg, #ff7a2e, #e05a12)" : "transparent",
+                      color: isAct ? "#140d08" : "#9a8b7a",
+                      fontSize: "10.5px",
+                      fontWeight: isAct ? "900" : "700",
+                      letterSpacing: "1px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      boxShadow: isAct ? "0 4px 14px rgba(255, 122, 46, 0.4)" : "none",
+                    }}
+                  >
+                    {pill.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsFilterModalOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px 18px",
+                background: periodFilter.startsWith("custom_")
+                  ? "linear-gradient(135deg, rgba(255,122,46,0.3) 0%, rgba(20,13,8,0.98) 100%)"
+                  : "linear-gradient(135deg, #24140b 0%, #140d08 100%)",
+                border: periodFilter.startsWith("custom_") ? "1.5px solid #ff7a2e" : "1.5px solid rgba(255, 122, 46, 0.35)",
+                borderRadius: "14px",
+                color: periodFilter.startsWith("custom_") ? "#ffb347" : "#f3e9dc",
+                fontSize: "11.5px",
+                fontWeight: "900",
+                letterSpacing: "1.2px",
+                cursor: "pointer",
+                boxShadow: periodFilter.startsWith("custom_")
+                  ? "0 8px 25px rgba(255,122,46,0.38), 0 0 15px rgba(255,122,46,0.25)"
+                  : "0 8px 24px rgba(0,0,0,0.6)",
+                transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+              }}
+            >
+              <div style={{
+                width: "26px",
+                height: "26px",
+                borderRadius: "7px",
+                background: "rgba(255, 122, 46, 0.15)",
+                border: "1px solid rgba(255, 122, 46, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ff7a2e"
+              }}>
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="21" x2="4" y2="14" />
+                  <line x1="4" y1="10" x2="4" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12" y2="3" />
+                  <line x1="20" y1="21" x2="20" y2="16" />
+                  <line x1="20" y1="12" x2="20" y2="3" />
+                  <line x1="1" y1="14" x2="7" y2="14" />
+                  <line x1="9" y1="8" x2="15" y2="8" />
+                  <line x1="17" y1="16" x2="23" y2="16" />
+                </svg>
+              </div>
+              <span>CALENDAR 📅</span>
+              {periodFilter.startsWith("custom_") && (
+                <span style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  background: "#ff7a2e",
+                  boxShadow: "0 0 10px #ff7a2e",
+                }} />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Redesigned Filter Modal Dialog */}
+        {isFilterModalOpen && (
+          <div
+            onClick={() => setIsFilterModalOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 100000,
+              background: "rgba(5, 3, 2, 0.85)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%",
+                maxWidth: "620px",
+                background: "linear-gradient(180deg, #1c1109 0%, #100a06 100%)",
+                border: "1.5px solid rgba(255, 122, 46, 0.45)",
+                borderRadius: "26px",
+                padding: "32px 30px",
+                boxShadow: "0 30px 80px rgba(0, 0, 0, 0.95), 0 0 50px rgba(255, 122, 46, 0.2)",
+                boxSizing: "border-box",
+                maxHeight: "90vh",
+                overflowY: "auto",
+              }}
+            >
+              {/* Modal Head */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "22px", borderBottom: "1px solid rgba(243, 233, 220, 0.1)", paddingBottom: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <div style={{
+                    width: "46px",
+                    height: "46px",
+                    borderRadius: "14px",
+                    background: "rgba(255, 122, 46, 0.15)",
+                    border: "1px solid rgba(255, 122, 46, 0.35)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#ff7a2e",
+                    boxShadow: "0 0 20px rgba(255, 122, 46, 0.25)"
+                  }}>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 style={{ fontFamily: "var(--disp)", fontSize: "25px", letterSpacing: "1px", margin: 0, color: "#fff" }}>
+                      FILTER TIMEFRAME
+                    </h3>
+                    <p style={{ fontSize: "11.5px", color: "#9a8b7a", margin: "4px 0 0" }}>
+                      Select a preset or specify custom dates to refine dashboard statistics.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsFilterModalOpen(false)}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "50%",
+                    width: "34px",
+                    height: "34px",
+                    color: "#9a8b7a",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* 1. Quick Presets (4 interactive cards) */}
+              <div style={{ marginBottom: "22px" }}>
+                <span style={{ fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", color: "#e8b04b", display: "block", marginBottom: "12px", textTransform: "uppercase" }}>
+                  ⚡ QUICK TIMEFRAMES:
+                </span>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  {[
+                    { id: "all", title: "ALL TIME", icon: "🌐", desc: "Lifetime restaurant records" },
+                    { id: "today", title: "TODAY", icon: "☀️", desc: "Live orders from today" },
+                    { id: "yesterday", title: "YESTERDAY", icon: "⏪", desc: "Previous day's volume" },
+                    { id: "this_month", title: "THIS MONTH", icon: "🗓️", desc: "Current month to date" },
+                  ].map((p) => {
+                    const active = periodFilter === p.id;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          setPeriodFilter(p.id);
+                          setIsFilterModalOpen(false);
+                        }}
+                        style={{
+                          background: active
+                            ? "linear-gradient(135deg, rgba(255,122,46,0.2) 0%, rgba(36,20,11,0.9) 100%)"
+                            : "rgba(255, 255, 255, 0.03)",
+                          border: active ? "1.5px solid #ff7a2e" : "1px solid rgba(243, 233, 220, 0.1)",
+                          borderRadius: "16px",
+                          padding: "16px 18px",
+                          cursor: "pointer",
+                          transition: "all 0.25s ease",
+                          position: "relative",
+                          boxShadow: active ? "0 6px 20px rgba(255, 122, 46, 0.25)" : "none",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "22px" }}>{p.icon}</span>
+                          {active && (
+                            <span style={{
+                              background: "#ff7a2e",
+                              color: "#140d08",
+                              borderRadius: "50%",
+                              width: "20px",
+                              height: "20px",
+                              fontSize: "11px",
+                              fontWeight: "900",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center"
+                            }}>
+                              ✓
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontFamily: "var(--disp)", fontSize: "17px", color: active ? "#ffb347" : "#f3e9dc", letterSpacing: "1px" }}>
+                          {p.title}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#9a8b7a", marginTop: "4px", lineHeight: "1.4" }}>
+                          {p.desc}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. Custom Date Range Pickers (2 Cards) */}
+              <div style={{ marginBottom: "22px" }}>
+                <span style={{ fontSize: "11px", fontWeight: "900", letterSpacing: "1.5px", color: "#e8b04b", display: "block", marginBottom: "12px", textTransform: "uppercase" }}>
+                  📅 OR CHOOSE CUSTOM DATE / MONTH:
+                </span>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  {/* Specific Day Picker Card */}
+                  <div
+                    onClick={() => setPeriodFilter("custom_date")}
+                    style={{
+                      background: periodFilter === "custom_date"
+                        ? "linear-gradient(135deg, rgba(255,122,46,0.2) 0%, rgba(36,20,11,0.9) 100%)"
+                        : "rgba(255, 255, 255, 0.03)",
+                      border: periodFilter === "custom_date" ? "1.5px solid #ff7a2e" : "1px solid rgba(243, 233, 220, 0.1)",
+                      borderRadius: "16px",
+                      padding: "16px 18px",
+                      cursor: "pointer",
+                      boxShadow: periodFilter === "custom_date" ? "0 6px 20px rgba(255, 122, 46, 0.25)" : "none",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      <span style={{ fontSize: "20px" }}>📆</span>
+                      <b style={{ fontSize: "13px", letterSpacing: "1px", color: periodFilter === "custom_date" ? "#ffb347" : "#fff" }}>
+                        SPECIFIC DAY
+                      </b>
+                    </div>
+                    <p style={{ fontSize: "10.5px", color: "#9a8b7a", margin: "0 0 10px" }}>
+                      Pick any single calendar date:
+                    </p>
+                    <input
+                      type="date"
+                      value={selectedCustomDate}
+                      onChange={(e) => {
+                        setSelectedCustomDate(e.target.value);
+                        setPeriodFilter("custom_date");
+                      }}
+                      style={{
+                        width: "100%",
+                        background: "#120a05",
+                        border: "1px solid rgba(255, 122, 46, 0.35)",
+                        borderRadius: "10px",
+                        padding: "9px 12px",
+                        color: "#fff",
+                        fontSize: "13px",
+                        fontWeight: "700",
+                        outline: "none",
+                        boxSizing: "border-box",
+                        cursor: "pointer"
+                      }}
+                    />
+                  </div>
+
+                  {/* Specific Month Picker Card */}
+                  <div
+                    onClick={() => setPeriodFilter("custom_month")}
+                    style={{
+                      background: periodFilter === "custom_month"
+                        ? "linear-gradient(135deg, rgba(255,122,46,0.2) 0%, rgba(36,20,11,0.9) 100%)"
+                        : "rgba(255, 255, 255, 0.03)",
+                      border: periodFilter === "custom_month" ? "1.5px solid #ff7a2e" : "1px solid rgba(243, 233, 220, 0.1)",
+                      borderRadius: "16px",
+                      padding: "16px 18px",
+                      cursor: "pointer",
+                      boxShadow: periodFilter === "custom_month" ? "0 6px 20px rgba(255, 122, 46, 0.25)" : "none",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      <span style={{ fontSize: "20px" }}>📊</span>
+                      <b style={{ fontSize: "13px", letterSpacing: "1px", color: periodFilter === "custom_month" ? "#ffb347" : "#fff" }}>
+                        SPECIFIC MONTH
+                      </b>
+                    </div>
+                    <p style={{ fontSize: "10.5px", color: "#9a8b7a", margin: "0 0 10px" }}>
+                      Pick a month & year:
+                    </p>
+                    <input
+                      type="month"
+                      value={selectedCustomMonth}
+                      onChange={(e) => {
+                        setSelectedCustomMonth(e.target.value);
+                        setPeriodFilter("custom_month");
+                      }}
+                      style={{
+                        width: "100%",
+                        background: "#120a05",
+                        border: "1px solid rgba(255, 122, 46, 0.35)",
+                        borderRadius: "10px",
+                        padding: "9px 12px",
+                        color: "#fff",
+                        fontSize: "13px",
+                        fontWeight: "700",
+                        outline: "none",
+                        boxSizing: "border-box",
+                        cursor: "pointer"
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Status Summary Pill */}
+              <div style={{
+                background: "rgba(255, 122, 46, 0.08)",
+                border: "1px dashed rgba(255, 122, 46, 0.35)",
+                borderRadius: "16px",
+                padding: "14px 20px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "24px"
+              }}>
+                <div>
+                  <span style={{ fontSize: "10.5px", color: "#9a8b7a", letterSpacing: "1px", display: "block" }}>CURRENT SELECTION</span>
+                  <b style={{ fontSize: "14px", color: "#ffb347", letterSpacing: "0.5px" }}>
+                    {periodFilter === "all" && "All Time (Complete Records)"}
+                    {periodFilter === "today" && "Today's Orders"}
+                    {periodFilter === "yesterday" && "Yesterday's Orders"}
+                    {periodFilter === "this_month" && "Current Month"}
+                    {periodFilter === "custom_date" && `Specific Date: ${selectedCustomDate}`}
+                    {periodFilter === "custom_month" && `Specific Month: ${selectedCustomMonth}`}
+                  </b>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <span style={{ fontSize: "10.5px", color: "#9a8b7a", display: "block" }}>MATCHING ORDERS</span>
+                  <b style={{ fontSize: "17px", color: "#57a84f" }}>{filteredOrders.length}</b>
+                </div>
+              </div>
+
+              {/* 4. Action Buttons */}
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  type="button"
+                  onClick={() => setPeriodFilter("all")}
+                  style={{
+                    flex: 1,
+                    padding: "14px",
+                    borderRadius: "99px",
+                    border: "1px solid rgba(243, 233, 220, 0.15)",
+                    background: "rgba(255, 255, 255, 0.04)",
+                    color: "#f3e9dc",
+                    fontWeight: "800",
+                    fontSize: "11px",
+                    letterSpacing: "1px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  RESET TO ALL TIME
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFilterModalOpen(false)}
+                  style={{
+                    flex: 1.4,
+                    padding: "14px",
+                    borderRadius: "99px",
+                    border: "none",
+                    background: "linear-gradient(135deg, #ff7a2e 0%, #e05a12 100%)",
+                    color: "#140d08",
+                    fontWeight: "900",
+                    fontSize: "12px",
+                    letterSpacing: "1.5px",
+                    cursor: "pointer",
+                    boxShadow: "0 6px 20px rgba(255, 122, 46, 0.4)",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  APPLY & CLOSE ✓
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ROW 1: FINANCIAL OVERVIEW (4 High-Impact KPI Cards) */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "14px",
-            marginBottom: "24px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "16px",
+            marginBottom: "16px",
           }}
         >
-          <div style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "16px", padding: "16px 20px" }}>
-            <div style={{ fontSize: "10px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>PAID REVENUE</div>
-            <div style={{ fontSize: "24px", fontFamily: "var(--disp)", color: "#57a84f", marginTop: "4px" }}>
-              EGP {totalRevenue.toLocaleString()}
+          {/* 1. PAID REVENUE */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(87,168,79,0.12) 0%, rgba(20,13,8,0.95) 100%)",
+            border: "1px solid rgba(87,168,79,0.45)",
+            borderRadius: "20px",
+            padding: "22px 24px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(87,168,79,0.12)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "#57a84f", letterSpacing: "2px", fontWeight: "900" }}>PAID REVENUE</span>
+              <span style={{ fontSize: "14px" }}>💰</span>
+            </div>
+            <div style={{ fontSize: "34px", fontFamily: "var(--disp)", color: "#57a84f", marginTop: "8px", letterSpacing: "0.5px" }}>
+              EGP {paidRevenue.toLocaleString()}
+            </div>
+            <div style={{ fontSize: "11.5px", color: "#9a8b7a", marginTop: "6px", fontWeight: "600" }}>
+              Net Verified Sales
             </div>
           </div>
-          <div style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "16px", padding: "16px 20px" }}>
-            <div style={{ fontSize: "10px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>PAID ORDERS</div>
-            <div style={{ fontSize: "24px", fontFamily: "var(--disp)", color: "#ffb347", marginTop: "4px" }}>
-              {paidOrdersCount}
+
+          {/* 2. CASH REVENUE */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(232,176,75,0.08) 0%, rgba(20,13,8,0.95) 100%)",
+            border: "1px solid rgba(232,176,75,0.35)",
+            borderRadius: "20px",
+            padding: "22px 24px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(232,176,75,0.1)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "#e8b04b", letterSpacing: "2px", fontWeight: "900" }}>CASH REVENUE</span>
+              <span style={{ fontSize: "14px" }}>💵</span>
+            </div>
+            <div style={{ fontSize: "32px", fontFamily: "var(--disp)", color: "#ffb347", marginTop: "8px", letterSpacing: "0.5px" }}>
+              EGP {totalCash.toLocaleString()}
+            </div>
+            <div style={{ fontSize: "11.5px", color: "#9a8b7a", marginTop: "6px", fontWeight: "600" }}>
+              {cashPaidOrders.length} Paid in Cash
             </div>
           </div>
-          <div style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "16px", padding: "16px 20px" }}>
-            <div style={{ fontSize: "10px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>PENDING CASHIER</div>
-            <div style={{ fontSize: "24px", fontFamily: "var(--disp)", color: pendingCount > 0 ? "#ff7a2e" : "#9a8b7a", marginTop: "4px" }}>
-              {pendingCount}
+
+          {/* 3. WALLETS & ONLINE */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(79,195,247,0.08) 0%, rgba(20,13,8,0.95) 100%)",
+            border: "1px solid rgba(79,195,247,0.35)",
+            borderRadius: "20px",
+            padding: "22px 24px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(79,195,247,0.1)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "#4fc3f7", letterSpacing: "2px", fontWeight: "900" }}>WALLETS & ONLINE</span>
+              <span style={{ fontSize: "14px" }}>📱</span>
+            </div>
+            <div style={{ fontSize: "32px", fontFamily: "var(--disp)", color: "#4fc3f7", marginTop: "8px", letterSpacing: "0.5px" }}>
+              EGP {totalWallets.toLocaleString()}
+            </div>
+            <div style={{ fontSize: "11.5px", color: "#9a8b7a", marginTop: "6px", fontWeight: "600" }}>
+              {walletPaidOrders.length} Paid via Vodafone / InstaPay
             </div>
           </div>
-          <div style={{ background: "#140d08", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "16px", padding: "16px 20px" }}>
-            <div style={{ fontSize: "10px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>TOTAL ORDERS</div>
-            <div style={{ fontSize: "24px", fontFamily: "var(--disp)", color: "#f3e9dc", marginTop: "4px" }}>
-              {orders.length}
+
+          {/* 4. CANCELLED / REJECTED */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(194,43,26,0.1) 0%, rgba(20,13,8,0.95) 100%)",
+            border: "1px solid rgba(194,43,26,0.4)",
+            borderRadius: "20px",
+            padding: "22px 24px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(194,43,26,0.12)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "#ff8b7a", letterSpacing: "2px", fontWeight: "900" }}>CANCELLED / REJECTED</span>
+              <span style={{ fontSize: "14px" }}>✕</span>
+            </div>
+            <div style={{ fontSize: "32px", fontFamily: "var(--disp)", color: "#ff8b7a", marginTop: "8px", letterSpacing: "0.5px" }}>
+              {cancelledCount} <span style={{ fontSize: "14px", fontFamily: "sans-serif", fontWeight: "700" }}>ORDERS</span>
+            </div>
+            <div style={{ fontSize: "11.5px", color: "#9a8b7a", marginTop: "6px", fontWeight: "600" }}>
+              EGP {cancelledRevenue.toLocaleString()} Lost Revenue
             </div>
           </div>
         </div>
+
+        {/* ROW 2: OPERATIONAL & VOLUME (3 Balanced Large Cards) */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: "16px",
+            marginBottom: "28px",
+          }}
+        >
+          {/* 5. COMPLETED ORDERS */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(20,13,8,0.95) 100%)",
+            border: "1px solid rgba(87,168,79,0.3)",
+            borderRadius: "20px",
+            padding: "20px 24px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>COMPLETED ORDERS</span>
+              <span style={{ fontSize: "13px", color: "#57a84f" }}>✓</span>
+            </div>
+            <div style={{ fontSize: "36px", fontFamily: "var(--disp)", color: "#57a84f", marginTop: "6px" }}>
+              {paidOrdersCount}
+            </div>
+            <div style={{ fontSize: "11.5px", color: "#9a8b7a", marginTop: "4px" }}>
+              Successfully Delivered & Fulfilled
+            </div>
+          </div>
+
+          {/* 6. PENDING CASHIER */}
+          <div style={{
+            background: pendingCount > 0 ? "linear-gradient(135deg, rgba(255,122,46,0.16) 0%, rgba(20,13,8,0.95) 100%)" : "rgba(20,13,8,0.95)",
+            border: pendingCount > 0 ? "1.5px solid #ff7a2e" : "1px solid rgba(243,233,220,0.12)",
+            borderRadius: "20px",
+            padding: "20px 24px",
+            boxShadow: pendingCount > 0 ? "0 10px 30px rgba(0,0,0,0.7), 0 0 25px rgba(255,122,46,0.25)" : "0 10px 30px rgba(0,0,0,0.5)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: pendingCount > 0 ? "#ffb347" : "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>AWAITING CASHIER</span>
+              <span style={{ fontSize: "13px" }}>⏳</span>
+            </div>
+            <div style={{ fontSize: "36px", fontFamily: "var(--disp)", color: pendingCount > 0 ? "#ff7a2e" : "#9a8b7a", marginTop: "6px" }}>
+              {pendingCount}
+            </div>
+            <div style={{ fontSize: "11.5px", color: pendingCount > 0 ? "#ffb347" : "#9a8b7a", marginTop: "4px", fontWeight: pendingCount > 0 ? "700" : "400" }}>
+              {pendingCount > 0 ? "Requires Immediate Attention 🔥" : "All Orders Verified"}
+            </div>
+          </div>
+
+          {/* 7. TOTAL ORDERS IN PERIOD */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(20,13,8,0.95) 100%)",
+            border: "1px solid rgba(243,233,220,0.18)",
+            borderRadius: "20px",
+            padding: "20px 24px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "#9a8b7a", letterSpacing: "2px", fontWeight: "800" }}>TOTAL IN PERIOD</span>
+              <span style={{ fontSize: "13px" }}>📊</span>
+            </div>
+            <div style={{ fontSize: "36px", fontFamily: "var(--disp)", color: "#f3e9dc", marginTop: "6px" }}>
+              {filteredOrders.length}
+            </div>
+            <div style={{ fontSize: "11.5px", color: "#9a8b7a", marginTop: "4px" }}>
+              Total Logged Orders in Period
+            </div>
+          </div>
+        </div>
+      </>
+    )}
 
         {/* Navigation Tabs */}
         <div style={{
@@ -792,7 +1575,10 @@ export default function AdminPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab("items")}
+            onClick={() => {
+              setActiveTab("items");
+              loadMenuData();
+            }}
             style={{
               flexShrink: 0,
               padding: "10px 20px",
@@ -810,7 +1596,10 @@ export default function AdminPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab("categories")}
+            onClick={() => {
+              setActiveTab("categories");
+              loadMenuData();
+            }}
             style={{
               flexShrink: 0,
               padding: "10px 20px",
@@ -862,12 +1651,33 @@ export default function AdminPage() {
           >
             MESSAGES ({messages.length}) ✉️
           </button>
+
+          {/* تم تعليق زر الكوبونات في الداشبورد (ctrl + ظ) */}
+          {/*
+          <button
+            onClick={() => setActiveTab("coupons")}
+            style={{
+              flexShrink: 0,
+              padding: "10px 20px",
+              borderRadius: "99px",
+              border: "1px solid " + (activeTab === "coupons" ? "#ff7a2e" : "rgba(243,233,220,0.15)"),
+              background: activeTab === "coupons" ? "#ff7a2e" : "transparent",
+              color: activeTab === "coupons" ? "#140d08" : "#9a8b7a",
+              fontWeight: "800",
+              fontSize: "10px",
+              letterSpacing: "2px",
+              cursor: "pointer",
+            }}
+          >
+            COUPONS ({coupons.length}) 🎟️
+          </button>
+          */}
         </div>
 
         {/* Tab 0: Orders */}
         {activeTab === "orders" && (
           <OrdersTab
-            orders={orders}
+            orders={filteredOrders}
             onUpdateStatus={handleUpdateOrderStatus}
             onSelectReceipt={(url) => setSelectedReceiptModal(url)}
             onResetOrders={handleResetOrders}
@@ -899,11 +1709,15 @@ export default function AdminPage() {
                 if (p.en) enList.push(p.en);
                 if (p.ar) arList.push(p.ar);
               });
+              const baseP = Number(it.price) || 0;
+              const szP = it.size_prices || {};
               setFormData({
                 name_en: parsedName.en,
                 name_ar: parsedName.ar,
                 item_id: it.item_id,
-                price: it.price,
+                price: szP.med || it.price || "",
+                price_small: szP.small || (baseP ? Math.round(baseP * 0.85) : ""),
+                price_large: szP.large || (baseP ? Math.round(baseP * 1.25) : ""),
                 is_simple: it.is_simple || false,
                 categories: it.categories || [],
                 ingredients_en: enList.join(", "),
@@ -957,6 +1771,17 @@ export default function AdminPage() {
             onDeleteMessage={handleDeleteMessage}
           />
         )}
+
+        {/* Tab 5: Promo Codes & Coupons - تم التعليق بناءً على الطلب (ctrl + ظ) */}
+        {/*
+        {activeTab === "coupons" && (
+          <CouponsTab
+            coupons={coupons}
+            onRefresh={loadCoupons}
+            loading={loadingCoupons}
+          />
+        )}
+        */}
 
         {/* Payment Receipt Modal */}
         <ReceiptModal

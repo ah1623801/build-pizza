@@ -86,7 +86,7 @@ export const Navbar = () => {
       <div className="nav-acts">
         {/* زر تبديل اللغة الراقي EN / عر */}
         <button id="langToggle" className="nav-lang-btn" type="button" aria-label="Toggle language" onClick={handleToggleLang}>
-          <span id="langLabel">{currentLang === 'ar' ? 'EN' : 'عر'}</span>
+          <span id="langLabel">{currentLang === 'ar' ? 'EN' : 'ع'}</span>
         </button>
 
         <button id="savedBtn" aria-label="View saved pizzas" onClick={() => document.body.classList.add('saved-open')}>
@@ -100,7 +100,7 @@ export const Navbar = () => {
             <path d="M2 2h3l2.6 12.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>
           </svg>
           <span className="cb-txt" id="navCartText">CART</span>
-          <span id="cartCount" className="nav-count-badge">{count}</span>
+          <span id="cartCount" className="nav-count-badge" suppressHydrationWarning>{count}</span>
         </button>
 
         <button id="burgerBtn" aria-label="Toggle Navigation Menu" aria-expanded="false" aria-controls="mMenu" onClick={() => document.body.classList.toggle('mm-open')}>

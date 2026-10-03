@@ -12,6 +12,119 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const DEFAULT_CATEGORIES = [
+  { id: 'signature', name: 'SIGNATURE || المميزة', sort_order: 1 },
+  { id: 'classic', name: 'CLASSIC || كلاسيك', sort_order: 2 },
+  { id: 'spicy', name: 'SPICY || سبايسي', sort_order: 3 },
+  { id: 'vegetarian', name: 'VEGGIE || خضار وجبن', sort_order: 4 },
+  { id: 'sides', name: 'SIDES || مقبلات', sort_order: 5 },
+  { id: 'drinks', name: 'DRINKS || مشروبات', sort_order: 6 },
+  { id: 'desserts', name: 'DESSERTS || حلويات', sort_order: 7 },
+];
+
+const DEFAULT_MENU_ITEMS = [
+  {
+    id: '1',
+    item_id: 'fire',
+    name: 'PEPPERONI FIRE || بيبروني فاير',
+    price: 285,
+    is_simple: false,
+    categories: ['signature', 'spicy'],
+    ingredients: ['Tomato', 'Mozzarella', 'Pepperoni', 'Jalapeño', 'Chili Oil'],
+    image_url: '/images/fire.webp',
+  },
+  {
+    id: '2',
+    item_id: 'truffle',
+    name: 'TRUFFLE MUSHROOM || ترافل مشروم',
+    price: 320,
+    is_simple: false,
+    categories: ['signature', 'vegetarian'],
+    ingredients: ['Truffle Cream', 'Mozzarella', 'Mushroom', 'Parmesan'],
+    image_url: '/images/truffle.webp',
+  },
+  {
+    id: '3',
+    item_id: 'bbq',
+    name: 'BBQ CHICKEN || تشيكن باربيكيو',
+    price: 275,
+    is_simple: false,
+    categories: ['signature'],
+    ingredients: ['BBQ', 'Mozzarella', 'Chicken', 'Smoked Cheese', 'Onion'],
+    image_url: '/images/bbq.webp',
+  },
+  {
+    id: '4',
+    item_id: 'green',
+    name: 'VEGGIE SUPREME || سوبريم خضار',
+    price: 240,
+    is_simple: false,
+    categories: ['signature', 'vegetarian'],
+    ingredients: ['Mozzarella', 'Mushroom', 'Olives', 'Green Pepper', 'Basil'],
+    image_url: '/images/green.webp',
+  },
+  {
+    id: '5',
+    item_id: 'marg',
+    name: 'MARGHERITA || مارجريتا',
+    price: 190,
+    is_simple: false,
+    categories: ['classic', 'vegetarian'],
+    ingredients: ['Tomato', 'Mozzarella', 'Basil', 'Olive Oil'],
+    image_url: '/images/margherita.webp',
+  },
+  {
+    id: '6',
+    item_id: 'original',
+    name: 'CLASSIC PEPPERONI || بيبروني كلاسيك',
+    price: 230,
+    is_simple: false,
+    categories: ['classic'],
+    ingredients: ['Tomato', 'Mozzarella', 'Double Pepperoni'],
+    image_url: '/images/original.webp',
+  },
+  {
+    id: '7',
+    item_id: 'diablo',
+    name: 'DIABLO SPICY || ديابلو حارة',
+    price: 295,
+    is_simple: false,
+    categories: ['spicy'],
+    ingredients: ['Spicy Tomato', 'Beef', 'Jalapeño', 'Chili Flakes'],
+    image_url: '/images/original.webp',
+  },
+  {
+    id: '8',
+    item_id: 'bread',
+    name: 'GARLIC BREAD || خبز بالثوم',
+    price: 60,
+    is_simple: true,
+    categories: ['sides'],
+    ingredients: ['Wood-Oven', 'Garlic', 'Herbs', 'Butter'],
+    image_url: '/ico.webp',
+  },
+  {
+    id: '9',
+    item_id: 'cola',
+    name: 'CRAFT COLA || كولا مثلجة',
+    price: 35,
+    is_simple: true,
+    categories: ['drinks'],
+    ingredients: ['Ice Cold', 'House Syrup', 'Citrus'],
+    image_url: '/ico.webp',
+  },
+  {
+    id: '10',
+    item_id: 'lava',
+    name: 'CHOCOLATE LAVA || مولتن لافا',
+    price: 75,
+    is_simple: true,
+    categories: ['desserts'],
+    ingredients: ['Molten Center', 'Sea Salt', 'Vanilla'],
+    image_url: '/ico.webp',
+  },
+];
+
 // 1. جلب المنيو والتصنيفات للموقع الرئيسي وللداشبورد
 export async function GET(request) {
   try {
@@ -30,16 +143,72 @@ export async function GET(request) {
       supabaseServer.from('menu_items').select('*').order('created_at', { ascending: false }),
     ]);
 
-    if (catError) throw catError;
-    if (itemError) throw itemError;
+    if (catError) {
+      console.warn('API Warning [GET /api/menu categories]:', catError);
+    }
+    if (itemError) {
+      console.warn('API Warning [GET /api/menu items]:', itemError);
+    }
+
+    let sizePricesMap = {};
+    try {
+      const { data: sizePricesSettings } = await supabaseServer
+        .from('settings')
+        .select('data')
+        .eq('id', 'pizza_size_prices')
+        .maybeSingle();
+
+      if (sizePricesSettings && sizePricesSettings.data) {
+        sizePricesMap = sizePricesSettings.data;
+      }
+    } catch (err) {
+      console.warn('Settings table query bypassed:', err);
+    }
+
+    // إذا كانت الجداول فارغة في السوبابيس لأي سبب، نستخدم التصنيفات والمنتجات الافتراضية ونقوم بمزامنتها
+    let safeCategories = Array.isArray(categories) && categories.length > 0 ? categories : DEFAULT_CATEGORIES;
+    let safeItems = Array.isArray(items) && items.length > 0 ? items : DEFAULT_MENU_ITEMS;
+
+    // محاولة الحفظ الخلفي التلقائي إذا كانت الجداول فارغة في قاعدة البيانات
+    if ((!categories || categories.length === 0) && supabaseServer) {
+      try {
+        await supabaseServer.from('categories').upsert(DEFAULT_CATEGORIES, { onConflict: 'id' });
+      } catch (_) {}
+    }
+    if ((!items || items.length === 0) && supabaseServer) {
+      try {
+        await supabaseServer.from('menu_items').upsert(DEFAULT_MENU_ITEMS, { onConflict: 'id' });
+      } catch (_) {}
+    }
+
+    const cleanCategories = safeCategories.map(c => ({
+      ...c,
+      name: c.name || ''
+    }));
+
+    const itemsWithSizePrices = safeItems.map((it) => {
+      const p = Number(it.price) || 0;
+      const customSizes = sizePricesMap[it.item_id] || sizePricesMap[it.id];
+      return {
+        ...it,
+        name: it.name || '',
+        ingredients: Array.isArray(it.ingredients) ? it.ingredients : [],
+        size_prices: customSizes || {
+          small: Math.round(p * 0.85),
+          med: p,
+          large: Math.round(p * 1.25),
+        },
+      };
+    });
 
     return NextResponse.json(
-      { categories: categories || [], items: items || [] },
+      { categories: cleanCategories, items: itemsWithSizePrices },
       { headers: getRateLimitHeaders(limitResult, limit) }
     );
   } catch (error) {
     console.error('API Error [GET /api/menu]:', error);
-    return NextResponse.json({ error: 'Failed to fetch menu' }, { status: 500 });
+    // إرجاع البيانات الافتراضية كحماية قصوى لمنع تصفير الداشبورد تحت أي ظرف
+    return NextResponse.json({ categories: DEFAULT_CATEGORIES, items: DEFAULT_MENU_ITEMS });
   }
 }
 
@@ -165,8 +334,55 @@ export async function POST(request) {
 
     if (result.error) throw result.error;
 
+    // حفظ وتحديث أسعار الـ 3 أحجام في جدول الإعدادات
+    const sizePricesRaw = formData.get('size_prices');
+    const priceSmallRaw = formData.get('price_small');
+    const priceLargeRaw = formData.get('price_large');
+    let sizePricesObj = safeJsonParse(sizePricesRaw, null);
+    if (!sizePricesObj && (priceSmallRaw || priceLargeRaw)) {
+      sizePricesObj = {
+        small: Number(priceSmallRaw) || Math.round(price * 0.85),
+        med: price,
+        large: Number(priceLargeRaw) || Math.round(price * 1.25),
+      };
+    }
+
+    if (sizePricesObj && !isSimple) {
+      try {
+        const { data: existingSettings } = await supabaseServer
+          .from('settings')
+          .select('data')
+          .eq('id', 'pizza_size_prices')
+          .maybeSingle();
+
+        const updatedMap = {
+          ...(existingSettings?.data || {}),
+          [cleanItemId]: {
+            small: Math.max(0, Number(sizePricesObj.small) || 0),
+            med: Math.max(0, Number(sizePricesObj.med) || price),
+            large: Math.max(0, Number(sizePricesObj.large) || 0),
+          },
+        };
+
+        await supabaseServer
+          .from('settings')
+          .upsert({ id: 'pizza_size_prices', data: updatedMap }, { onConflict: 'id' });
+      } catch (err) {
+        console.warn('Could not persist size prices to settings:', err);
+      }
+    }
+
+    const savedItem = {
+      ...result.data[0],
+      size_prices: sizePricesObj || {
+        small: Math.round(price * 0.85),
+        med: price,
+        large: Math.round(price * 1.25),
+      },
+    };
+
     return NextResponse.json(
-      { success: true, item: result.data[0] },
+      { success: true, item: savedItem },
       { headers: getRateLimitHeaders(limitResult, limit) }
     );
   } catch (error) {

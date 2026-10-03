@@ -5,7 +5,7 @@ import { clamp, escapeHtml } from './geometry';
 import { SIZES } from './pricing';
 import { DOUGH, SAUCE, CHEESE, MEAT, VEG, EXTRAS } from './config';
 import { PizzaStage } from './stage';
-import { t } from '@/lib/i18n';
+import { t, getLang, getLocalizedItemName } from '@/lib/i18n';
 import { supabaseClient, isSupabaseLive } from '@/lib/supabaseClient';
 import { compressImage } from '@/lib/imageCompressor';
 
@@ -49,6 +49,7 @@ export function setupCart({
   let customerPollInterval = null;
   let customerRealtimeChannel = null;
   let appliedCoupon = null;
+  let selectedTip = 0;
   let isSubmittingOrder = false;
   let isCompletingAnimation = false;
   let completionTimer = null;
@@ -62,7 +63,7 @@ export function setupCart({
     }
   }
 
-function persistCart() {
+  function persistCart() {
     try {
       localStorage.setItem('forno_cart', JSON.stringify(cart));
     } catch (e) {}
@@ -120,27 +121,36 @@ function persistCart() {
   function updateCheckoutTotals() {
     const subtotal = cart.reduce((a, c) => a + c.unit * c.qty, 0);
     let discount = 0;
+    const tipAmount = Math.max(0, Number(selectedTip) || 0);
 
-    // حماية ضد الخصم الوهمي: إلغاء الكوبون فوراً لو إجمالي السلة نزل عن الحد الأدنى المطلوب
+    // تم تعليق جزء الكوبون (ctrl + ظ)
+    /*
     if (appliedCoupon && appliedCoupon.valid) {
       if (appliedCoupon.minSubtotal && subtotal < appliedCoupon.minSubtotal) {
+        const requiredMin = appliedCoupon.minSubtotal;
         appliedCoupon = null;
         const feedback = $('#couponFeedback');
         if (feedback) {
           feedback.style.display = 'block';
           feedback.style.color = 'var(--red)';
-          feedback.textContent = `COUPON REMOVED: MINIMUM ORDER IS EGP ${appliedCoupon ? appliedCoupon.minSubtotal : ''}`;
+          feedback.textContent = `COUPON REMOVED: MINIMUM ORDER IS EGP ${requiredMin}`;
         }
       } else if (appliedCoupon.type === 'percent') {
         discount = Math.round((subtotal * appliedCoupon.value) / 100);
+        if (appliedCoupon.maxDiscount && appliedCoupon.maxDiscount > 0) {
+          discount = Math.min(discount, appliedCoupon.maxDiscount);
+        }
       } else {
         discount = Math.min(subtotal, appliedCoupon.value);
       }
     }
-    const finalTotal = Math.max(0, subtotal - discount);
+    */
+    const finalTotal = Math.max(0, subtotal - discount + tipAmount);
 
     const subRow = $('#subtotalRow');
     const discRow = $('#discountRow');
+    const tipRow = $('#tipRow');
+    const tipVal = $('#tipVal');
     const subVal = $('#subtotalVal');
     const discVal = $('#discountVal');
     const totalVal = $('#checkoutTotalVal');
@@ -153,6 +163,20 @@ function persistCart() {
     } else {
       if (subRow) subRow.style.display = 'none';
       if (discRow) discRow.style.display = 'none';
+    }
+
+    if (tipRow && tipVal) {
+      if (tipAmount > 0) {
+        tipRow.style.display = 'flex';
+        tipVal.textContent = '+ EGP ' + tipAmount;
+      } else {
+        tipRow.style.display = 'none';
+      }
+    }
+
+    const tipsSelectedVal = $('#ckTipsSelectedVal');
+    if (tipsSelectedVal) {
+      tipsSelectedVal.textContent = tipAmount > 0 ? `EGP ${tipAmount}` : 'EGP 0';
     }
 
     if (totalVal) totalVal.textContent = 'EGP ' + finalTotal;
@@ -185,8 +209,10 @@ function persistCart() {
       row.appendChild(prev);
       const body = document.createElement('div');
       body.className = 'ci-body';
+      const lang = getLang();
       const meta = item.kind === 'pizza' ? summarize(item.snap) : item.meta;
-      const safeName = escapeHtml(item.name);
+      const cleanName = getLocalizedItemName(item.name, lang) || item.name;
+      const safeName = escapeHtml(cleanName);
       const safeMeta = escapeHtml(meta);
       body.innerHTML =
         '<div class="ci-name">' +
@@ -239,14 +265,23 @@ function persistCart() {
 
   function setPaymentMode(mode) {
     selectedPayment = mode;
+    const typeDeliveryBtn = $('#typeDeliveryBtn');
+    const orderTypeGrid = $('#orderTypeGrid') || $('#orderTypeBox > div');
     if (mode === 'cash') {
       $('#payCashBtn')?.classList.add('active');
       $('#payVisaBtn')?.classList.remove('active');
       if ($('#visaBox')) $('#visaBox').style.display = 'none';
+      // إخفاء خيار الدفع عند الاستلام وحصر الكاش على الاستلام بالفرع فقط
+      if (typeDeliveryBtn) typeDeliveryBtn.style.display = 'none';
+      if (orderTypeGrid) orderTypeGrid.style.gridTemplateColumns = '1fr';
+      setDeliveryMode('pickup');
     } else {
       $('#payVisaBtn')?.classList.add('active');
       $('#payCashBtn')?.classList.remove('active');
       if ($('#visaBox')) $('#visaBox').style.display = 'block';
+      // إتاحة التوصيل مع الفيزا وإنستاباي
+      if (typeDeliveryBtn) typeDeliveryBtn.style.display = 'block';
+      if (orderTypeGrid) orderTypeGrid.style.gridTemplateColumns = '1fr 1fr';
     }
     updatePlaceOrderButtonText();
   }
@@ -263,6 +298,78 @@ function persistCart() {
       if ($('#ckAddressWrap')) $('#ckAddressWrap').style.display = 'none';
     }
     updatePlaceOrderButtonText();
+  }
+
+  function playConfirmationChime() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const g1 = ctx.createGain();
+      osc1.frequency.setValueAtTime(587.33, now);
+      g1.gain.setValueAtTime(0.18, now);
+      g1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(g1);
+      g1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      const osc2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      osc2.frequency.setValueAtTime(783.99, now + 0.16);
+      g2.gain.setValueAtTime(0.22, now + 0.16);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      osc2.connect(g2);
+      g2.connect(ctx.destination);
+      osc2.start(now + 0.16);
+      osc2.stop(now + 0.65);
+    } catch (_) {}
+  }
+
+  function checkAndTriggerConfirmedPopup(ord) {
+    if (!ord || !ord.order_number) return;
+    const ackKey = `forno_confirmed_modal_shown_${ord.order_number}`;
+    if (sessionStorage.getItem(ackKey)) return;
+    sessionStorage.setItem(ackKey, 'true');
+
+    const modal = $('#paymentConfirmedModal');
+    if (!modal) return;
+
+    playConfirmationChime();
+
+    const titleEl = $('#pcModalTitle');
+    const subEl = $('#pcModalSub');
+    const ordEl = $('#pcModalOrderNum');
+    const totEl = $('#pcModalTotal');
+    const trackBtn = $('#pcModalTrackBtn');
+    const closeBtn = $('#pcModalCloseBtn');
+
+    if (titleEl) titleEl.textContent = t('modalPaymentConfirmedTitle') || 'PAYMENT CONFIRMED! 🎉';
+    if (subEl) subEl.textContent = t('modalPaymentConfirmedSub') || 'Your payment was verified and the kitchen is preparing your wood-fired pizza!';
+    if (ordEl) ordEl.textContent = `ORDER #${ord.order_number}`;
+    const totVal = ord.total ?? ord.total_price ?? (activeCustomerOrder?.total ?? 0);
+    if (totEl) totEl.textContent = `${t('trackTotalDue') || 'TOTAL:'} EGP ${totVal || 0}`;
+    if (trackBtn) trackBtn.textContent = t('modalViewTrackerBtn') || 'TRACK ORDER';
+    if (closeBtn) closeBtn.textContent = t('modalOkBtn') || 'OK';
+
+    modal.style.display = 'flex';
+    toast(t('modalPaymentConfirmedTitle') || 'PAYMENT CONFIRMED! 🎉', 5000);
+
+    const closeModal = () => {
+      modal.style.display = 'none';
+    };
+
+    if (closeBtn) closeBtn.onclick = closeModal;
+    if (trackBtn) {
+      trackBtn.onclick = () => {
+        closeModal();
+        openCart();
+        showCustomerTracking(ord);
+      };
+    }
   }
 
   function updateTrackerUI(ord) {
@@ -288,6 +395,17 @@ function persistCart() {
       try {
         localStorage.setItem('forno_active_order', JSON.stringify(activeCustomerOrder));
       } catch (e) {}
+    }
+
+    // إبقاء السعر الإجمالي ظاهراً دائماً أثناء متابعة حالة الطلب
+    const totalDue = ord.total ?? ord.total_price ?? (activeCustomerOrder?.total ?? 0);
+    const trackTotalVal = $('#trackTotalVal');
+    if (trackTotalVal) {
+      trackTotalVal.textContent = 'EGP ' + (totalDue || 0);
+    }
+    const trackTotalLabel = $('#trackTotalLabel');
+    if (trackTotalLabel) {
+      trackTotalLabel.textContent = t('trackTotalDue') || 'TOTAL DUE:';
     }
 
     if (ord.payment_status === 'rejected') {
@@ -396,20 +514,22 @@ function persistCart() {
       return;
     }
 
-    // 3. CONFIRMED: when cashier confirms payment / starts preparing
+    // 3. CONFIRMED & PREPARING: when cashier confirms payment / starts preparing
     if (ord.payment_status === 'paid' || ord.order_status === 'preparing') {
       setStepProgress('completed', 'active', '', '50%');
       if (badge) {
-        badge.textContent = 'CONFIRMED';
+        badge.textContent = t('statusConfirmedPreparing') || 'CONFIRMED & PREPARING';
         badge.style.background = 'rgba(232,176,75,0.25)';
         badge.style.color = 'var(--gold)';
         badge.style.borderColor = 'var(--gold)';
       }
-      if (desc) desc.textContent = 'Payment verified & order confirmed! Your pizza is being baked in the oven 🔥';
+      if (desc) desc.textContent = t('descConfirmedPreparing') || 'Payment verified & order confirmed! Your pizza is being prepared and baked in the oven 🔥';
       if (doneBtn) {
         doneBtn.style.display = 'flex';
         doneBtn.textContent = 'CLOSE';
       }
+
+      checkAndTriggerConfirmedPopup(ord);
       return;
     }
 
@@ -437,6 +557,16 @@ function persistCart() {
     if ($('#cartDrawerTitle')) $('#cartDrawerTitle').textContent = t('orderTracking');
     const orderNoEl = $('#trackOrderNo') || $('#trackOrderNum');
     if (orderNoEl) orderNoEl.textContent = 'ORDER #' + order.order_number;
+
+    const totalDue = order.total ?? order.total_price ?? (activeCustomerOrder?.total ?? 0);
+    const trackTotalVal = $('#trackTotalVal');
+    if (trackTotalVal) {
+      trackTotalVal.textContent = 'EGP ' + (totalDue || 0);
+    }
+    const trackTotalLabel = $('#trackTotalLabel');
+    if (trackTotalLabel) {
+      trackTotalLabel.textContent = t('trackTotalDue') || 'TOTAL DUE:';
+    }
 
     const trackerActiveContent = $('#trackerActiveContent');
     const trackerCompletedScreen = $('#trackerCompletedScreen');
@@ -592,6 +722,8 @@ function persistCart() {
     };
   }
 
+  // تم تعليق كود فحص وتطبيق الكوبون (ctrl + ظ)
+  /*
   const btnApplyCoupon = $('#btnApplyCoupon');
   if (btnApplyCoupon) {
     btnApplyCoupon.onclick = async () => {
@@ -632,6 +764,7 @@ function persistCart() {
       }
     };
   }
+  */
 
   const payCashBtn = $('#payCashBtn');
   if (payCashBtn) payCashBtn.onclick = () => setPaymentMode('cash');
@@ -641,6 +774,32 @@ function persistCart() {
   if (typeDeliveryBtn) typeDeliveryBtn.onclick = () => setDeliveryMode('delivery');
   const typePickupBtn = $('#typePickupBtn');
   if (typePickupBtn) typePickupBtn.onclick = () => setDeliveryMode('pickup');
+
+  // Tip selection buttons
+  document.querySelectorAll('.tip-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tip-btn').forEach((b) => b.classList.remove('active'));
+      const val = parseInt(btn.getAttribute('data-tip') || '0', 10);
+      selectedTip = val;
+      btn.classList.add('active');
+      const customInput = $('#ckCustomTip');
+      if (customInput) customInput.value = '';
+      updateCheckoutTotals();
+    });
+  });
+
+  const btnApplyCustomTip = $('#btnApplyCustomTip');
+  const ckCustomTip = $('#ckCustomTip');
+  if (btnApplyCustomTip && ckCustomTip) {
+    const applyCustomTip = () => {
+      const val = Math.max(0, parseInt(ckCustomTip.value, 10) || 0);
+      selectedTip = val;
+      document.querySelectorAll('.tip-btn').forEach((b) => b.classList.remove('active'));
+      updateCheckoutTotals();
+    };
+    btnApplyCustomTip.onclick = applyCustomTip;
+    ckCustomTip.oninput = applyCustomTip;
+  }
 
   const backToCartBtn = $('#backToCartBtn');
   if (backToCartBtn) {
@@ -704,6 +863,7 @@ function persistCart() {
       const name = $('#ckName')?.value.trim();
       const phone = $('#ckPhone')?.value.trim();
       const address = $('#ckAddress')?.value.trim();
+      const notes = $('#ckNotes')?.value.trim() || '';
 
       if (!name || !phone) {
         toast('PLEASE ENTER NAME & PHONE NUMBER');
@@ -748,7 +908,20 @@ function persistCart() {
           if (!itemCopy.img) itemCopy.img = '/ico.webp';
           return itemCopy;
         });
-        const totalAmount = cart.reduce((a, c) => a + c.unit * c.qty, 0);
+
+        if (selectedTip > 0) {
+          orderItems.push({
+            kind: 'tip',
+            name: 'إكرامية الطيار والفرن (TIP)',
+            unit: selectedTip,
+            qty: 1,
+            total: selectedTip,
+            meta: `EGP ${selectedTip}`,
+            img: '/ico.webp'
+          });
+        }
+
+        const totalAmount = cart.reduce((a, c) => a + c.unit * c.qty, 0) + (selectedTip > 0 ? selectedTip : 0);
 
         const fd = new FormData();
         fd.append('customer_name', name);
@@ -757,10 +930,14 @@ function persistCart() {
         fd.append('payment_method', selectedPayment);
         fd.append('total', totalAmount);
         fd.append('items', JSON.stringify(orderItems));
+        if (notes) fd.append('notes', notes);
+        if (selectedTip > 0) fd.append('tip', selectedTip);
         if (receiptFileBlob) fd.append('receipt', receiptFileBlob);
+        /*
         if (appliedCoupon && appliedCoupon.valid) {
           fd.append('coupon_code', appliedCoupon.code);
         }
+        */
 
         const res = await fetch('/api/orders', { method: 'POST', body: fd });
         const data = await res.json();
@@ -768,6 +945,13 @@ function persistCart() {
         if (res.ok && data.success) {
           cart.length = 0;
           appliedCoupon = null;
+          selectedTip = 0;
+          if ($('#ckNotes')) $('#ckNotes').value = '';
+          if ($('#ckCustomTip')) $('#ckCustomTip').value = '';
+          document.querySelectorAll('.tip-btn').forEach((b) => {
+            if (b.getAttribute('data-tip') === '0') b.classList.add('active');
+            else b.classList.remove('active');
+          });
           const couponFeedback = $('#couponFeedback');
           if (couponFeedback) couponFeedback.style.display = 'none';
           persistCart();

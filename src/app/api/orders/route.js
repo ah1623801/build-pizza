@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { verifyAdmin } from '@/lib/authGuard';
 import { getClientIp, checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
-import { validateCoupon } from '@/lib/coupons';
+import { validateCoupon, validateCouponAsync } from '@/lib/coupons';
 import {
   isValidImageBuffer,
   sanitizeString,
@@ -43,15 +43,38 @@ async function calculateOrderTotal(items) {
   if (!Array.isArray(items) || items.length === 0) return 0;
 
   try {
-    const [{ data: menuItems }, { data: ingSettings }] = await Promise.all([
-      supabaseServer.from('menu_items').select('name, price'),
-      supabaseServer.from('settings').select('data').eq('id', 'ingredients').single(),
-    ]);
+    const { data: menuItems } = await supabaseServer.from('menu_items').select('name, price, item_id');
+
+    let ingSettings = null;
+    let sizePricesSettings = null;
+    try {
+      const ingRes = await supabaseServer.from('settings').select('data').eq('id', 'ingredients').maybeSingle();
+      ingSettings = ingRes?.data ? ingRes : null;
+    } catch (_) {}
+    try {
+      const szRes = await supabaseServer.from('settings').select('data').eq('id', 'pizza_size_prices').maybeSingle();
+      sizePricesSettings = szRes?.data ? szRes : null;
+    } catch (_) {}
+
+    const sizePricesMap = sizePricesSettings?.data || {};
 
     const menuMap = new Map();
     if (Array.isArray(menuItems)) {
       for (const m of menuItems) {
-        if (m.name) menuMap.set(m.name.toUpperCase().trim(), Math.max(0, Number(m.price) || 0));
+        const price = Math.max(0, Number(m.price) || 0);
+        if (m.name) {
+          const rawName = m.name.toUpperCase().trim();
+          menuMap.set(rawName, price);
+          if (rawName.includes('||')) {
+            const [enPart, arPart] = rawName.split('||').map(s => s.trim());
+            if (enPart) menuMap.set(enPart, price);
+            if (arPart) menuMap.set(arPart, price);
+          }
+        }
+        if (m.item_id) {
+          menuMap.set(String(m.item_id).toUpperCase().trim(), price);
+          menuMap.set(String(m.item_id).toLowerCase().trim(), price);
+        }
       }
     }
 
@@ -73,15 +96,106 @@ async function calculateOrderTotal(items) {
 
     for (const item of items) {
       if (!item || typeof item !== 'object') return 0;
+
+      // Handling Tip and Note items gracefully
+      if (item.kind === 'tip') {
+        const tipVal = Math.max(0, Math.min(2000, Number(item.unit || item.price) || 0));
+        total += tipVal;
+        continue;
+      }
+      if (item.kind === 'note') {
+        continue;
+      }
+
       const qty = Math.min(50, Math.max(1, parseInt(item.qty, 10) || 1));
       let unit = 0;
-      const normalizedName = sanitizeString(item.name || '', 100).toUpperCase().trim();
+      const rawItemName = sanitizeString(item.name || '', 100);
+      const normalizedName = rawItemName.toUpperCase().trim();
+      const itemId = item.item_id || item.id;
 
-      if (menuMap.has(normalizedName)) {
-        unit = menuMap.get(normalizedName);
-      } else if (item.kind === 'pizza' && item.snap && typeof item.snap === 'object') {
+      // Extract size if specified
+      let itemSize = item.size || (item.snap?.size);
+      if (!itemSize) {
+        if (normalizedName.includes('(SMALL') || normalizedName.includes('(صغير') || normalizedName.includes('(24')) itemSize = 'small';
+        else if (normalizedName.includes('(LARGE') || normalizedName.includes('(كبير') || normalizedName.includes('(36')) itemSize = 'large';
+        else if (normalizedName.includes('(MED') || normalizedName.includes('(وسط') || normalizedName.includes('(30')) itemSize = 'med';
+      }
+      if (!VALID_SIZES.includes(itemSize)) itemSize = null;
+
+      const cleanBaseName = normalizedName
+        .replace(/\s*\((SMALL|MEDIUM|LARGE|صغير|وسط|كبير|24|30|36)\)/gi, '')
+        .trim();
+
+      const fallbackDefaultPrices = {
+        'GARLIC BUTTER BREAD': 60,
+        'خبز بالثوم والزبدة': 60,
+        'CRAFT COLA': 35,
+        'كولا حرفية': 35,
+        'CHOCOLATE LAVA': 75,
+        'شوكولاتة لافا': 75,
+        'THE FIRE': 285,
+        'ذا فاير': 285,
+        'FIRE': 285,
+        'THE TRUFFLE': 320,
+        'ذا ترافل': 320,
+        'TRUFFLE': 320,
+        'THE BBQ': 275,
+        'ذا باربكيو': 275,
+        'BBQ': 275,
+        'THE GREEN': 240,
+        'ذا جرين': 240,
+        'GREEN': 240,
+        'MARGHERITA': 190,
+        'مارجريتا': 190,
+        'THE ORIGINAL': 230,
+        'ذا أوريجينال': 230,
+        'ORIGINAL': 230,
+        'DIABLO': 295,
+        'ديابلو': 295,
+      };
+
+      let basePrice = 0;
+      if (menuMap.has(cleanBaseName)) {
+        basePrice = menuMap.get(cleanBaseName);
+      } else if (cleanBaseName.includes('||')) {
+        const [enP, arP] = cleanBaseName.split('||').map(s => s.trim());
+        if (enP && menuMap.has(enP)) basePrice = menuMap.get(enP);
+        else if (arP && menuMap.has(arP)) basePrice = menuMap.get(arP);
+      } else if (itemId && menuMap.has(String(itemId).toUpperCase().trim())) {
+        basePrice = menuMap.get(String(itemId).toUpperCase().trim());
+      } else if (menuMap.has(normalizedName)) {
+        basePrice = menuMap.get(normalizedName);
+      }
+
+      if (basePrice === 0) {
+        const nameParts = cleanBaseName.split('||').map(s => s.trim());
+        const matchKey = Object.keys(fallbackDefaultPrices).find(k => 
+          k === cleanBaseName || nameParts.includes(k) || k === normalizedName
+        );
+        if (matchKey) {
+          basePrice = fallbackDefaultPrices[matchKey];
+        }
+      }
+
+      if (basePrice > 0) {
+        const customSizes = (itemId && sizePricesMap[itemId]) || (itemId && sizePricesMap[String(itemId).toLowerCase()]) || sizePricesMap[cleanBaseName.toLowerCase()];
+        if (itemSize && customSizes && customSizes[itemSize]) {
+          unit = Number(customSizes[itemSize]);
+        } else if (itemSize === 'small') {
+          unit = Math.round(basePrice * 0.85);
+        } else if (itemSize === 'large') {
+          unit = Math.round(basePrice * 1.25);
+        } else {
+          unit = basePrice;
+        }
+      }
+
+      // Custom pizza builder calculation with base crust fee
+      if (unit === 0 && item.kind === 'pizza' && item.snap && typeof item.snap === 'object') {
         const snap = item.snap;
         const sz = VALID_SIZES.includes(snap.size) ? snap.size : 'med';
+        const baseScale = { small: 0.85, med: 1.0, large: 1.25 }[sz] || 1.0;
+        unit = Math.round(145 * baseScale);
 
         if (snap.dough && VALID_DOUGHS.includes(snap.dough)) {
           unit += getPrice('dough', snap.dough, sz);
@@ -118,24 +232,12 @@ async function calculateOrderTotal(items) {
             }
           }
         }
-      } else {
-        const fallbackDefaultPrices = {
-          'GARLIC BUTTER BREAD': 60,
-          'CRAFT COLA': 35,
-          'CHOCOLATE LAVA': 75,
-          'THE FIRE': 285,
-          'THE TRUFFLE': 320,
-          'THE BBQ': 275,
-          'THE GREEN': 240,
-          'MARGHERITA': 190,
-          'THE ORIGINAL': 230,
-          'DIABLO': 295,
-        };
-        if (fallbackDefaultPrices[normalizedName]) {
-          unit = fallbackDefaultPrices[normalizedName];
-        } else {
-          return 0; // Reject order with unrecognized items to prevent price tampering
-        }
+
+        unit = Math.max(Math.round(145 * baseScale), unit);
+      }
+
+      if (unit === 0) {
+        return 0; // Reject order with unrecognized items to prevent price tampering
       }
 
       total += unit * qty;
@@ -266,6 +368,8 @@ export async function POST(request) {
     const customer_name = sanitizeString(formData.get('customer_name') || '', 100);
     const customer_phone = sanitizeString(formData.get('customer_phone') || '', 30);
     const customer_address = sanitizeString(formData.get('customer_address') || '', 500);
+    const notes = sanitizeString(formData.get('notes') || '', 500);
+    const tipAmount = Math.max(0, Math.min(2000, Number(formData.get('tip')) || 0));
     const rawPayment = formData.get('payment_method') || 'cash';
     const payment_method = rawPayment === 'visa' ? 'visa' : 'cash';
 
@@ -291,17 +395,19 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid order calculation' }, { status: 400 });
     }
 
+    // تم تعليق جزء الكوبونات بناءً على طلب المستخدم (ctrl + ظ)
+    /*
     const coupon_code = sanitizeString(formData.get('coupon_code') || '', 20).toUpperCase();
-    let discount_amount = 0;
-    let finalTotal = baseTotal;
-
     if (coupon_code) {
-      const couponCheck = validateCoupon(coupon_code, baseTotal);
+      const couponCheck = await validateCouponAsync(coupon_code, baseTotal);
       if (couponCheck.valid) {
         discount_amount = couponCheck.discount;
         finalTotal = couponCheck.finalTotal;
       }
     }
+    */
+    let discount_amount = 0;
+    let finalTotal = baseTotal;
 
     let receipt_url = null;
     if (receiptFile && typeof receiptFile === 'object' && receiptFile.size > 0) {
@@ -374,7 +480,21 @@ if (!uploadError) {
     let data = null;
     let insertError = null;
 
-    const safeAddress = customer_address || 'IN-STORE / PICKUP';
+    let safeAddress = customer_address || 'IN-STORE / PICKUP';
+    if (notes) {
+      safeAddress = `${safeAddress} [ملاحظة: ${notes}]`;
+    }
+
+    const orderItemsToSave = Array.isArray(items) ? [...items] : [];
+    if (notes && !orderItemsToSave.some(it => it.kind === 'note')) {
+      orderItemsToSave.push({
+        kind: 'note',
+        name: `📝 ملاحظة العميل: ${notes}`,
+        note: notes,
+        unit: 0,
+        qty: 1
+      });
+    }
 
     for (let attempt = 0; attempt < 5; attempt++) {
       const randBase = Math.floor(100000 + Math.random() * 900000);
@@ -386,7 +506,7 @@ if (!uploadError) {
           customer_name,
           customer_phone,
           customer_address: safeAddress,
-          items,
+          items: orderItemsToSave,
           total: finalTotal,
           payment_method,
           payment_status: 'pending',
@@ -412,7 +532,9 @@ if (!uploadError) {
       `الاسم: ${customer_name}\n` +
       `الهاتف: ${customer_phone}\n` +
       `العنوان: ${safeAddress}\n` +
-      `الإجمالي: ${finalTotal} ج.م${discount_amount > 0 ? ` (بعد خصم ${discount_amount} ج.م بكود ${coupon_code})` : ''}\n` +
+      (notes ? `ملاحظات خاصة: 📝 ${notes}\n` : '') +
+      (tipAmount > 0 ? `إكرامية: ${tipAmount} ج.م\n` : '') +
+      `الإجمالي: ${finalTotal} ج.م\n` +
       `طريقة الدفع: ${payment_method === 'visa' ? 'فيزا / إنستاباي' : 'كاش'}\n` +
       `أرجو تأكيد تحضير طلبي فوراً وشكراً!`;
     const whatsapp_url = `https://wa.me/${sitePhone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(waMsg)}`;

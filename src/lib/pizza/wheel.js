@@ -3,6 +3,7 @@
 
 import { GROUPS, TOPCFG } from './config';
 import { ICON } from './toppings';
+import { t } from '../i18n';
 
 export function setupWheel({
   state,
@@ -159,6 +160,7 @@ export function setupWheel({
   }
 
   let A = 0,
+    prevA = 0,
     vel = 0,
     drag = false,
     lastA = 0,
@@ -206,129 +208,39 @@ export function setupWheel({
     { passive: false }
   );
 
-  let audioCtx = null;
-  function getAudioCtx() {
-    if (typeof window === 'undefined') return null;
-    if (!audioCtx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) audioCtx = new AC();
+  let AC = null,
+    tickAcc = 0;
+
+  function initAudio() {
+    if (!AC) {
+      try {
+        AC = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {}
+    } else if (AC.state === 'suspended') {
+      AC.resume().catch(() => {});
     }
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
-    return audioCtx;
   }
+  document.addEventListener('pointerdown', initAudio);
+  document.addEventListener('touchstart', initAudio, { passive: true });
 
-  const unlockAudio = () => {
-    const ctx = getAudioCtx();
-    if (ctx && ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
-  };
-  ['pointerdown', 'touchstart', 'click', 'keydown', 'wheel', 'scroll'].forEach((evt) => {
-    window.addEventListener(evt, unlockAudio, { passive: true });
-  });
-
-  let accumAngle = 0;
-  let lastTickTime = 0;
-
-  function checkWheelTick(deltaDeg, currentSpeed = 0) {
-    if (!builderInView || document.hidden || !isWheelActive()) return;
+  function tick() {
+    if (!builderInView) return;
+    const builder = document.getElementById('builder');
+    if (builder && builder.classList.contains('picking-size')) return;
     const ovenScene = document.getElementById('ovenScene');
     if (ovenScene && ovenScene.classList.contains('on')) return;
-    if (document.getElementById('builder')?.classList.contains('picking-size')) return;
-
-    accumAngle += Math.abs(deltaDeg);
-    const STEP = 2.0; // درجة الدوران لكل تكة: ريتم هادئ ومنتظم (~0.78 ثانية) أثناء حركة العجلة التلقائية لوحدها
-
-    if (accumAngle >= STEP) {
-      const now = performance.now();
-      const minInterval = 25; // 25ms (أقصى سرعة تكات 40 تكة/ثانية لضمان صوت "تن" فخم وواضح بدون تشويش)
-      if (now - lastTickTime >= minInterval) {
-        lastTickTime = now;
-        playTick(currentSpeed);
-        accumAngle = accumAngle % STEP;
-      } else {
-        if (accumAngle > STEP * 2) {
-          accumAngle = STEP * 2;
-        }
-      }
-    }
-  }
-
-  function playTick(speedDegPerSec = 0) {
-    try {
-      const ctx = getAudioCtx();
-      if (!ctx) return;
-      if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-        return;
-      }
-      if (ctx.state !== 'running') return;
-      const now = ctx.currentTime;
-
-      // معامل السرعة: 0 عند دوران العجلة الهادئ لوحدها، ويصل إلى 1 عند التدوير السريع جداً
-      const s = Math.min(1, Math.max(0, (speedDegPerSec - 2.5) / 500));
-
-      // طبقة الصوت: تبدأ من 1520Hz (نغمة "تن" رنانة وجميلة)، وترتفع تدريجياً مع زيادة السرعة حتى 2380Hz
-      const baseFreq = 1520 + s * 860 + (Math.random() - 0.5) * 40;
-
-      // مدة النغمة: تكون أطول قليلاً في الحركة التلقائية (0.052 ثانية) لتسمع رنين "تن"، وتصبح أقصر وأسرع في الدوران السريع (0.024 ثانية)
-      const dur = 0.052 - s * 0.028;
-
-      // مستوى الصوت: هادئ ومريح وغير مزعج لوحدها (0.032)، ويزداد طردياً وقوة ووضوح مع السرعة حتى (0.092)
-      const vol = 0.032 + s * 0.06;
-
-      // فلتر تشكيل رنين المعدن / التكة الميكانيكية الفخمة (Bandpass Filter)
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(baseFreq * 1.15, now);
-      filter.Q.setValueAtTime(3.6, now);
-
-      // 1. المذبذب الأساسي لنغمة "تن" الجرسية الميكانيكية الرنانة
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(baseFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.74, now + dur);
-
-      // 2. الهارموني المعدني المميز لحركة التروس
-      const overtone = ctx.createOscillator();
-      overtone.type = 'triangle';
-      overtone.frequency.setValueAtTime(baseFreq * 2.38, now);
-      overtone.frequency.exponentialRampToValueAtTime(baseFreq * 1.4, now + dur * 0.5);
-
-      // 3. نقرة الارتطام اللحظية الخاطفة (Transient Click) في أول 4ms لصوت التكة الصريح
-      const click = ctx.createOscillator();
-      click.type = 'triangle';
-      click.frequency.setValueAtTime(baseFreq * 3.4, now);
-      click.frequency.exponentialRampToValueAtTime(120, now + 0.005);
-
-      // مضخم الصوت وتلاشي الصوت التدريجي
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(vol, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-
-      const clickGain = ctx.createGain();
-      clickGain.gain.setValueAtTime(vol * 0.55, now);
-      clickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.005);
-
-      // توصيل عناصر الصوت
-      osc.connect(filter);
-      overtone.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-
-      click.connect(clickGain);
-      clickGain.connect(ctx.destination);
-
-      osc.start(now);
-      overtone.start(now);
-      click.start(now);
-
-      osc.stop(now + dur);
-      overtone.stop(now + dur);
-      click.stop(now + 0.006);
-    } catch (e) {}
+    if (!AC || AC.state !== 'running') return;
+    const t = AC.currentTime,
+      o = AC.createOscillator(),
+      gn = AC.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(1500 + Math.random() * 1000, t);
+    gn.gain.setValueAtTime(0.04, t);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    o.connect(gn);
+    gn.connect(AC.destination);
+    o.start(t);
+    o.stop(t + 0.06);
   }
 
   wrap.addEventListener('pointermove', (e) => {
@@ -344,11 +256,10 @@ export function setupWheel({
     A += d;
     lastA = a;
     lastT = t;
-    checkWheelTick(d, Math.abs(vel));
   });
 
   wrap.addEventListener('pointerdown', (e) => {
-    getAudioCtx();
+    initAudio();
     if (!isWheelActive()) return;
     const ovenScene = document.getElementById('ovenScene');
     if (ovenScene && ovenScene.classList.contains('on')) return;
@@ -409,9 +320,7 @@ export function setupWheel({
 
     if (!drag) {
       vel *= Math.pow(0.0025, dt);
-      const moveDelta = (AUTO + vel) * dt;
-      A += moveDelta;
-      checkWheelTick(moveDelta, Math.abs(AUTO + vel));
+      A += (AUTO + vel) * dt;
     }
 
     rot.style.transform = `rotate(${A}deg)`;
@@ -419,6 +328,13 @@ export function setupWheel({
       if (icons[i].firstChild) {
         icons[i].firstChild.style.transform = `rotate(${-A}deg)`;
       }
+    }
+
+    tickAcc += Math.abs(A - prevA);
+    prevA = A;
+    if (tickAcc > 5) {
+      tickAcc = 0;
+      tick();
     }
 
     // البيتزا تدور لوحدها حركة حرة ومستقلة عكس اتجاه العجلة
@@ -522,7 +438,7 @@ const S = Math.min(document.querySelector('#stageHost .pz-rot')?.offsetWidth || 
   document.getElementById('wheelBake')?.addEventListener('click', () => {
     const s = getStateFn();
     if (!s.dough || !s.sauce || !s.cheese) {
-      toast('PICK DOUGH, SAUCE & CHEESE FROM THE WHEEL FIRST');
+      toast(t('pickDoughFirst') || 'PICK DOUGH, SAUCE & CHEESE FROM THE WHEEL FIRST 🍕', 5000);
       return;
     }
     startBake();

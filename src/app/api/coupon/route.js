@@ -1,15 +1,18 @@
 // src/app/api/coupon/route.js
 import { NextResponse } from 'next/server';
-import { validateCoupon } from '@/lib/coupons';
-import { getClientIp, checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
-import { sanitizeString } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
+  // تم تعليق جزء الكوبونات بالكامل من الموقع (ctrl + ظ)
+  /*
+  import { validateCouponAsync } from '@/lib/coupons';
+  import { getClientIp, checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
+  import { sanitizeString } from '@/lib/security';
+
   try {
     const ip = getClientIp(request);
-    const limit = 10; // الحد الأقصى 10 محاولات في الدقيقة لمنع تخمين أكواد الخصم آلياً
+    const limit = 10;
     const limitResult = checkRateLimit(`coupon_${ip}`, { limit, windowMs: 60 * 1000 });
     if (!limitResult.allowed) {
       return NextResponse.json(
@@ -22,7 +25,7 @@ export async function POST(request) {
     const rawCode = sanitizeString(body?.code || '', 30);
     const subtotal = Math.max(0, Math.min(1000000, Number(body?.subtotal) || 0));
 
-    const result = validateCoupon(rawCode, subtotal);
+    const result = await validateCouponAsync(rawCode, subtotal);
     if (!result.valid) {
       return NextResponse.json(
         { success: false, error: result.error },
@@ -37,4 +40,6 @@ export async function POST(request) {
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
+  */
+  return NextResponse.json({ success: false, error: 'Coupons are currently disabled' }, { status: 400 });
 }

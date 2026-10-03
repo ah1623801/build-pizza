@@ -121,14 +121,147 @@ export default function MenuTab({
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
+          {/* Category Selector */}
+          <div>
+            <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>
+              CATEGORY / نوع الصنف *
+            </label>
+            <select
+              value={formData.categories[0] || categories[0]?.id || "signature"}
+              onChange={(e) => {
+                const catId = e.target.value;
+                const isSimple = ["sides", "drinks", "desserts"].includes(catId);
+                setFormData({
+                  ...formData,
+                  categories: [catId],
+                  is_simple: isSimple,
+                });
+              }}
+              style={{
+                width: "100%",
+                padding: "13px 16px",
+                background: "#18100a",
+                border: "1px solid rgba(255, 122, 46, 0.4)",
+                borderRadius: "12px",
+                color: "#ffb347",
+                fontSize: "13px",
+                fontWeight: "800",
+                letterSpacing: "1px",
+                outline: "none",
+                cursor: "pointer",
+                boxSizing: "border-box",
+              }}
+            >
+              {categories.map((c) => {
+                const p = parseBilingual(c.name);
+                const displayCat = p.ar ? `${p.en} (${p.ar})` : (p.en || c.name);
+                return (
+                  <option key={c.id} value={c.id} style={{ background: "#140d08", color: "#fff" }}>
+                    {displayCat}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* Pricing Fields: 3 Sizes if Pizza, Single Price if Simple Item */}
+          {!formData.is_simple ? (
+            <div>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: "#ff7a2e", marginBottom: "8px", letterSpacing: "1px" }}>
+                🍕 أسعار الـ 3 أحجام للبيتزا (PIZZA SIZES PRICING):
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+                {/* Small Size */}
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "12px", padding: "10px 12px" }}>
+                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", marginBottom: "4px" }}>
+                    حجم صغير SMALL
+                  </label>
+                  <input
+                    type="number"
+                    placeholder={formData.price ? String(Math.round(formData.price * 0.85)) : "240"}
+                    value={formData.price_small}
+                    onChange={(e) => setFormData({ ...formData, price_small: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(243,233,220,0.15)",
+                      borderRadius: "8px",
+                      color: "#fff",
+                      boxSizing: "border-box",
+                      fontSize: "13px",
+                      fontWeight: "bold",
+                    }}
+                  />
+                </div>
+
+                {/* Medium Size (Base) */}
+                <div style={{ background: "rgba(255,122,46,0.08)", border: "1px solid #ff7a2e", borderRadius: "12px", padding: "10px 12px" }}>
+                  <label style={{ display: "block", fontSize: "10px", color: "#ffb347", fontWeight: "900", marginBottom: "4px" }}>
+                    حجم وسط MEDIUM ★
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="285"
+                    value={formData.price}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const num = Number(val) || 0;
+                      setFormData({
+                        ...formData,
+                        price: val,
+                        price_small: formData.price_small ? formData.price_small : (num ? Math.round(num * 0.85) : ""),
+                        price_large: formData.price_large ? formData.price_large : (num ? Math.round(num * 1.25) : ""),
+                      });
+                    }}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,122,46,0.4)",
+                      borderRadius: "8px",
+                      color: "#ffb347",
+                      boxSizing: "border-box",
+                      fontSize: "13px",
+                      fontWeight: "bold",
+                    }}
+                  />
+                </div>
+
+                {/* Large Size */}
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(243,233,220,0.1)", borderRadius: "12px", padding: "10px 12px" }}>
+                  <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", marginBottom: "4px" }}>
+                    حجم كبير LARGE
+                  </label>
+                  <input
+                    type="number"
+                    placeholder={formData.price ? String(Math.round(formData.price * 1.25)) : "355"}
+                    value={formData.price_large}
+                    onChange={(e) => setFormData({ ...formData, price_large: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(243,233,220,0.15)",
+                      borderRadius: "8px",
+                      color: "#fff",
+                      boxSizing: "border-box",
+                      fontSize: "13px",
+                      fontWeight: "bold",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
             <div>
               <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>
-                PRICE (EGP)
+                PRICE (EGP) / السعر
               </label>
               <input
                 type="number"
-                placeholder="290"
+                placeholder="60"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 required
@@ -144,48 +277,7 @@ export default function MenuTab({
                 }}
               />
             </div>
-            <div>
-              <label style={{ display: "block", fontSize: "10px", color: "#e8b04b", fontWeight: "800", letterSpacing: "2px", marginBottom: "6px" }}>
-                CATEGORY
-              </label>
-              <select
-                value={formData.categories[0] || categories[0]?.id || "signature"}
-                onChange={(e) => {
-                  const catId = e.target.value;
-                  const isSimple = ["sides", "drinks", "desserts"].includes(catId);
-                  setFormData({
-                    ...formData,
-                    categories: [catId],
-                    is_simple: isSimple,
-                  });
-                }}
-                style={{
-                  width: "100%",
-                  padding: "13px 16px",
-                  background: "#18100a",
-                  border: "1px solid rgba(255, 122, 46, 0.4)",
-                  borderRadius: "12px",
-                  color: "#ffb347",
-                  fontSize: "13px",
-                  fontWeight: "800",
-                  letterSpacing: "1px",
-                  outline: "none",
-                  cursor: "pointer",
-                  boxSizing: "border-box",
-                }}
-              >
-                {categories.map((c) => {
-                  const p = parseBilingual(c.name);
-                  const displayCat = p.ar ? `${p.en} (${p.ar})` : (p.en || c.name);
-                  return (
-                    <option key={c.id} value={c.id} style={{ background: "#140d08", color: "#fff" }}>
-                      {displayCat}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
             <div>
@@ -380,14 +472,22 @@ export default function MenuTab({
                       const p = parseBilingual(it.name);
                       return (
                         <div>
-                          <b style={{ fontSize: "12px", color: "#f3e9dc" }}>{p.en || it.name}</b>
-                          {p.ar && <div style={{ fontSize: "11px", color: "#ffb347", fontWeight: "700" }}>{p.ar}</div>}
+                          <b style={{ fontSize: "12px", color: "#f3e9dc" }}>{p.ar || p.en || it.name}</b>
                           <div style={{ fontSize: "9px", color: "#9a8b7a", marginTop: "2px" }}>{it.categories?.join(", ")}</div>
                         </div>
                       );
                     })()}
                   </td>
-                  <td style={{ padding: "10px", fontFamily: "Impact, sans-serif", color: "#e8b04b", fontSize: "16px" }}>EGP {it.price}</td>
+                  <td style={{ padding: "10px" }}>
+                    <div style={{ fontFamily: "Impact, sans-serif", color: "#e8b04b", fontSize: "16px" }}>
+                      EGP {it.size_prices?.med || it.price}
+                    </div>
+                    {it.size_prices && !it.is_simple && (
+                      <div style={{ fontSize: "9px", color: "#ffb347", marginTop: "2px", fontWeight: "700" }}>
+                        S: {it.size_prices.small} · M: {it.size_prices.med} · L: {it.size_prices.large}
+                      </div>
+                    )}
+                  </td>
                   <td style={{ padding: "10px" }}>
                     <div style={{ display: "flex", gap: "6px" }}>
                       <button

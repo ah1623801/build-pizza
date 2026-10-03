@@ -12,6 +12,7 @@ import { syncMenuFromServer, buildTabs, renderMenu, setupContactForm, resolvePiz
 import { setupLayout, toast, triggerSizeAlert, updateBadge } from './layout';
 import { initAnimations } from '@/lib/animations';
 import { setupI18n } from './i18nManager';
+import { getLocalizedItemName, getLocalizedIngredient } from '@/lib/i18n';
 
 let appInitPromise = null;
 let currentAppInstance = null;
@@ -194,33 +195,47 @@ export async function initApp() {
       updateBadge: () => updateBadge(state)
     });
 
-    const handleAddToCart = (it) => {
+    const handleAddToCart = (it, selectedSize = 'med', selectedPrice = null) => {
+      const lang = getLang();
+      const cleanName = getLocalizedItemName(it.name, lang) || it.name;
       if (it.simple) {
         cart.push({
           uid: Date.now(),
           kind: 'simple',
-          name: it.name,
+          name: cleanName,
           img: it.img,
-          meta: (it.ing || []).join(' · '),
+          meta: (it.ing || []).map(x => getLocalizedIngredient(x, lang)).join(' · '),
           unit: it.price,
           qty: 1
         });
       } else {
         const chosenImg = it.img || resolvePizzaImage(it) || IMG.pOriginal;
+        const sz = selectedSize || 'med';
+        const szLabel = lang === 'ar'
+          ? (sz === 'small' ? ' (صغير)' : sz === 'large' ? ' (كبير)' : ' (وسط)')
+          : (sz === 'small' ? ' (Small)' : sz === 'large' ? ' (Large)' : ' (Medium)');
+        const unitPrice = selectedPrice || (it.size_prices?.[sz] || it.price);
+        const presetSnap = it.preset ? JSON.parse(JSON.stringify(it.preset)) : { dough: 'classic', sauce: 'tomato', cheese: 'mozzarella', meats: {}, vegs: [], extras: [] };
+        presetSnap.size = sz;
+
         cart.push({
           uid: Date.now(),
           kind: 'pizza',
           fromMenu: true,
-          name: it.name,
+          name: cleanName + szLabel,
+          size: sz,
           img: chosenImg,
-          snap: it.preset ? JSON.parse(JSON.stringify(it.preset)) : { dough: 'classic', sauce: 'tomato', cheese: 'mozzarella', meats: {}, vegs: [], extras: [] },
-          unit: it.price,
+          snap: presetSnap,
+          unit: unitPrice,
           qty: 1
         });
       }
       cartModule?.persistCart();
       cartModule?.openCart();
-      toast(it.name + ' ADDED TO CART 🍕');
+      const toastMsg = lang === 'ar'
+        ? `تمت إضافة ${cleanName} إلى السلة 🍕`
+        : `${cleanName} ADDED TO CART 🍕`;
+      toast(toastMsg);
     };
 
     window.fornoRerenderMenu = () => {

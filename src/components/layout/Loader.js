@@ -1,87 +1,82 @@
 // src/components/layout/Loader.js
-export const Loader = () => (
-  <div id="loader">
-    <div className="ld-in">
-      <div className="ld-slice-card">
-        <svg className="ld-slice-svg" viewBox="0 0 120 130" width="130" height="140">
-          <defs>
-            {/* ألوان العجينة المشوية */}
-            <linearGradient id="crustGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#8a4716" />
-              <stop offset="50%" stopColor="#d89650" />
-              <stop offset="100%" stopColor="#8a4716" />
-            </linearGradient>
+export const Loader = () => {
+  const renderSlice = (keyClass, rotation) => (
+    <g key={keyClass} className={`pz-slice ${keyClass}`} transform={`rotate(${rotation} 100 100)`}>
+      {/* 1. طبقة العجينة والكرست الذهبي */}
+      <path d="M 100 100 L 63.2 33.5 A 76 76 0 0 1 136.8 33.5 Z" fill="#d49b57" />
+      <path d="M 62 33.5 A 76 76 0 0 1 138 33.5" stroke="url(#crustGrad)" strokeWidth="7" strokeLinecap="round" fill="none" />
+      <circle cx="85" cy="27" r="2" fill="#5c2605" opacity="0.75" />
+      <circle cx="115" cy="27.5" r="1.8" fill="#5c2605" opacity="0.75" />
 
-            {/* ألوان الجبنة السايحة */}
-            <radialGradient id="cheeseGrad" cx="50%" cy="30%" r="70%">
-              <stop offset="0%" stopColor="#fff3b0" />
-              <stop offset="60%" stopColor="#ffb347" />
-              <stop offset="100%" stopColor="#e07a12" />
-            </radialGradient>
-          </defs>
+      {/* 2. طبقة صلصة الطماطم الحمراء */}
+      <path d="M 100 100 L 68.2 37.6 A 70 70 0 0 1 131.8 37.6 Z" fill="#b02412" />
 
-          {/* بخار طالع من الشريحة */}
-          <g className="slice-steam">
-            <path d="M 50 15 Q 46 8 50 2" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M 60 18 Q 64 10 60 3" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M 70 16 Q 66 9 70 2" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" fill="none" />
-          </g>
+      {/* 3. طبقة الجبنة الموتزاريلا السايحة */}
+      <path d="M 100 100 L 72.1 40.2 A 66 66 0 0 1 127.9 40.2 Z" fill="url(#cheeseGrad)" />
+      <circle cx="104" cy="62" r="2.2" fill="#fff3b0" />
 
-          {/* 1. الطبقة الأولى: العجينة والكرست الذهبي */}
-          <g className="layer-dough">
-            <path d="M 20 30 Q 60 14 100 30 L 60 120 Z" fill="#d49b57" />
-            {/* حرف الكرست السميك */}
-            <path d="M 18 30 Q 60 12 102 30" stroke="url(#crustGrad)" strokeWidth="10" strokeLinecap="round" fill="none" />
-            {/* فقاقيع تحمير الفرن */}
-            <circle cx="36" cy="24" r="2.5" fill="#5c2605" opacity="0.7" />
-            <circle cx="62" cy="20" r="3" fill="#5c2605" opacity="0.6" />
-            <circle cx="84" cy="24" r="2" fill="#5c2605" opacity="0.8" />
-          </g>
+      {/* 4. إضافات البيبروني والريحان الطازج */}
+      <g className="slice-toppings">
+        {/* بيبروني علوي */}
+        <circle cx="100" cy="50" r="7.5" fill="#a81c07" stroke="#6e1003" strokeWidth="1.2" />
+        <circle cx="98" cy="48" r="1.4" fill="#f0b39c" />
+        <circle cx="102" cy="52" r="1" fill="#f0b39c" />
 
-          {/* 2. الطبقة الثانية: صلصة الطماطم الحمراء */}
-          <g className="layer-sauce">
-            <path d="M 25 34 Q 60 22 95 34 L 60 114 Z" fill="#b02412" />
-          </g>
+        {/* بيبروني سفلي */}
+        <circle cx="91" cy="72" r="6" fill="#a81c07" stroke="#6e1003" strokeWidth="1.2" />
+        <circle cx="89" cy="71" r="1" fill="#f0b39c" />
 
-          {/* 3. الطبقة الثالثة: الجبنة الموتزاريلا السايحة مع سيلان على الحواف */}
-          <g className="layer-cheese">
-            <path d="M 26 36 Q 60 25 94 36 L 82 66 Q 78 72 74 65 L 60 110 L 46 66 Q 42 74 38 65 Z" fill="url(#cheeseGrad)" />
-            {/* قطرات جبنة بتسيل */}
-            <circle cx="76" cy="69" r="2.5" fill="#ffb347" />
-            <circle cx="40" cy="71" r="2" fill="#ffb347" />
-          </g>
+        {/* ورقة ريحان طازجة */}
+        <path d="M 107 72 C 113 67 116 77 110 81 C 105 78 104 71 107 72 Z" fill="#2d7a1e" />
+      </g>
+    </g>
+  );
 
-          {/* 4. الطبقة الرابعة: البيبروني والريحان */}
-          <g className="layer-toppings">
-            {/* بيبروني 1 */}
-            <g className="top-item p1">
-              <circle cx="60" cy="44" r="8" fill="#a81c07" stroke="#6e1003" strokeWidth="1.5" />
-              <circle cx="58" cy="42" r="1.5" fill="#f0b39c" />
-              <circle cx="62" cy="46" r="1.2" fill="#f0b39c" />
+  return (
+    <div id="loader">
+      <div className="ld-in">
+        <div className="ld-pizza-wrap">
+          <svg className="ld-pizza-svg" viewBox="0 0 200 200" width="160" height="160">
+            <defs>
+              {/* ألوان العجينة المشوية في فرن الحطب */}
+              <linearGradient id="crustGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#8a4716" />
+                <stop offset="50%" stopColor="#e29e57" />
+                <stop offset="100%" stopColor="#8a4716" />
+              </linearGradient>
+
+              {/* ألوان الجبنة الموتزاريلا الذائبة */}
+              <radialGradient id="cheeseGrad" cx="50%" cy="30%" r="70%">
+                <stop offset="0%" stopColor="#fff3b0" />
+                <stop offset="55%" stopColor="#ffb347" />
+                <stop offset="100%" stopColor="#e07a12" />
+              </radialGradient>
+            </defs>
+
+            {/* بخار يتصاعد بنعومة فوق البيتزا الساخنة عند اكتمالها */}
+            <g className="pizza-steam-loader">
+              <path d="M 88 18 Q 82 9 88 2" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+              <path d="M 100 20 Q 106 10 100 3" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+              <path d="M 112 18 Q 106 9 112 2" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
             </g>
-            {/* بيبروني 2 */}
-            <g className="top-item p2">
-              <circle cx="48" cy="66" r="7.5" fill="#a81c07" stroke="#6e1003" strokeWidth="1.5" />
-              <circle cx="46" cy="64" r="1.2" fill="#f0b39c" />
-            </g>
-            {/* بيبروني 3 */}
-            <g className="top-item p3">
-              <circle cx="72" cy="66" r="7.5" fill="#a81c07" stroke="#6e1003" strokeWidth="1.5" />
-              <circle cx="74" cy="68" r="1.2" fill="#f0b39c" />
-            </g>
-            {/* أوراق ريحان خضراء طازة */}
-            <path className="top-item b1" d="M 58 78 C 65 74 67 85 60 88 C 55 85 54 75 58 78 Z" fill="#2d7a1e" />
-            <path className="top-item b2" d="M 40 48 C 45 44 48 52 42 55 C 38 52 37 46 40 48 Z" fill="#3a8f2a" />
-          </g>
-        </svg>
+
+            {/* الشرائح الست التي تتجمع وتتراص واحدة تلو الأخرى لتشكيل بيتزا دائرية كاملة */}
+            {renderSlice('s1', 0)}
+            {renderSlice('s2', 60)}
+            {renderSlice('s3', 120)}
+            {renderSlice('s4', 180)}
+            {renderSlice('s5', 240)}
+            {renderSlice('s6', 300)}
+          </svg>
+        </div>
+
+        <div className="ld-logo">FORNO<span>.</span></div>
+        <div className="ld-bar"><i id="loadBar"></i></div>
+        <div id="loadPct">0%</div>
+        <div className="ld-note">PREHEATING THE OVENS</div>
       </div>
-
-      <div className="ld-logo">FORNO<span>.</span></div>
-      <div className="ld-bar"><i id="loadBar"></i></div>
-      <div id="loadPct">0%</div>
-      <div className="ld-note">PREHEATING THE OVENS</div>
     </div>
-  </div>
-);
+  );
+};
 
 export default Loader;

@@ -43,17 +43,14 @@ export const Builder = () => (
         <div id="mobileSizeSelector" className="mob-size-wrap">
           <div className="ms-title" id="chooseSizeTitle">CHOOSE PIZZA SIZE</div>
           <div className="ms-circles" role="group" aria-label="Select Pizza Size">
-            <button type="button" className="ms-circle-btn" data-size="small" aria-label="Small Pizza (24)" aria-pressed="false">
+            <button type="button" className="ms-circle-btn" data-size="small" aria-label="Small Pizza" aria-pressed="false">
               <b>S</b>
-        
             </button>
-            <button type="button" className="ms-circle-btn active" data-size="med" aria-label="Medium Pizza (30)" aria-pressed="true">
+            <button type="button" className="ms-circle-btn active" data-size="med" aria-label="Medium Pizza" aria-pressed="true">
               <b>M</b>
-    
             </button>
-            <button type="button" className="ms-circle-btn" data-size="large" aria-label="Large Pizza (36)" aria-pressed="false">
+            <button type="button" className="ms-circle-btn" data-size="large" aria-label="Large Pizza" aria-pressed="false">
               <b>L</b>
-    
             </button>
           </div>
         </div>

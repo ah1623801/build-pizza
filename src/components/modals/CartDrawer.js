@@ -47,23 +47,73 @@ export const CartDrawer = () => (
           <button type="button" id="payVisaBtn" className="pay-method-btn">💳 VISA / INSTAPAY</button>
         </div>
 
-        {/* خيار نوع الطلب (توصيل / في المحل) - ظاهر دائماً لكافة طرق الدفع */}
+        {/* خيار نوع الطلب (توصيل / في المحل) */}
         <div id="orderTypeBox" style={{ display: 'block', marginBottom: '16px' }}>
           <h4 id="ckOrderTypeTitle" style={{ fontFamily: 'var(--disp)', fontSize: '16px', color: 'var(--gold)', marginBottom: '8px' }}>
             ORDER TYPE
           </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button type="button" id="typeDeliveryBtn" className="del-type-btn active">🛵 DELIVERY</button>
-            <button type="button" id="typePickupBtn" className="del-type-btn">🏪 IN STORE PICKUP</button>
+          <div id="orderTypeGrid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+            <button type="button" id="typeDeliveryBtn" className="del-type-btn" style={{ display: 'none' }}>🛵 DELIVERY</button>
+            <button type="button" id="typePickupBtn" className="del-type-btn active">🏪 IN STORE PICKUP</button>
           </div>
         </div>
 
         {/* حقل العنوان: يظهر دائماً في حالة التوصيل لكاش أو فيزا */}
-        <div id="ckAddressWrap" style={{ display: 'block', marginBottom: '18px' }}>
+        <div id="ckAddressWrap" style={{ display: 'block', marginBottom: '16px' }}>
           <label htmlFor="ckAddress" id="ckAddressLabel" style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: 'var(--mut)', letterSpacing: '1px', marginBottom: '6px' }}>
             DELIVERY ADDRESS *
           </label>
           <textarea id="ckAddress" placeholder="STREET, BUILDING, APARTMENT NUMBER (عنوان التوصيل بالتفصيل)" aria-label="Delivery Address" className="ck-input" style={{ minHeight: '65px', resize: 'none' }}></textarea>
+        </div>
+
+        {/* ملاحظات خاصة بالطلب */}
+        <div id="ckNotesWrap" style={{ marginBottom: '16px' }}>
+          <label htmlFor="ckNotes" id="ckNotesLabel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', fontWeight: '800', color: 'var(--gold)', letterSpacing: '1px', marginBottom: '6px' }}>
+            <span>📝 ORDER NOTES / ملاحظات خاصة للطلب</span>
+            <span style={{ fontSize: '9px', color: 'var(--mut)', fontWeight: '600' }}>(اختياري)</span>
+          </label>
+          <textarea
+            id="ckNotes"
+            placeholder="Any special requests? e.g. Extra napkins, no onions, ring doorbell softly... (أي ملاحظات للطلب)"
+            aria-label="Order Notes"
+            className="ck-input"
+            style={{ minHeight: '55px', resize: 'none', fontSize: '12px' }}
+          ></textarea>
+        </div>
+
+        {/* اختيار الإكرامية (Tips) */}
+        <div id="ckTipsWrap" style={{ marginBottom: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--line)', borderRadius: '14px', padding: '12px 14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span id="ckTipsTitle" style={{ fontSize: '10px', fontWeight: '800', color: 'var(--gold)', letterSpacing: '1px' }}>
+              🍕 TIP THE CREW & DRIVER (إكرامية)
+            </span>
+            <span id="ckTipsSelectedVal" style={{ fontSize: '11px', fontWeight: '800', color: 'var(--ember2)' }}>EGP 0</span>
+          </div>
+          <div id="tipsBtnGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '8px' }}>
+            <button type="button" className="tip-btn active" data-tip="0">NONE</button>
+            <button type="button" className="tip-btn" data-tip="10">+10</button>
+            <button type="button" className="tip-btn" data-tip="20">+20</button>
+            <button type="button" className="tip-btn" data-tip="30">+30</button>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <input
+              id="ckCustomTip"
+              type="number"
+              min="0"
+              max="500"
+              placeholder="Custom tip (مبلغ آخر)..."
+              className="ck-input"
+              style={{ padding: '7px 10px', fontSize: '11px', flex: 1 }}
+            />
+            <button
+              type="button"
+              id="btnApplyCustomTip"
+              className="btn ghost"
+              style={{ padding: '7px 12px', fontSize: '9px', letterSpacing: '1px', whiteSpace: 'nowrap' }}
+            >
+              SET
+            </button>
+          </div>
         </div>
 
         {/* تفاصيل التحويل والإيصال (تظهر فقط عند اختيار فيزا / إنستاباي) */}
@@ -105,28 +155,18 @@ export const CartDrawer = () => (
           </div>
         </div>
 
-        {/* كود الخصم (Promo Code) */}
-        <div id="couponSection" style={{ marginBottom: '18px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--line)', borderRadius: '12px', padding: '12px' }}>
-          <label htmlFor="ckCoupon" id="couponLabel" style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: 'var(--gold)', letterSpacing: '1px', marginBottom: '6px' }}>
-            PROMO CODE / COUPON
-          </label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input id="ckCoupon" placeholder="e.g. FORNO10" aria-label="Promo code" className="ck-input" style={{ textTransform: 'uppercase', flex: 1, padding: '10px 14px' }} />
-            <button type="button" id="btnApplyCoupon" className="btn ghost" style={{ padding: '8px 16px', fontSize: '11px', whiteSpace: 'nowrap' }}>
-              APPLY
-            </button>
-          </div>
-          <div id="couponFeedback" style={{ display: 'none', fontSize: '11px', marginTop: '6px', fontWeight: '600' }}></div>
-        </div>
-
         <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
           <div id="subtotalRow" style={{ display: 'none', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span id="subtotalLabel" style={{ fontSize: '11px', color: 'var(--mut)' }}>SUBTOTAL:</span>
             <span id="subtotalVal" style={{ fontSize: '12px', color: 'var(--ink)' }}>EGP 0</span>
           </div>
-          <div id="discountRow" style={{ display: 'none', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div id="discountRow" style={{ display: 'none', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span id="discountLabel" style={{ fontSize: '11px', color: '#57a84f' }}>DISCOUNT:</span>
             <span id="discountVal" style={{ fontSize: '12px', color: '#57a84f', fontWeight: 'bold' }}>- EGP 0</span>
+          </div>
+          <div id="tipRow" style={{ display: 'none', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <span id="tipLabel" style={{ fontSize: '11px', color: 'var(--gold)' }}>TIP / إكرامية:</span>
+            <span id="tipVal" style={{ fontSize: '12px', color: 'var(--gold)', fontWeight: 'bold' }}>+ EGP 0</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
             <span id="checkoutTotalLabel" style={{ fontSize: '12px', color: 'var(--mut)', letterSpacing: '2px' }}>TOTAL DUE:</span>
@@ -150,6 +190,26 @@ export const CartDrawer = () => (
 
           <h4 id="trackOrderNo" className="tracker-order-num">ORDER #</h4>
           <p id="trackOrderRecvMsg" className="tracker-order-sub">YOUR WOOD-FIRED ORDER IS BEING PROCESSED</p>
+
+          {/* Permanent Total Price Card in Order Tracking */}
+          <div id="trackTotalCard" style={{
+            margin: '12px 0 16px',
+            padding: '12px 18px',
+            background: 'linear-gradient(135deg, rgba(255,122,46,0.12), rgba(20,13,8,0.85))',
+            border: '1px solid rgba(255,122,46,0.4)',
+            borderRadius: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+          }}>
+            <span id="trackTotalLabel" style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '1.5px', color: 'var(--mut)' }}>
+              TOTAL DUE:
+            </span>
+            <b id="trackTotalVal" style={{ fontFamily: 'var(--disp)', fontSize: '22px', color: 'var(--gold)', letterSpacing: '0.5px' }}>
+              EGP 0
+            </b>
+          </div>
 
           {/* Stepper with animated progress line */}
           <div className="order-stepper-wrap">
@@ -259,6 +319,56 @@ export const CartDrawer = () => (
         <button id="trackDoneBtn" className="btn ghost" style={{ marginTop: 'auto', width: '100%', justifyContent: 'center' }}>CLOSE</button>
       </div>
     </aside>
+
+    {/* 4. بوب اب تأكيد الدفع والبدء بالتجهيز للعميل */}
+    <div id="paymentConfirmedModal" style={{
+      display: 'none',
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(5, 3, 2, 0.85)',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
+      zIndex: 100000,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '420px',
+        background: 'linear-gradient(180deg, #24140b 0%, #120a05 100%)',
+        border: '2px solid #ff7a2e',
+        borderRadius: '26px',
+        padding: '30px 24px',
+        textAlign: 'center',
+        boxShadow: '0 25px 70px rgba(0,0,0,0.9), 0 0 50px rgba(255,122,46,0.3)',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{ fontSize: '46px', marginBottom: '10px' }}>🎉</div>
+        <h3 id="pcModalTitle" style={{ fontFamily: 'var(--disp)', fontSize: '25px', color: '#ffb347', letterSpacing: '1px', margin: '0 0 8px' }}>
+          PAYMENT CONFIRMED!
+        </h3>
+        <p id="pcModalSub" style={{ fontSize: '13px', color: 'var(--ink)', lineHeight: '1.6', margin: '0 0 16px' }}>
+          Your payment was verified and the kitchen is preparing your wood-fired pizza!
+        </p>
+        <div style={{ background: 'rgba(255,122,46,0.1)', border: '1px dashed #ff7a2e', borderRadius: '16px', padding: '12px 16px', marginBottom: '20px' }}>
+          <div id="pcModalOrderNum" style={{ fontFamily: 'var(--disp)', fontSize: '20px', color: '#fff' }}>
+            ORDER #
+          </div>
+          <div id="pcModalTotal" style={{ fontSize: '13px', color: 'var(--gold)', marginTop: '4px', fontWeight: '800' }}>
+            TOTAL: EGP 0
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button type="button" id="pcModalTrackBtn" className="btn solid" style={{ flex: 1, justifyContent: 'center', padding: '13px', fontSize: '11px', letterSpacing: '1.5px' }}>
+            TRACK ORDER
+          </button>
+          <button type="button" id="pcModalCloseBtn" className="btn ghost" style={{ flex: 1, justifyContent: 'center', padding: '13px', fontSize: '11px', letterSpacing: '1.5px' }}>
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
   </>
 );
 
