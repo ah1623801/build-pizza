@@ -14,9 +14,9 @@ export let MENU_ITEMS = [
   { id: 'marg', cat: ['classic', 'vegetarian'], name: 'MARGHERITA || مارجريتا', price: 190, img: IMG.pMarg, ing: ['صلصة طماطم', 'موتزاريلا', 'ريحان فريش', 'زيت زيتون'], preset: { dough: 'thin', sauce: 'tomato', cheese: 'mozzarella', meats: {}, vegs: ['basil'], extras: [] } },
   { id: 'original', cat: ['classic'], name: 'CLASSIC PEPPERONI || بيبروني كلاسيك', price: 230, img: IMG.pOriginal, ing: ['صلصة طماطم', 'موتزاريلا', 'دبل بيبروني'], preset: { dough: 'classic', sauce: 'tomato', cheese: 'extra', meats: { pepperoni: 'more' }, vegs: [], extras: [] } },
   { id: 'diablo', cat: ['spicy'], name: 'DIABLO SPICY || ديابلو حارة', price: 295, img: IMG.pOriginal, imgF: 'saturate(1.35) hue-rotate(-10deg) brightness(.95)', ing: ['صلصة حارة', 'لحم مفروم', 'هلابينو', 'شطة مجروشة'], preset: { dough: 'thin', sauce: 'spicy', cheese: 'mozzarella', meats: { beef: 'normal' }, vegs: ['jalapeno'], extras: ['chili'] } },
-  { id: 'bread', cat: ['sides'], name: 'GARLIC BREAD || خبز بالثوم', price: 60, simple: true, ing: ['فرن حطب', 'ثوم بلدي', 'أعشاب إيطالية', 'زبدة'] },
-  { id: 'cola', cat: ['drinks'], name: 'CRAFT COLA || كولا مثلجة', price: 35, simple: true, ing: ['ثلج منعش', 'سيرب كولا', 'ليمون'] },
-  { id: 'lava', cat: ['desserts'], name: 'CHOCOLATE LAVA || مولتن لافا', price: 75, simple: true, ing: ['شوكولاتة ذائبة', 'ملح بحري', 'فانيليا'] }
+  { id: 'bread', cat: ['sides'], name: 'GARLIC BREAD || خبز بالثوم', price: 60, simple: true, img: '/images/bread.jpg', ing: ['فرن حطب', 'ثوم بلدي', 'أعشاب إيطالية', 'زبدة'] },
+  { id: 'cola', cat: ['drinks'], name: 'CRAFT COLA || كولا مثلجة', price: 35, simple: true, img: '/images/cola.jpg', ing: ['ثلج منعش', 'سيرب كولا', 'ليمون'] },
+  { id: 'lava', cat: ['desserts'], name: 'CHOCOLATE LAVA || مولتن لافا', price: 75, simple: true, img: '/images/lava.jpg', ing: ['شوكولاتة ذائبة', 'ملح بحري', 'فانيليا'] }
 ];
 
 export let CATS = ['signature', 'classic', 'spicy', 'vegetarian', 'sides', 'drinks', 'desserts'];
@@ -46,31 +46,34 @@ export function resolvePizzaImage(it) {
     'كلاسيك دبل': IMG.pOriginal,
     diablo: IMG.pOriginal,
     'ديابلو': IMG.pOriginal,
-    bread: '/ico.webp',
-    'خبز': '/ico.webp',
-    cola: '/ico.webp',
-    'كولا': '/ico.webp',
-    lava: '/ico.webp',
-    'لافا': '/ico.webp',
-    'مولتن': '/ico.webp'
+    bread: '/images/bread.jpg',
+    'خبز': '/images/bread.jpg',
+    garlic: '/images/bread.jpg',
+    cola: '/images/cola.jpg',
+    'كولا': '/images/cola.jpg',
+    lava: '/images/lava.jpg',
+    'لافا': '/images/lava.jpg',
+    'مولتن': '/images/lava.jpg'
   };
 
   const id = String(it.item_id || it.id || '').toLowerCase().trim();
   const name = String(it.name || '').toLowerCase().trim();
 
-  // فحص التطابق مع كروت البيتزا الأساسية لضمان ظهور صورها الفخمة دائماً
-  for (const [key, path] of Object.entries(PRESET_MAP)) {
-    if (id === key || id.includes(key) || name.includes(key)) {
-      return path;
-    }
-  }
-
+  // إذا كان المنتج يمتلك صورة مخصصة (مرفوعة من الداشبورد أو معدلة)، نعتمدها فوراً
   let img = it.image_url || it.img;
   if (typeof img === 'string') {
     img = img.trim();
-    if (img && img !== 'null' && img !== 'undefined' && img !== '') {
+    const isBadUrl = img.includes('qwenlm.ai') || img === '/ico.webp' || img === 'null' || img === 'undefined' || img === '';
+    if (!isBadUrl) {
       if (img.startsWith('images/')) return '/' + img;
       return img;
+    }
+  }
+
+  // إذا لم تكن هناك صورة مخصصة، نستخدم الصور الافتراضية للوصفات
+  for (const [key, path] of Object.entries(PRESET_MAP)) {
+    if (id === key || id.includes(key) || name.includes(key)) {
+      return path;
     }
   }
 
@@ -100,7 +103,7 @@ export async function syncMenuFromServer() {
       applyPrices(EXTRAS, ingData.extras);
     }
 
-    const res = await fetch('/api/menu');
+    const res = await fetch('/api/menu', { cache: 'no-store' });
     if (!res.ok) return;
     const data = await res.json();
 
@@ -170,9 +173,11 @@ export function renderMenu({ onAddToCart } = {}) {
         '</div>'
       : '';
 
+    const isPng = typeof safeImg === 'string' && (safeImg.toLowerCase().includes('.png') || safeImg.includes('image/png'));
+
     return (
       '<article class="mcard' + (it.simple ? ' is-simple' : '') + '" data-id="' + safeId + '">' +
-      (safeImg ? '<div class="mimg"><img loading="lazy" src="' + safeImg + '" style="' + (it.imgF ? 'filter:' + it.imgF : '') + '" alt="' + safeName + '" onerror="this.onerror=null;this.src=\'/ico.webp\';"></div>' : '<div class="mnum">0' + (n + 1) + '</div>') +
+      (safeImg ? '<div class="mimg' + (isPng ? ' is-png' : '') + '"><img loading="lazy" src="' + safeImg + '" class="' + (isPng ? 'is-png' : '') + '" style="' + (it.imgF ? 'filter:' + it.imgF + ';' : '') + (isPng ? 'border-radius:0 !important;object-fit:contain !important;' : '') + '" alt="' + safeName + '" onerror="this.onerror=null;this.src=\'' + (it.simple ? '/ico.webp' : (IMG.pOriginal || '/images/pOriginal.webp')) + '\';"></div>' : '<div class="mnum">0' + (n + 1) + '</div>') +
       '<span class="mcat">' + safeCat + '</span><h3>' + safeName + '</h3>' +
       '<ul class="mings">' + safeIngs + '</ul>' +
       sizesHtml +

@@ -27,7 +27,7 @@ export const Hero = () => {
         muted
         loop
         playsInline
-        preload="metadata"
+        preload="auto"
         poster="/images/pOriginal.webp"
       >
         <source src="/hero.mp4" type="video/mp4" />

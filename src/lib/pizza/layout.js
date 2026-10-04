@@ -800,13 +800,6 @@ export function setupLayout({
       v.playsInline = true;
       v.play().catch(() => {});
 
-      v.addEventListener('timeupdate', () => {
-        if (v.currentTime >= 11) {
-          v.currentTime = 0;
-          v.play();
-        }
-      });
-
       const heroObserver = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
           v.play().catch(() => {});

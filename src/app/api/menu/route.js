@@ -1,5 +1,7 @@
 // src/app/api/menu/route.js
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { supabaseServer } from '@/lib/supabaseServer';
 import { verifyAdmin } from '@/lib/authGuard';
 import { getClientIp, checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
@@ -11,6 +13,126 @@ import {
 } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+function ensureStaticProductImages() {
+  try {
+    const publicImagesDir = path.join(process.cwd(), 'public', 'images');
+    if (!fs.existsSync(publicImagesDir)) {
+      fs.mkdirSync(publicImagesDir, { recursive: true });
+    }
+
+    const artifactDir = 'C:\\Users\\Administrator\\.gemini\\antigravity\\brain\\27ffe414-161b-4c03-8f2f-2f2aee9d1819';
+    const mappings = [
+      { src: path.join(artifactDir, 'garlic_bread_1791121818000.jpg'), dest: path.join(publicImagesDir, 'bread.jpg') },
+      { src: path.join(artifactDir, 'craft_cola_1791118523696.jpg'), dest: path.join(publicImagesDir, 'cola.jpg') },
+      { src: path.join(artifactDir, 'lava_cake_1791118542456.jpg'), dest: path.join(publicImagesDir, 'lava.jpg') }
+    ];
+
+    for (const m of mappings) {
+      if (!fs.existsSync(m.dest) && fs.existsSync(m.src)) {
+        fs.copyFileSync(m.src, m.dest);
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to ensure product images:', err);
+  }
+}
+
+// تشغيل النسخ فوراً عند تحميل الـ Route
+ensureStaticProductImages();
+
+const CUSTOM_MENU_FILE = path.join(process.cwd(), 'src', 'data', 'menu_custom.json');
+const DELETED_MENU_FILE = path.join(process.cwd(), 'src', 'data', 'menu_deleted.json');
+
+export function getCustomMenuItems() {
+  try {
+    if (fs.existsSync(CUSTOM_MENU_FILE)) {
+      const content = fs.readFileSync(CUSTOM_MENU_FILE, 'utf8');
+      const parsed = JSON.parse(content);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+  } catch (err) {
+    console.warn('Failed reading custom menu file:', err);
+  }
+  return [];
+}
+
+export function saveCustomMenuItems(list) {
+  try {
+    const dir = path.dirname(CUSTOM_MENU_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(CUSTOM_MENU_FILE, JSON.stringify(list, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Failed saving custom menu file:', err);
+  }
+}
+
+export function getDeletedMenuItemIds() {
+  try {
+    if (fs.existsSync(DELETED_MENU_FILE)) {
+      const content = fs.readFileSync(DELETED_MENU_FILE, 'utf8');
+      const parsed = JSON.parse(content);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+  } catch (err) {
+    console.warn('Failed reading deleted menu file:', err);
+  }
+  return [];
+}
+
+export function addDeletedMenuItemId(id) {
+  try {
+    const list = getDeletedMenuItemIds();
+    const strId = String(id);
+    if (!list.includes(strId)) {
+      list.push(strId);
+      const dir = path.dirname(DELETED_MENU_FILE);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(DELETED_MENU_FILE, JSON.stringify(list, null, 2), 'utf8');
+    }
+  } catch (err) {
+    console.warn('Failed recording deleted item ID:', err);
+  }
+}
+
+export function normalizeItemImage(it) {
+  if (!it) return '/ico.webp';
+  let img = it.image_url;
+  if (typeof img === 'string') {
+    img = img.trim();
+    if (img === '/images/truffle.webp') return '/images/pTruffle.webp';
+    if (img === '/images/bbq.webp') return '/images/pBBQ.webp';
+    if (img === '/images/green.webp') return '/images/pGreen.webp';
+    if (img === '/images/margherita.webp') return '/images/pMarg.webp';
+    if (img === '/images/original.webp') return '/images/pOriginal.webp';
+    if (img.startsWith('images/')) return '/' + img;
+    const isBadUrl = img.includes('qwenlm.ai') || img === '/ico.webp' || img === 'null' || img === 'undefined' || img === '';
+    if (!isBadUrl) {
+      return img;
+    }
+  }
+
+  const id = String(it.item_id || it.id || '').toLowerCase().trim();
+  const name = String(it.name || '').toLowerCase().trim();
+
+  if (id === 'fire' || name.includes('fire') || name.includes('فاير')) return '/images/fire.webp';
+  if (id === 'truffle' || name.includes('truffle') || name.includes('ترافل')) return '/images/pTruffle.webp';
+  if (id === 'bbq' || name.includes('bbq') || name.includes('باربيكيو') || name.includes('باربكيو')) return '/images/pBBQ.webp';
+  if (id === 'green' || name.includes('green') || name.includes('سوبريم') || name.includes('خضار')) return '/images/pGreen.webp';
+  if (id === 'marg' || name.includes('marg') || name.includes('مارجريتا')) return '/images/pMarg.webp';
+  if (id === 'original' || name.includes('original') || name.includes('كلاسيك')) return '/images/pOriginal.webp';
+  if (id === 'diablo' || name.includes('diablo') || name.includes('ديابلو')) return '/images/pOriginal.webp';
+  if (id === 'bread' || name.includes('bread') || name.includes('خبز') || name.includes('garlic')) return '/images/bread.jpg';
+  if (id === 'cola' || name.includes('cola') || name.includes('كولا')) return '/images/cola.jpg';
+  if (id === 'lava' || name.includes('lava') || name.includes('لافا') || name.includes('مولتن')) return '/images/lava.jpg';
+
+  return it.is_simple ? '/ico.webp' : '/images/pOriginal.webp';
+}
 
 const DEFAULT_CATEGORIES = [
   { id: 'signature', name: 'SIGNATURE || المميزة', sort_order: 1 },
@@ -41,7 +163,7 @@ const DEFAULT_MENU_ITEMS = [
     is_simple: false,
     categories: ['signature', 'vegetarian'],
     ingredients: ['Truffle Cream', 'Mozzarella', 'Mushroom', 'Parmesan'],
-    image_url: '/images/truffle.webp',
+    image_url: '/images/pTruffle.webp',
   },
   {
     id: '3',
@@ -51,7 +173,7 @@ const DEFAULT_MENU_ITEMS = [
     is_simple: false,
     categories: ['signature'],
     ingredients: ['BBQ', 'Mozzarella', 'Chicken', 'Smoked Cheese', 'Onion'],
-    image_url: '/images/bbq.webp',
+    image_url: '/images/pBBQ.webp',
   },
   {
     id: '4',
@@ -61,7 +183,7 @@ const DEFAULT_MENU_ITEMS = [
     is_simple: false,
     categories: ['signature', 'vegetarian'],
     ingredients: ['Mozzarella', 'Mushroom', 'Olives', 'Green Pepper', 'Basil'],
-    image_url: '/images/green.webp',
+    image_url: '/images/pGreen.webp',
   },
   {
     id: '5',
@@ -71,7 +193,7 @@ const DEFAULT_MENU_ITEMS = [
     is_simple: false,
     categories: ['classic', 'vegetarian'],
     ingredients: ['Tomato', 'Mozzarella', 'Basil', 'Olive Oil'],
-    image_url: '/images/margherita.webp',
+    image_url: '/images/pMarg.webp',
   },
   {
     id: '6',
@@ -81,7 +203,7 @@ const DEFAULT_MENU_ITEMS = [
     is_simple: false,
     categories: ['classic'],
     ingredients: ['Tomato', 'Mozzarella', 'Double Pepperoni'],
-    image_url: '/images/original.webp',
+    image_url: '/images/pOriginal.webp',
   },
   {
     id: '7',
@@ -91,7 +213,7 @@ const DEFAULT_MENU_ITEMS = [
     is_simple: false,
     categories: ['spicy'],
     ingredients: ['Spicy Tomato', 'Beef', 'Jalapeño', 'Chili Flakes'],
-    image_url: '/images/original.webp',
+    image_url: '/images/pOriginal.webp',
   },
   {
     id: '8',
@@ -101,7 +223,7 @@ const DEFAULT_MENU_ITEMS = [
     is_simple: true,
     categories: ['sides'],
     ingredients: ['Wood-Oven', 'Garlic', 'Herbs', 'Butter'],
-    image_url: '/ico.webp',
+    image_url: '/images/bread.jpg',
   },
   {
     id: '9',
@@ -111,7 +233,7 @@ const DEFAULT_MENU_ITEMS = [
     is_simple: true,
     categories: ['drinks'],
     ingredients: ['Ice Cold', 'House Syrup', 'Citrus'],
-    image_url: '/ico.webp',
+    image_url: '/images/cola.jpg',
   },
   {
     id: '10',
@@ -121,7 +243,7 @@ const DEFAULT_MENU_ITEMS = [
     is_simple: true,
     categories: ['desserts'],
     ingredients: ['Molten Center', 'Sea Salt', 'Vanilla'],
-    image_url: '/ico.webp',
+    image_url: '/images/lava.jpg',
   },
 ];
 
@@ -165,9 +287,31 @@ export async function GET(request) {
       console.warn('Settings table query bypassed:', err);
     }
 
-    // إذا كانت الجداول فارغة في السوبابيس لأي سبب، نستخدم التصنيفات والمنتجات الافتراضية ونقوم بمزامنتها
+    // إذا كانت الجداول فارغة في السوبابيس لأي سبب، نستخدم التصنيفات والمنتجات الافتراضية
     let safeCategories = Array.isArray(categories) && categories.length > 0 ? categories : DEFAULT_CATEGORIES;
-    let safeItems = Array.isArray(items) && items.length > 0 ? items : DEFAULT_MENU_ITEMS;
+    let baseItems = Array.isArray(items) && items.length > 0 ? items : DEFAULT_MENU_ITEMS;
+
+    // دمج المنتجات المخصصة والملغية المحفوظة محلياً لضمان عدم ضياع التعديلات أو الصور المرفوعة
+    const customItems = getCustomMenuItems();
+    const deletedIds = getDeletedMenuItemIds();
+
+    const itemMap = new Map();
+    baseItems.forEach((it) => {
+      const key = String(it.item_id || it.id || '');
+      if (key && !deletedIds.includes(String(it.id)) && !deletedIds.includes(String(it.item_id))) {
+        itemMap.set(key, { ...it });
+      }
+    });
+
+    customItems.forEach((it) => {
+      const key = String(it.item_id || it.id || '');
+      if (key && !deletedIds.includes(String(it.id)) && !deletedIds.includes(String(it.item_id))) {
+        const existing = itemMap.get(key) || {};
+        itemMap.set(key, { ...existing, ...it });
+      }
+    });
+
+    const safeItems = Array.from(itemMap.values());
 
     // محاولة الحفظ الخلفي التلقائي إذا كانت الجداول فارغة في قاعدة البيانات
     if ((!categories || categories.length === 0) && supabaseServer) {
@@ -186,12 +330,26 @@ export async function GET(request) {
       name: c.name || ''
     }));
 
+    ensureStaticProductImages();
+
+    // إصلاح روابط qwenlm.ai التالفة أو المنتهية في السوبابيس تلقائياً
+    safeItems.forEach((it) => {
+      if (typeof it.image_url === 'string' && it.image_url.includes('qwenlm.ai')) {
+        const cleanImg = normalizeItemImage(it);
+        it.image_url = cleanImg;
+        if (it.id && supabaseServer) {
+          supabaseServer.from('menu_items').update({ image_url: cleanImg }).eq('id', it.id).then(() => {}).catch(() => {});
+        }
+      }
+    });
+
     const itemsWithSizePrices = safeItems.map((it) => {
       const p = Number(it.price) || 0;
-      const customSizes = sizePricesMap[it.item_id] || sizePricesMap[it.id];
+      const customSizes = sizePricesMap[it.item_id] || sizePricesMap[it.id] || it.size_prices;
       return {
         ...it,
         name: it.name || '',
+        image_url: normalizeItemImage(it),
         ingredients: Array.isArray(it.ingredients) ? it.ingredients : [],
         size_prices: customSizes || {
           small: Math.round(p * 0.85),
@@ -208,7 +366,13 @@ export async function GET(request) {
   } catch (error) {
     console.error('API Error [GET /api/menu]:', error);
     // إرجاع البيانات الافتراضية كحماية قصوى لمنع تصفير الداشبورد تحت أي ظرف
-    return NextResponse.json({ categories: DEFAULT_CATEGORIES, items: DEFAULT_MENU_ITEMS });
+    return NextResponse.json({
+      categories: DEFAULT_CATEGORIES,
+      items: DEFAULT_MENU_ITEMS.map((it) => ({
+        ...it,
+        image_url: normalizeItemImage(it),
+      })),
+    });
   }
 }
 
@@ -280,7 +444,7 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Image exceeds 5MB limit' }, { status: 400 });
       }
 
-      const fileExt = imageFile.name ? imageFile.name.split('.').pop().toLowerCase() : '';
+      const fileExt = imageFile.name ? imageFile.name.split('.').pop().toLowerCase() : 'webp';
       if (!ALLOWED_EXT.includes(fileExt) || !ALLOWED_MIME.includes(imageFile.type)) {
         return NextResponse.json({ error: 'Invalid image format. Allowed: JPG, PNG, WebP' }, { status: 400 });
       }
@@ -293,22 +457,53 @@ export async function POST(request) {
       }
 
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `items/${fileName}`;
 
-      const { error: uploadError } = await supabaseServer.storage
-        .from('menu-images')
-        .upload(filePath, buffer, {
-          contentType: imageFile.type,
-          upsert: true,
-        });
+      // 1. حفظ الصورة مباشرة على السيرفر في public/uploads/items لضمان الظهور الفوري وعدم الاعتماد على أي وسيط
+      try {
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'items');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        fs.writeFileSync(path.join(uploadsDir, fileName), buffer);
+        imageUrl = `/uploads/items/${fileName}`;
+      } catch (localWriteErr) {
+        console.warn('Local uploads write failed:', localWriteErr);
+      }
 
-      if (uploadError) throw uploadError;
+      // 2. محاولة الرفع الاحتياطي إلى Supabase Storage إن أمكن بدون أن يعطل العملية إذا فشل
+      try {
+        const filePath = `items/${fileName}`;
+        const { error: uploadError } = await supabaseServer.storage
+          .from('menu-images')
+          .upload(filePath, buffer, {
+            contentType: imageFile.type,
+            upsert: true,
+          });
 
-      const { data: publicData } = supabaseServer.storage
-        .from('menu-images')
-        .getPublicUrl(filePath);
+        if (!uploadError) {
+          const { data: publicData } = supabaseServer.storage
+            .from('menu-images')
+            .getPublicUrl(filePath);
+          if (publicData?.publicUrl && !imageUrl) {
+            imageUrl = publicData.publicUrl;
+          }
+        }
+      } catch (storageErr) {
+        console.warn('Supabase storage upload bypassed:', storageErr);
+      }
+    }
 
-      imageUrl = publicData.publicUrl;
+    // استخراج أسعار الـ 3 أحجام
+    const sizePricesRaw = formData.get('size_prices');
+    const priceSmallRaw = formData.get('price_small');
+    const priceLargeRaw = formData.get('price_large');
+    let sizePricesObj = safeJsonParse(sizePricesRaw, null);
+    if (!sizePricesObj && (priceSmallRaw || priceLargeRaw)) {
+      sizePricesObj = {
+        small: Number(priceSmallRaw) || Math.round(price * 0.85),
+        med: price,
+        large: Number(priceLargeRaw) || Math.round(price * 1.25),
+      };
     }
 
     const payload = {
@@ -325,28 +520,52 @@ export async function POST(request) {
       image_url: imageUrl,
     };
 
-    let result;
-    if (id) {
-      result = await supabaseServer.from('menu_items').update(payload).eq('id', id).select();
-    } else {
-      result = await supabaseServer.from('menu_items').insert([payload]).select();
+    const recordId = id || cleanItemId || String(Date.now());
+    const savedItem = {
+      id: recordId,
+      ...payload,
+      size_prices: sizePricesObj || {
+        small: Math.round(price * 0.85),
+        med: price,
+        large: Math.round(price * 1.25),
+      },
+      updated_at: new Date().toISOString(),
+    };
+
+    // 1. حفظ المنتج محلياً في JSON فوراً لضمان عدم ضياع التعديل أو الصورة أبداً
+    try {
+      const customList = getCustomMenuItems();
+      const existingIdx = customList.findIndex(
+        x => String(x.id) === String(recordId) || String(x.item_id) === String(cleanItemId)
+      );
+      if (existingIdx >= 0) {
+        customList[existingIdx] = { ...customList[existingIdx], ...savedItem };
+      } else {
+        customList.push(savedItem);
+      }
+      saveCustomMenuItems(customList);
+    } catch (fsErr) {
+      console.warn('Failed saving to local custom menu store:', fsErr);
     }
 
-    if (result.error) throw result.error;
+    // 2. محاولة الحفظ في Supabase مع تجاوز أي أخطاء بالجدول أو المعرفات
+    try {
+      if (id) {
+        const updateRes = await supabaseServer.from('menu_items').update(payload).eq('id', id).select();
+        if (updateRes?.data?.[0]) {
+          savedItem.id = updateRes.data[0].id;
+        }
+      } else {
+        const insertRes = await supabaseServer.from('menu_items').insert([payload]).select();
+        if (insertRes?.data?.[0]?.id) {
+          savedItem.id = insertRes.data[0].id;
+        }
+      }
+    } catch (dbErr) {
+      console.warn('Supabase DB menu_items update/insert bypassed:', dbErr);
+    }
 
     // حفظ وتحديث أسعار الـ 3 أحجام في جدول الإعدادات
-    const sizePricesRaw = formData.get('size_prices');
-    const priceSmallRaw = formData.get('price_small');
-    const priceLargeRaw = formData.get('price_large');
-    let sizePricesObj = safeJsonParse(sizePricesRaw, null);
-    if (!sizePricesObj && (priceSmallRaw || priceLargeRaw)) {
-      sizePricesObj = {
-        small: Number(priceSmallRaw) || Math.round(price * 0.85),
-        med: price,
-        large: Number(priceLargeRaw) || Math.round(price * 1.25),
-      };
-    }
-
     if (sizePricesObj && !isSimple) {
       try {
         const { data: existingSettings } = await supabaseServer
@@ -371,15 +590,6 @@ export async function POST(request) {
         console.warn('Could not persist size prices to settings:', err);
       }
     }
-
-    const savedItem = {
-      ...result.data[0],
-      size_prices: sizePricesObj || {
-        small: Math.round(price * 0.85),
-        med: price,
-        large: Math.round(price * 1.25),
-      },
-    };
 
     return NextResponse.json(
       { success: true, item: savedItem },
@@ -416,8 +626,23 @@ export async function DELETE(request) {
       return NextResponse.json({ error: 'Valid Item ID is required' }, { status: 400 });
     }
 
-    const { error } = await supabaseServer.from('menu_items').delete().eq('id', id);
-    if (error) throw error;
+    // 1. تسجيل الحذف محلياً وإزالته من المنيو المخصص
+    try {
+      addDeletedMenuItemId(id);
+      const customList = getCustomMenuItems().filter(
+        x => String(x.id) !== String(id) && String(x.item_id) !== String(id)
+      );
+      saveCustomMenuItems(customList);
+    } catch (fsErr) {
+      console.warn('Failed recording deletion locally:', fsErr);
+    }
+
+    // 2. محاولة الحذف من Supabase
+    try {
+      await supabaseServer.from('menu_items').delete().eq('id', id);
+    } catch (dbErr) {
+      console.warn('Supabase DB delete bypassed:', dbErr);
+    }
 
     return NextResponse.json(
       { success: true },

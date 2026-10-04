@@ -1,5 +1,5 @@
 // public/sw.js
-const CACHE_NAME = 'forno-v2';
+const CACHE_NAME = 'forno-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -31,8 +31,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip non-GET, API calls, and external DB requests
-  if (event.request.method !== 'GET' || url.pathname.startsWith('/api') || url.hostname.includes('supabase.co')) {
+  // Skip non-GET, API calls, external DB requests, and media files
+  if (event.request.method !== 'GET' || url.pathname.startsWith('/api') || url.hostname.includes('supabase.co') || url.pathname.endsWith('.mp4')) {
     return;
   }
 

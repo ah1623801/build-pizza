@@ -1,5 +1,54 @@
 // src/components/layout/Loader.js
+"use client";
+
+import { useEffect } from 'react';
+
 export const Loader = () => {
+  useEffect(() => {
+    let currentPct = 0;
+    const interval = setInterval(() => {
+      currentPct += Math.floor(Math.random() * 14) + 6;
+      if (currentPct > 90) {
+        currentPct = 90;
+        clearInterval(interval);
+      }
+      const pctEl = document.getElementById('loadPct');
+      const barEl = document.getElementById('loadBar');
+      if (pctEl) {
+        const val = parseInt(pctEl.textContent || '0', 10);
+        if (isNaN(val) || val < currentPct) {
+          pctEl.textContent = currentPct + '%';
+        }
+      }
+      if (barEl) {
+        barEl.style.width = currentPct + '%';
+      }
+    }, 70);
+
+    // Hard fallback: never allow loader to block screen for more than 2.2 seconds
+    const fallbackTimer = setTimeout(() => {
+      clearInterval(interval);
+      const l = document.getElementById('loader');
+      if (l) {
+        const pctEl = document.getElementById('loadPct');
+        const barEl = document.getElementById('loadBar');
+        if (pctEl) pctEl.textContent = '100%';
+        if (barEl) barEl.style.width = '100%';
+        l.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        l.style.opacity = '0';
+        l.style.pointerEvents = 'none';
+        setTimeout(() => {
+          l.remove();
+          document.body.classList.add('loaded');
+        }, 400);
+      }
+    }, 2200);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(fallbackTimer);
+    };
+  }, []);
   const renderSlice = (keyClass, rotation) => (
     <g key={keyClass} className={`pz-slice ${keyClass}`} transform={`rotate(${rotation} 100 100)`}>
       {/* 1. طبقة العجينة والكرست الذهبي */}

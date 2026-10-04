@@ -293,7 +293,7 @@ em{font-style:normal;color:var(--ember)}
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.4 !important; /* تقليل الشفافية لراحة العين وإبراز النصوص */
+  opacity: 1 !important;
   display: block !important;
   z-index: 1;
   pointer-events: none;
@@ -503,8 +503,8 @@ em{font-style:normal;color:var(--ember)}
   width:clamp(210px, 28vh, 300px);
   height:clamp(210px, 28vh, 300px);
   aspect-ratio:1;
-  border-radius:0 !important;
-  overflow:visible !important;
+  border-radius:50% !important;
+  overflow:hidden !important;
   position:relative;
   box-shadow:none !important;
   border:none !important;
@@ -520,8 +520,8 @@ em{font-style:normal;color:var(--ember)}
 .mimg img{
   width:100% !important;
   height:100% !important;
-  object-fit:contain !important;
-  border-radius:0 !important;
+  object-fit:cover !important;
+  border-radius:50% !important;
   border:none !important;
   outline:none !important;
   box-shadow:none !important;
@@ -532,6 +532,22 @@ em{font-style:normal;color:var(--ember)}
   transition:none !important;
 }
 .mcard:hover .mimg img{transform:none !important}
+
+/* إلغاء الـ border-radius للصور الشفافة بصيغة PNG */
+.mimg.is-png,
+.mimg:has(img[src*=".png"]),
+.mimg:has(img[src*="image/png"]),
+.mimg:has(img.is-png) {
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+.mimg.is-png img,
+.mimg img[src*=".png"],
+.mimg img[src*="image/png"],
+.mimg img.is-png {
+  border-radius: 0 !important;
+  object-fit: contain !important;
+}
 .mnum{font-family:var(--disp);font-size:80px;color:transparent;-webkit-text-stroke:1px rgba(255,179,71,.4);text-align:center;line-height:1;padding:20px 0}
 .mcat{font-size:clamp(8.5px, 1.1vh, 10px);letter-spacing:.3em;color:var(--ember);font-weight:800}
 .mcard h3{font-size:clamp(20px, 2.5vh, 28px);margin:clamp(4px, 0.7vh, 8px) 0 clamp(8px, 1.2vh, 12px);flex-shrink:0}
@@ -631,6 +647,9 @@ body.saved-open #cartOverlay{opacity:1;pointer-events:auto}
 .ci{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:18px;padding:14px;background:rgba(255,255,255,.02);width:100%;box-sizing:border-box}
 .ci-pz{width:84px;height:84px;flex:0 0 auto}
 .ci-img{width:84px;height:84px;border-radius:50%;object-fit:cover}
+.ci-img.is-png,
+.ci-img[src*=".png"],
+.ci-img[src*="image/png"]{border-radius:0 !important;object-fit:contain !important}
 .ci-body{flex:1;min-width:0}
 .ci-name{font-family:var(--disp);font-size:16px;letter-spacing:.05em}
 .ci-meta{color:var(--mut);font-size:10px;line-height:1.7;letter-spacing:.08em;margin:6px 0}

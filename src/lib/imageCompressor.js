@@ -68,8 +68,10 @@ export async function compressImage(file, options = {}) {
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
 
-          // Fill white background for transparent PNGs converted to JPEG if fallback needed
-          if (outputType === 'image/jpeg') {
+          const isOriginalPng = file.type === 'image/png' || (file.name && file.name.toLowerCase().endsWith('.png'));
+
+          // Fill white background for transparent images converted to JPEG if fallback needed
+          if (outputType === 'image/jpeg' && !isOriginalPng) {
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, width, height);
           }
@@ -78,7 +80,7 @@ export async function compressImage(file, options = {}) {
 
           // Check if browser supports WebP canvas export
           const isWebpSupported = canvas.toDataURL('image/webp').startsWith('data:image/webp');
-          const mime = isWebpSupported ? outputType : fallbackType;
+          const mime = isOriginalPng ? 'image/png' : (isWebpSupported ? outputType : fallbackType);
 
           canvas.toBlob(
             (blob) => {
@@ -92,7 +94,7 @@ export async function compressImage(file, options = {}) {
               }
 
               // Determine appropriate filename with new extension
-              const ext = mime === 'image/webp' ? 'webp' : 'jpg';
+              const ext = isOriginalPng ? 'png' : (mime === 'image/webp' ? 'webp' : 'jpg');
               const baseName = (file.name || 'product').replace(/\.[^/.]+$/, '');
               const newFileName = `${baseName}.${ext}`;
 

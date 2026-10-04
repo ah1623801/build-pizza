@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import OrdersTab from "@/components/admin/OrdersTab";
-import MenuTab from "@/components/admin/MenuTab";
+import MenuTab, { resolveAdminItemImage } from "@/components/admin/MenuTab";
 import CategoriesTab from "@/components/admin/CategoriesTab";
 import IngredientsTab from "@/components/admin/IngredientsTab";
 import MessagesTab from "@/components/admin/MessagesTab";
@@ -140,7 +140,7 @@ export default function AdminPage() {
 
   const loadMenuData = async () => {
     try {
-      const res = await fetch("/api/menu");
+      const res = await fetch("/api/menu", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         if (data.categories && Array.isArray(data.categories)) setCategories(data.categories);
@@ -1714,7 +1714,7 @@ export default function AdminPage() {
               setFormData({
                 name_en: parsedName.en,
                 name_ar: parsedName.ar,
-                item_id: it.item_id,
+                item_id: it.item_id || it.id || "",
                 price: szP.med || it.price || "",
                 price_small: szP.small || (baseP ? Math.round(baseP * 0.85) : ""),
                 price_large: szP.large || (baseP ? Math.round(baseP * 1.25) : ""),
@@ -1722,7 +1722,7 @@ export default function AdminPage() {
                 categories: it.categories || [],
                 ingredients_en: enList.join(", "),
                 ingredients_ar: arList.join(", "),
-                image_url: it.image_url || "",
+                image_url: it.image_url || resolveAdminItemImage(it) || "",
               });
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}

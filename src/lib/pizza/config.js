@@ -13,7 +13,10 @@ export const IMG = {
   pBBQ: '/images/pBBQ.webp',
   pGreen: '/images/pGreen.webp',
   pMarg: '/images/pMarg.webp',
-  pOriginal: '/images/pOriginal.webp'
+  pOriginal: '/images/pOriginal.webp',
+  bread: '/images/bread.jpg',
+  cola: '/images/cola.jpg',
+  lava: '/images/lava.jpg'
 };
 
 export const DOUGH = [

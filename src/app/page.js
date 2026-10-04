@@ -18,21 +18,17 @@ import { initApp } from '@/utils/mainLogic';
 
 export default function Home() {
   useEffect(() => {
-    let isMounted = true;
     let appInstance = null;
 
     if (typeof initApp === 'function') {
       initApp().then((instance) => {
-        if (!isMounted) {
-          instance?.destroy?.();
-        } else {
-          appInstance = instance;
-        }
+        appInstance = instance;
+      }).catch((err) => {
+        console.error('initApp failed:', err);
       });
     }
 
     return () => {
-      isMounted = false;
       if (appInstance && typeof appInstance.destroy === 'function') {
         appInstance.destroy();
       }

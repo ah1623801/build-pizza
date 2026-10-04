@@ -5,6 +5,52 @@ import { useState, useEffect } from "react";
 import { parseBilingual } from "@/lib/i18n";
 import { compressImage, formatBytes } from "@/lib/imageCompressor";
 
+export function resolveAdminItemImage(it) {
+  if (!it) return "/ico.webp";
+  let img = it.image_url || it.img;
+  if (typeof img === 'string') {
+    img = img.trim();
+    if (img === '/images/truffle.webp') return '/images/pTruffle.webp';
+    if (img === '/images/bbq.webp') return '/images/pBBQ.webp';
+    if (img === '/images/green.webp') return '/images/pGreen.webp';
+    if (img === '/images/margherita.webp') return '/images/pMarg.webp';
+    if (img === '/images/original.webp') return '/images/pOriginal.webp';
+    if (img.startsWith('images/')) img = '/' + img;
+    const isBadUrl = img.includes('qwenlm.ai') || img === '/ico.webp' || img === 'null' || img === 'undefined' || img === '';
+    if (!isBadUrl) {
+      return img;
+    }
+  }
+
+  const id = String(it.item_id || it.id || '').toLowerCase().trim();
+  const name = String(it.name || '').toLowerCase().trim();
+
+  if (id === 'fire' || name.includes('fire') || name.includes('فاير')) return '/images/fire.webp';
+  if (id === 'truffle' || name.includes('truffle') || name.includes('ترافل')) return '/images/pTruffle.webp';
+  if (id === 'bbq' || name.includes('bbq') || name.includes('باربيكيو') || name.includes('باربكيو')) return '/images/pBBQ.webp';
+  if (id === 'green' || name.includes('green') || name.includes('سوبريم') || name.includes('خضار')) return '/images/pGreen.webp';
+  if (id === 'marg' || name.includes('marg') || name.includes('مارجريتا')) return '/images/pMarg.webp';
+  if (id === 'original' || name.includes('original') || name.includes('كلاسيك')) return '/images/pOriginal.webp';
+  if (id === 'diablo' || name.includes('diablo') || name.includes('ديابلو')) return '/images/pOriginal.webp';
+  if (id === 'bread' || name.includes('bread') || name.includes('خبز') || name.includes('garlic')) return '/images/bread.jpg';
+  if (id === 'cola' || name.includes('cola') || name.includes('كولا')) return '/images/cola.jpg';
+  if (id === 'lava' || name.includes('lava') || name.includes('لافا') || name.includes('مولتن')) return '/images/lava.jpg';
+
+  return it.is_simple ? '/ico.webp' : '/images/pOriginal.webp';
+}
+
+export function isPngImage(src, file) {
+  if (file) {
+    if (file.type === 'image/png') return true;
+    if (file.name && file.name.toLowerCase().endsWith('.png')) return true;
+  }
+  if (typeof src === 'string') {
+    const s = src.toLowerCase();
+    return s.includes('.png') || s.includes('image/png');
+  }
+  return false;
+}
+
 export default function MenuTab({
   items,
   categories,
@@ -355,14 +401,27 @@ export default function MenuTab({
                 <img
                   src={URL.createObjectURL(imageFile)}
                   alt="Preview"
-                  style={{ width: "54px", height: "54px", borderRadius: "50%", objectFit: "cover", border: "2px solid #57a84f", boxShadow: "0 0 15px rgba(87,168,79,0.4)" }}
+                  style={{
+                    width: "54px",
+                    height: "54px",
+                    borderRadius: isPngImage(imageFile.name, imageFile) ? "0" : "50%",
+                    objectFit: isPngImage(imageFile.name, imageFile) ? "contain" : "cover",
+                    border: isPngImage(imageFile.name, imageFile) ? "none" : "2px solid #57a84f",
+                    boxShadow: "0 0 15px rgba(87,168,79,0.4)"
+                  }}
                 />
-              ) : formData.image_url ? (
+              ) : (formData.image_url || (editingItem ? resolveAdminItemImage(editingItem) : '')) ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
-                  src={formData.image_url}
+                  src={formData.image_url || resolveAdminItemImage(editingItem)}
                   alt="Current"
-                  style={{ width: "54px", height: "54px", borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(243,233,220,0.2)" }}
+                  style={{
+                    width: "54px",
+                    height: "54px",
+                    borderRadius: isPngImage(formData.image_url || resolveAdminItemImage(editingItem)) ? "0" : "50%",
+                    objectFit: isPngImage(formData.image_url || resolveAdminItemImage(editingItem)) ? "contain" : "cover",
+                    border: isPngImage(formData.image_url || resolveAdminItemImage(editingItem)) ? "none" : "1px solid rgba(243,233,220,0.2)"
+                  }}
                 />
               ) : (
                 <div style={{ width: "54px", height: "54px", borderRadius: "50%", background: "rgba(255,122,46,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", color: "#ffb347" }}>
@@ -456,17 +515,34 @@ export default function MenuTab({
               </tr>
             </thead>
             <tbody>
-              {items.map((it) => (
-                <tr key={it.id} style={{ borderBottom: "1px solid rgba(243, 233, 220, 0.05)" }}>
-                  <td style={{ padding: "10px" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={it.image_url || "/ico.webp"}
-                      alt=""
-                      style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(243,233,220,0.15)" }}
-                      onError={(e) => { e.currentTarget.src = "/ico.webp"; }}
-                    />
-                  </td>
+              {items.map((it) => {
+                const itemImg = resolveAdminItemImage(it);
+                const isPng = isPngImage(itemImg);
+                return (
+                  <tr key={it.id} style={{ borderBottom: "1px solid rgba(243, 233, 220, 0.05)" }}>
+                    <td style={{ padding: "10px" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={itemImg}
+                        alt=""
+                        style={{
+                          width: "38px",
+                          height: "38px",
+                          borderRadius: isPng ? "0" : "50%",
+                          objectFit: isPng ? "contain" : "cover",
+                          border: isPng ? "none" : "1px solid rgba(243,233,220,0.15)",
+                          background: "transparent",
+                        }}
+                        onError={(e) => {
+                          const fallback = resolveAdminItemImage({ ...it, image_url: '' });
+                          if (e.currentTarget.src !== fallback && !e.currentTarget.src.endsWith(fallback)) {
+                            e.currentTarget.src = fallback;
+                          } else {
+                            e.currentTarget.src = "/ico.webp";
+                          }
+                        }}
+                      />
+                    </td>
                   <td style={{ padding: "10px" }}>
                     {(() => {
                       const p = parseBilingual(it.name);
@@ -505,8 +581,9 @@ export default function MenuTab({
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
+              );
+            })}
+          </tbody>
           </table>
         </div>
       </div>

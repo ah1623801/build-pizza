@@ -12,58 +12,129 @@ import { syncMenuFromServer, buildTabs, renderMenu, setupContactForm, resolvePiz
 import { setupLayout, toast, triggerSizeAlert, updateBadge } from './layout';
 import { initAnimations } from '@/lib/animations';
 import { setupI18n } from './i18nManager';
-import { getLocalizedItemName, getLocalizedIngredient } from '@/lib/i18n';
+import { getLang, getLocalizedItemName, getLocalizedIngredient } from '@/lib/i18n';
+
+const $ = (s) => (typeof document !== 'undefined' ? document.querySelector(s) : null);
+const $$ = (s) => (typeof document !== 'undefined' ? [...document.querySelectorAll(s)] : []);
 
 let appInitPromise = null;
 let currentAppInstance = null;
 
-export async function initApp() {
-  if (typeof window === 'undefined') return null;
-  if (currentAppInstance) return currentAppInstance;
+export function dismissLoader() {
+  const l = document.getElementById('loader');
+  if (!l) {
+    document.body.classList.add('loaded');
+    return;
+  }
+  const pct = document.getElementById('loadPct');
+  const bar = document.getElementById('loadBar');
+  if (pct) pct.textContent = '100%';
+  if (bar) bar.style.width = '100%';
+
+  if (window.gsap) {
+    window.gsap.to(l, {
+      autoAlpha: 0,
+      scale: 1.05,
+      duration: 0.5,
+      ease: 'power3.inOut',
+      onComplete: () => {
+        l.remove();
+        document.body.classList.add('loaded');
+        if (window.ScrollTrigger) window.ScrollTrigger.refresh();
+      }
+    });
+  } else {
+    l.style.transition = 'opacity 0.4s ease';
+    l.style.opacity = '0';
+    setTimeout(() => {
+      l.remove();
+      document.body.classList.add('loaded');
+    }, 400);
+  }
+}
+
+export function initApp() {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  if (currentAppInstance) return Promise.resolve(currentAppInstance);
   if (appInitPromise) return appInitPromise;
 
   window.__forno_app_inited = true;
 
-  console.log('🍕 [FORNO 1/4] Starting modular initApp...');
+  // Fallback safety timeout: never let the loader stay stuck
+  const failsafeTimer = setTimeout(() => {
+    dismissLoader();
+  }, 2200);
 
-  const { gsap, ScrollTrigger } = initAnimations();
+  appInitPromise = (async () => {
+    console.log('🍕 [FORNO 1/4] Starting modular initApp...');
 
-  const $ = (s) => document.querySelector(s);
+    const { gsap, ScrollTrigger } = initAnimations();
 
-  console.log('🍕 [FORNO 3/4] Animation engine ready! Booting components...');
+    console.log('🍕 [FORNO 3/4] Animation engine ready! Booting components...');
 
-  const loadBar = $('#loadBar');
-  const loadPct = $('#loadPct');
+    const progress = { v: 0 };
+    let loadAnim = null;
+    if (gsap) {
+      loadAnim = gsap.to(progress, {
+        v: 90,
+        duration: 1.0,
+        ease: 'power2.out',
+        onUpdate: () => {
+          const bar = document.getElementById('loadBar');
+          const pct = document.getElementById('loadPct');
+          if (bar) bar.style.width = Math.round(progress.v) + '%';
+          if (pct) pct.textContent = Math.round(progress.v) + '%';
+        }
+      });
+    }
 
-  const progress = { v: 0 };
-  let loadAnim = null;
-  if (gsap) {
-    loadAnim = gsap.to(progress, {
-      v: 90,
-      duration: 1.2,
-      ease: 'power2.out',
-      onUpdate: () => {
-        if (loadBar) loadBar.style.width = Math.round(progress.v) + '%';
-        if (loadPct) loadPct.textContent = Math.round(progress.v) + '%';
+    DOUGH_SRC.thin = IMG.doughThin;
+    DOUGH_SRC.classic = IMG.doughClassic;
+    DOUGH_SRC.thick = IMG.doughThick;
+    DOUGH_SRC.cheese = IMG.doughCheese;
+
+    const jobs = [
+      loadImg(IMG.fire).catch(() => {}),
+      syncMenuFromServer().catch(() => {})
+    ];
+
+    await Promise.all(jobs);
+
+    return new Promise((resolve) => {
+      const handleComplete = () => {
+        clearTimeout(failsafeTimer);
+        try {
+          const instance = finishBoot();
+          resolve(instance);
+        } catch (err) {
+          console.error('finishBoot error:', err);
+          dismissLoader();
+          resolve(null);
+        }
+      };
+
+      if (gsap) {
+        if (loadAnim) loadAnim.kill();
+        gsap.to(progress, {
+          v: 100,
+          duration: 0.25,
+          ease: 'power1.inOut',
+          onUpdate: () => {
+            const bar = document.getElementById('loadBar');
+            const pct = document.getElementById('loadPct');
+            if (bar) bar.style.width = Math.round(progress.v) + '%';
+            if (pct) pct.textContent = Math.round(progress.v) + '%';
+          },
+          onComplete: handleComplete
+        });
+      } else {
+        handleComplete();
       }
     });
-  }
+  })();
 
-  DOUGH_SRC.thin = IMG.doughThin;
-  DOUGH_SRC.classic = IMG.doughClassic;
-  DOUGH_SRC.thick = IMG.doughThick;
-  DOUGH_SRC.cheese = IMG.doughCheese;
-
-  const jobs = [
-    loadImg(IMG.fire).catch(() => {}),
-    syncMenuFromServer().catch(() => {})
-  ];
-
-  await Promise.all(jobs);
-
-  if (loadAnim) loadAnim.kill();
-
-  const finishBoot = () => {
+  function finishBoot() {
+    const gsap = window.gsap;
     try {
       localStorage.removeItem('forno_builder_progress');
     } catch (e) {}
@@ -260,20 +331,9 @@ export async function initApp() {
     layout.setupMobileLivePrice();
     setupI18n();
 
-    if (gsap) {
-      gsap.to('#loader', {
-        autoAlpha: 0,
-        scale: 1.05,
-        duration: 0.6,
-        ease: 'power3.inOut',
-        onComplete: () => {
-          const l = $('#loader');
-          if (l) l.remove();
-          document.body.classList.add('loaded');
-          if (window.ScrollTrigger) window.ScrollTrigger.refresh();
-        }
-      });
+    dismissLoader();
 
+    if (gsap) {
       const heroTl = gsap.timeline({ delay: 0.2 });
       if ($('#heroPizza')) {
         heroTl.fromTo('#heroPizza', { scale: 0.7, autoAlpha: 0, rotation: -20 }, { scale: 1, autoAlpha: 1, rotation: 0, duration: 1.2, ease: 'power3.out' });
@@ -281,10 +341,6 @@ export async function initApp() {
       heroTl.fromTo('.h-line span', { yPercent: 110 }, { yPercent: 0, duration: 0.9, stagger: 0.12, ease: 'power4.out' }, $('#heroPizza') ? '-=0.7' : '0')
         .fromTo('.h-sub, .h-cta', { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.6, stagger: 0.1 }, '-=0.3')
         .fromTo('.h-scroll', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, '-=0.2');
-    } else {
-      const l = $('#loader');
-      if (l) l.remove();
-      document.body.classList.add('loaded');
     }
 
     // إرجاع واجهة التحكم والتنظيف الكامل (Lifecycle Teardown Interface)
@@ -316,29 +372,6 @@ export async function initApp() {
     currentAppInstance = appInstance;
     return appInstance;
   };
-
-  // غلق المعمارية بنظام Promise يضمن إرجاع كائن الـ Lifecycle Teardown بدقة
-  appInitPromise = new Promise((resolve) => {
-    const handleComplete = () => {
-      const instance = finishBoot();
-      resolve(instance);
-    };
-
-    if (gsap) {
-      gsap.to(progress, {
-        v: 100,
-        duration: 0.3,
-        ease: 'power1.inOut',
-        onUpdate: () => {
-          if (loadBar) loadBar.style.width = Math.round(progress.v) + '%';
-          if (loadPct) loadPct.textContent = Math.round(progress.v) + '%';
-        },
-        onComplete: handleComplete
-      });
-    } else {
-      handleComplete();
-    }
-  });
 
   return appInitPromise;
 }
