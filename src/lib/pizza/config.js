@@ -67,7 +67,7 @@ export const DRIZZLES = ['ketchup', 'bbqDrizzle', 'truffle'];
 
 export const TOPCFG = {
   pepperoni: { size: 0.145, kind: 'meat', dist: 'phy', counts: { less: 8, normal: 12, more: 18 }, anim: { dur: 0.7, spin: 160, bounce: true } },
-  beef: { size: 0.1, kind: 'meat', dist: 'phy', counts: { less: 10, normal: 15, more: 21 }, anim: { dur: 0.65, spin: 90, bounce: true } },
+  beef: { size: 0.08, kind: 'meat', dist: 'phy', counts: { less: 24, normal: 38, more: 54 }, anim: { dur: 0.65, spin: 90, bounce: true } },
   chicken: { size: 0.115, kind: 'meat', dist: 'phy', counts: { less: 9, normal: 13, more: 19 }, anim: { dur: 0.7, spin: 120 } },
   sausage: { size: 0.12, kind: 'meat', dist: 'phy', counts: { less: 8, normal: 12, more: 18 }, anim: { dur: 0.7, spin: 100 } },
   olives: { size: 0.07, kind: 'veg', dist: 'phy', fixed: 8, anim: { dur: 0.55, roll: true } },

@@ -90,18 +90,13 @@ em{font-style:normal;color:var(--ember)}
 .ld-in{text-align:center;display:flex;flex-direction:column;align-items:center}
 .ld-pizza-wrap{
   position:relative;
-  width:160px;
-  height:160px;
-  margin-bottom:18px;
+  width:180px;
+  height:180px;
+  margin-bottom:22px;
   display:flex;
   align-items:center;
   justify-content:center;
-  filter:drop-shadow(0 14px 28px rgba(0,0,0,0.75)) drop-shadow(0 0 24px rgba(255,122,46,0.35));
-}
-.ld-pizza-svg{
-  width:100%;
-  height:100%;
-  overflow:visible;
+  filter:drop-shadow(0 14px 28px rgba(0,0,0,0.85)) drop-shadow(0 0 28px rgba(255,122,46,0.4));
   animation:pzSubtleFloat 3.6s ease-in-out infinite;
 }
 @keyframes pzSubtleFloat{
@@ -109,12 +104,30 @@ em{font-style:normal;color:var(--ember)}
   50%{transform:translateY(-4px) rotate(1.5deg);}
 }
 
-/* أنيميشن نزول وتكون الشرائح الست واحدة تلو الأخرى بانسيابية فائقة لتكوين بيتزا كاملة */
+.pz-slice-wrap{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  transform-origin:50% 50%;
+}
+
+/* أنيميشن نزول وتراص الشرائح الحقيقية واحدة تلو الأخرى لتشكيل بيتزا دائرية كاملة */
 .pz-slice{
+  position:absolute;
+  width:145px;
+  height:145px;
+  left:50%;
+  top:50%;
+  margin-left:-82.94px; /* -57.2% من العرض لمحاذاة رأس الشريحة مع السنتر بالضبط */
+  margin-top:-119.48px; /* -82.4% من الطول لمحاذاة رأس الشريحة مع السنتر بالضبط */
+  transform-origin:57.2% 82.4%;
   opacity:0;
-  transform-origin:100px 100px;
+  user-select:none;
+  pointer-events:none;
+  border-radius:0 !important;
   animation:sliceDropIn 3.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
+
 .pz-slice.s1{animation-delay:0.0s;}
 .pz-slice.s2{animation-delay:0.22s;}
 .pz-slice.s3{animation-delay:0.44s;}
@@ -125,39 +138,45 @@ em{font-style:normal;color:var(--ember)}
 @keyframes sliceDropIn{
   0%{
     opacity:0;
-    transform:scale(0.5) translate(0, -22px);
+    transform:scale(0.4) translateY(-32px);
   }
-  8%{
+  9%{
     opacity:1;
-    transform:scale(1.06) translate(0, 1px);
+    transform:scale(1.05) translateY(0);
   }
-  14%{
+  15%{
     opacity:1;
-    transform:scale(1) translate(0, 0);
+    transform:scale(1) translateY(0);
   }
   78%{
     opacity:1;
-    transform:scale(1) translate(0, 0);
+    transform:scale(1) translateY(0);
   }
   88%{
     opacity:0;
-    transform:scale(0.92) translate(0, 4px);
+    transform:scale(0.92) translateY(6px);
   }
   100%{
     opacity:0;
-    transform:scale(0.5) translate(0, -22px);
+    transform:scale(0.4) translateY(-32px);
   }
 }
 
 .pizza-steam-loader{
+  position:absolute;
+  top:-22px;
+  left:50%;
+  transform:translateX(-50%);
+  pointer-events:none;
   opacity:0;
   animation:steamRise 3.6s ease-out infinite;
+  z-index:2;
 }
 @keyframes steamRise{
-  0%, 38%{opacity:0;transform:translateY(6px);}
-  50%{opacity:0.8;transform:translateY(0);}
-  75%{opacity:0.4;transform:translateY(-12px);}
-  85%, 100%{opacity:0;transform:translateY(-18px);}
+  0%, 38%{opacity:0;transform:translateX(-50%) translateY(6px);}
+  50%{opacity:0.8;transform:translateX(-50%) translateY(0);}
+  75%{opacity:0.4;transform:translateX(-50%) translateY(-12px);}
+  85%, 100%{opacity:0;transform:translateX(-50%) translateY(-18px);}
 }
 
 /* Size buttons on pizza cards */

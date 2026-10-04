@@ -1049,7 +1049,7 @@ export default function AdminPage() {
                   <line x1="17" y1="16" x2="23" y2="16" />
                 </svg>
               </div>
-              <span>CALENDAR 📅</span>
+     
               {periodFilter.startsWith("custom_") && (
                 <span style={{
                   width: "8px",

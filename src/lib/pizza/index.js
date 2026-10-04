@@ -63,7 +63,7 @@ export function initApp() {
   // Fallback safety timeout: never let the loader stay stuck
   const failsafeTimer = setTimeout(() => {
     dismissLoader();
-  }, 2200);
+  }, 4200);
 
   appInitPromise = (async () => {
     console.log('🍕 [FORNO 1/4] Starting modular initApp...');
@@ -77,7 +77,7 @@ export function initApp() {
     if (gsap) {
       loadAnim = gsap.to(progress, {
         v: 90,
-        duration: 1.0,
+        duration: 2.4,
         ease: 'power2.out',
         onUpdate: () => {
           const bar = document.getElementById('loadBar');
@@ -93,9 +93,13 @@ export function initApp() {
     DOUGH_SRC.thick = IMG.doughThick;
     DOUGH_SRC.cheese = IMG.doughCheese;
 
+    // مهلة إضافية ثانيتين لضمان استمتاع الزائر برؤية اكتمال البيتزا بالكامل
+    const minLoadDelay = new Promise((resolve) => setTimeout(resolve, 2200));
+
     const jobs = [
       loadImg(IMG.fire).catch(() => {}),
-      syncMenuFromServer().catch(() => {})
+      syncMenuFromServer().catch(() => {}),
+      minLoadDelay
     ];
 
     await Promise.all(jobs);
@@ -117,7 +121,7 @@ export function initApp() {
         if (loadAnim) loadAnim.kill();
         gsap.to(progress, {
           v: 100,
-          duration: 0.25,
+          duration: 0.4,
           ease: 'power1.inOut',
           onUpdate: () => {
             const bar = document.getElementById('loadBar');

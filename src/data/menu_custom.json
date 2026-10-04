@@ -1,0 +1,24 @@
+[
+  {
+    "id": "bf1c6a91-0974-4c4b-a613-9df7ea4699ce",
+    "name": "CHOCOLATE LAVA",
+    "item_id": "lava",
+    "price": 75,
+    "is_simple": true,
+    "categories": [
+      "desserts"
+    ],
+    "ingredients": [
+      "Molten Center",
+      "Sea Salt",
+      "Vanilla"
+    ],
+    "image_url": "/uploads/items/1791130338418-yd98u1wkaip.jpg",
+    "size_prices": {
+      "small": 64,
+      "med": 75,
+      "large": 94
+    },
+    "updated_at": "2026-10-04T16:12:18.819Z"
+  }
+]

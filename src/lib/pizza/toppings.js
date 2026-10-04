@@ -166,42 +166,34 @@ export function pepperoniSVG() {
 
 export function beefSVG() {
   const gid1 = nid('bf1'), gid2 = nid('bf2');
-  const c1 = wobbleCircle(50, 48, 20, 8, 0.28);
-  const c2 = wobbleCircle(34, 40, 14, 7, 0.32);
-  const c3 = wobbleCircle(66, 42, 15, 7, 0.30);
-  const c4 = wobbleCircle(42, 64, 13, 6, 0.34);
-  const c5 = wobbleCircle(60, 62, 12, 6, 0.32);
-  const c6 = wobbleCircle(48, 30, 11, 5, 0.35);
-  const c7 = wobbleCircle(28, 56, 9, 5, 0.38);
-
   return mkSVG(
     100,
     '<defs>' +
-      '<radialGradient id="' + gid1 + '" cx="42%" cy="36%" r="68%">' +
-        '<stop offset="0%" stop-color="#844520"/>' +
-        '<stop offset="45%" stop-color="#612d14"/>' +
-        '<stop offset="78%" stop-color="#441c0a"/>' +
-        '<stop offset="100%" stop-color="#2a0f04"/>' +
+      '<radialGradient id="' + gid1 + '" cx="40%" cy="35%" r="68%">' +
+        '<stop offset="0%" stop-color="#7c3d19"/>' +
+        '<stop offset="50%" stop-color="#54240c"/>' +
+        '<stop offset="85%" stop-color="#361506"/>' +
+        '<stop offset="100%" stop-color="#1f0a03"/>' +
       '</radialGradient>' +
-      '<radialGradient id="' + gid2 + '" cx="38%" cy="32%" r="65%">' +
-        '<stop offset="0%" stop-color="#995328"/>' +
-        '<stop offset="55%" stop-color="#6e3318"/>' +
-        '<stop offset="100%" stop-color="#3b1607"/>' +
+      '<radialGradient id="' + gid2 + '" cx="36%" cy="30%" r="65%">' +
+        '<stop offset="0%" stop-color="#934d23"/>' +
+        '<stop offset="60%" stop-color="#642b10"/>' +
+        '<stop offset="100%" stop-color="#2c0f04"/>' +
       '</radialGradient>' +
     '</defs>' +
-    '<g filter="drop-shadow(0 2px 3px rgba(18,7,2,0.6))">' +
-      '<path d="' + c2 + '" fill="url(#' + gid1 + ')"/>' +
-      '<path d="' + c3 + '" fill="url(#' + gid1 + ')"/>' +
-      '<path d="' + c4 + '" fill="url(#' + gid1 + ')"/>' +
-      '<path d="' + c5 + '" fill="url(#' + gid1 + ')"/>' +
-      '<path d="' + c7 + '" fill="url(#' + gid1 + ')"/>' +
-      '<path d="' + c1 + '" fill="url(#' + gid2 + ')"/>' +
-      '<path d="' + c6 + '" fill="url(#' + gid2 + ')"/>' +
-      '<path d="M 38 42 Q 48 48 58 40 M 44 54 Q 52 50 62 58 M 34 50 Q 42 62 46 68 M 52 34 Q 48 42 42 46" fill="none" stroke="#240c03" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<path d="M 44 38 Q 50 34 56 36 M 30 38 Q 36 34 40 40 M 60 40 Q 66 38 68 44" fill="none" stroke="rgba(255,195,140,0.35)" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<path d="M 38 60 Q 44 56 48 60 M 56 58 Q 62 56 64 62" fill="none" stroke="rgba(255,195,140,0.25)" stroke-width="1.8" stroke-linecap="round"/>' +
-      speckles(50, 50, 30, 9, 1.2, 2.4, '#150602', 0.95) +
-      speckles(50, 50, 24, 5, 0.8, 1.6, '#381406', 0.9) +
+    '<g filter="drop-shadow(0 2px 3px rgba(12,4,1,0.65))">' +
+      '<path d="M 32 44 Q 38 32 48 35 Q 56 30 64 36 Q 74 38 72 48 Q 78 58 70 66 Q 62 74 50 72 Q 38 75 30 66 Q 22 56 32 44 Z" fill="url(#' + gid1 + ')"/>' +
+      '<path d="M 36 40 Q 44 34 52 38 Q 60 35 66 42 Q 68 52 62 60 Q 52 66 42 62 Q 32 58 34 48 Q 32 42 36 40 Z" fill="url(#' + gid2 + ')"/>' +
+      '<circle cx="28" cy="42" r="7" fill="url(#' + gid1 + ')"/>' +
+      '<circle cx="68" cy="44" r="8" fill="url(#' + gid1 + ')"/>' +
+      '<circle cx="48" cy="68" r="7.5" fill="url(#' + gid1 + ')"/>' +
+      '<circle cx="62" cy="64" r="6.5" fill="url(#' + gid1 + ')"/>' +
+      '<circle cx="34" cy="62" r="6" fill="url(#' + gid1 + ')"/>' +
+      '<circle cx="50" cy="32" r="6.5" fill="url(#' + gid2 + ')"/>' +
+      '<path d="M 34 42 Q 42 46 48 40 M 42 52 Q 52 48 58 56 M 34 56 Q 44 60 52 54 M 52 38 Q 58 44 66 42" fill="none" stroke="#1f0a03" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<path d="M 36 38 Q 42 34 46 36 M 54 36 Q 60 34 64 38 M 38 58 Q 44 54 48 58" fill="none" stroke="rgba(255,190,135,0.4)" stroke-width="1.8" stroke-linecap="round"/>' +
+      speckles(50, 50, 26, 12, 1, 2.2, '#120501', 0.95) +
+      speckles(50, 50, 22, 6, 0.8, 1.5, '#421606', 0.9) +
     '</g>'
   );
 }
@@ -240,37 +232,43 @@ export function chickenSVG() {
 }
 
 export function sausageSVG() {
-  const gidMeat = nid('sa_m');
-  const gidRim = nid('sa_r');
-  const outer = wobbleCircle(50, 50, 41, 12, 0.03);
-  const inner = wobbleCircle(50, 50, 36, 12, 0.03);
+  const gidSkin = nid('sa_sk');
+  const gidMeat = nid('sa_mt');
+  const rot = ((rand(-25, 25)) | 0);
   return mkSVG(
     100,
     '<defs>' +
-      '<radialGradient id="' + gidRim + '" cx="46%" cy="42%" r="68%">' +
-        '<stop offset="0%" stop-color="#b82618"/>' +
-        '<stop offset="70%" stop-color="#8a170c"/>' +
-        '<stop offset="100%" stop-color="#610d05"/>' +
+      '<radialGradient id="' + gidSkin + '" cx="45%" cy="40%" r="70%">' +
+        '<stop offset="0%" stop-color="#dc2626"/>' +
+        '<stop offset="60%" stop-color="#b91c1c"/>' +
+        '<stop offset="100%" stop-color="#7f1d1d"/>' +
       '</radialGradient>' +
-      '<radialGradient id="' + gidMeat + '" cx="44%" cy="40%" r="65%">' +
-        '<stop offset="0%" stop-color="#ea5743"/>' +
-        '<stop offset="55%" stop-color="#d43b27"/>' +
-        '<stop offset="85%" stop-color="#ba2c1a"/>' +
-        '<stop offset="100%" stop-color="#9a1d0d"/>' +
+      '<radialGradient id="' + gidMeat + '" cx="42%" cy="38%" r="68%">' +
+        '<stop offset="0%" stop-color="#fca5a5"/>' +
+        '<stop offset="45%" stop-color="#f87171"/>' +
+        '<stop offset="85%" stop-color="#ef4444"/>' +
+        '<stop offset="100%" stop-color="#b91c1c"/>' +
       '</radialGradient>' +
     '</defs>' +
-    '<path d="' + outer + '" fill="url(#' + gidRim + ')"/>' +
-    '<path d="' + outer + '" fill="none" stroke="#520a03" stroke-width="2.2" opacity="0.9"/>' +
-    '<path d="' + inner + '" fill="url(#' + gidMeat + ')"/>' +
-    '<path d="' + inner + '" fill="none" stroke="rgba(255,180,165,0.4)" stroke-width="1.2"/>' +
-    '<g stroke="#6e1208" stroke-width="2.2" stroke-linecap="round" opacity="0.65">' +
-      '<line x1="32" y1="42" x2="48" y2="58"/>' +
-      '<line x1="42" y1="32" x2="58" y2="48"/>' +
-      '<line x1="52" y1="36" x2="68" y2="52"/>' +
-    '</g>' +
-    speckles(50, 50, 26, 8, 1.2, 2.2, '#ffd5cc', 0.85) +
-    speckles(50, 50, 28, 5, 0.9, 1.8, '#590a03', 0.8) +
-    '<ellipse cx="40" cy="36" rx="14" ry="6.5" fill="rgba(255,255,255,0.24)" transform="rotate(-22 40 36)"/>'
+    '<g transform="rotate(' + rot + ' 50 50)" filter="drop-shadow(0 2px 4px rgba(20,5,3,0.65))">' +
+      '<ellipse cx="50" cy="54" rx="41" ry="24" fill="#610e08" stroke="#3b0804" stroke-width="1.5"/>' +
+      '<ellipse cx="50" cy="50" rx="41" ry="24" fill="url(#' + gidSkin + ')" stroke="#450a0a" stroke-width="2"/>' +
+      '<ellipse cx="50" cy="49" rx="36" ry="20" fill="url(#' + gidMeat + ')"/>' +
+      '<ellipse cx="50" cy="49" rx="36" ry="20" fill="none" stroke="rgba(255,200,200,0.5)" stroke-width="1"/>' +
+      '<g stroke="#5c0d06" stroke-width="2.6" stroke-linecap="round">' +
+        '<path d="M 28 44 Q 34 50 38 56"/>' +
+        '<path d="M 44 40 Q 50 48 54 58"/>' +
+        '<path d="M 60 42 Q 66 50 70 56"/>' +
+      '</g>' +
+      '<g stroke="#fca5a5" stroke-width="1" stroke-linecap="round" opacity="0.75">' +
+        '<path d="M 29 43 Q 35 49 39 55"/>' +
+        '<path d="M 45 39 Q 51 47 55 57"/>' +
+        '<path d="M 61 41 Q 67 49 71 55"/>' +
+      '</g>' +
+      speckles(50, 49, 24, 6, 0.9, 1.8, '#ffffff', 0.75) +
+      speckles(50, 49, 26, 4, 0.7, 1.4, '#4a0804', 0.8) +
+      '<path d="M 22 46 C 26 34, 46 30, 72 34" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.45"/>' +
+    '</g>'
   );
 }
 
@@ -542,146 +540,130 @@ export function icoTomato() {
 }
 
 export function icoMozzarella() {
-  const [gSlice, dSlice] = GR('#ffffff', '#f5f0e6', '#e8dcc8');
-  let s = '<defs>' + dSlice + '</defs>';
-  
-  // بركة الشرش/الماء أسفل الشرائح
-  s += '<ellipse cx="50" cy="82" rx="38" ry="7" fill="#e8dcc8" opacity="0.4"/>';
-  s += '<ellipse cx="50" cy="82" rx="26" ry="4" fill="#ffffff" opacity="0.7"/>';
-  
-  // شريحة خلفية (الأبعد)
-  s += '<ellipse cx="62" cy="38" rx="22" ry="14" fill="url(#' + gSlice + ')" stroke="#d4c8b0" stroke-width="1.5"/>';
-  s += '<ellipse cx="58" cy="34" rx="8" ry="4" fill="#ffffff" opacity="0.8"/>';
-  s += '<path d="M 52 36 Q 62 40 70 38" fill="none" stroke="#e8dcc8" stroke-width="1.2" opacity="0.5"/>';
-  
-  // شريحة وسطى
-  s += '<ellipse cx="48" cy="52" rx="26" ry="16" fill="url(#' + gSlice + ')" stroke="#d4c8b0" stroke-width="1.5"/>';
-  s += '<ellipse cx="42" cy="48" rx="10" ry="5" fill="#ffffff" opacity="0.85"/>';
-  // ألياف/خيوط داخلية
-  s += '<path d="M 38 50 Q 48 54 58 52" fill="none" stroke="#e8dcc8" stroke-width="1.5" opacity="0.6"/>';
-  s += '<path d="M 40 56 Q 50 58 60 56" fill="none" stroke="#f0ead8" stroke-width="1.2" opacity="0.5"/>';
-  
-  // شريحة أمامية (الأقرب)
-  s += '<ellipse cx="54" cy="66" rx="24" ry="15" fill="url(#' + gSlice + ')" stroke="#d4c8b0" stroke-width="1.5"/>';
-  s += '<ellipse cx="48" cy="62" rx="9" ry="4.5" fill="#ffffff" opacity="0.9"/>';
-  // ألياف/خيوط داخلية
-  s += '<path d="M 44 64 Q 54 68 64 66" fill="none" stroke="#e8dcc8" stroke-width="1.5" opacity="0.6"/>';
-  s += '<path d="M 46 70 Q 56 72 66 70" fill="none" stroke="#f0ead8" stroke-width="1.2" opacity="0.5"/>';
-  s += '<path d="M 42 62 Q 52 66 62 64" fill="none" stroke="#e8dcc8" stroke-width="1" opacity="0.4"/>';
-  
-  // لمعان إضافي على الحواف
-  s += '<path d="M 36 60 C 34 64, 38 70, 42 72" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.6" stroke-linecap="round"/>';
-  
-  // قطرات شرش متساقطة
-  s += '<ellipse cx="42" cy="78" rx="2" ry="3" fill="#ffffff" stroke="#d4c8b0" stroke-width="1" opacity="0.8"/>';
-  s += '<ellipse cx="58" cy="80" rx="1.5" ry="2.5" fill="#ffffff" stroke="#d4c8b0" stroke-width="1" opacity="0.7"/>';
-  s += '<ellipse cx="66" cy="76" rx="1.8" ry="2.8" fill="#ffffff" stroke="#d4c8b0" stroke-width="1" opacity="0.8"/>';
-  
-  return mkSVG(100, s);
+  return mkSVG(
+    100,
+    '<g transform="translate(50, 50) scale(1.35) translate(-50, -57)">' +
+      // 1. الكرة الخلفية (Mozzarella dome at back)
+      '<path d="M 52 38 C 59 36, 75 39, 83 51 C 89 62, 87 72, 78 74 C 72 75, 63 74, 58 72 Z" fill="#f8fafc" stroke="#1c1917" stroke-width="2.8" stroke-linejoin="round"/>' +
+      // مقطع الوجه المقطوع للكرة الخلفية
+      '<path d="M 52 38 C 44 38, 41 49, 43 60 C 45 69, 52 73, 58 72 C 65 71, 69 61, 67 50 C 65 41, 59 38, 52 38 Z" fill="#ffffff" stroke="#1c1917" stroke-width="2.8"/>' +
+      // 2. الشريحة الوسطى (The middle round slice)
+      '<path d="M 43 47 L 48 50 C 58 58, 62 69, 58 78 L 53 75" fill="#f1f5f9" stroke="#1c1917" stroke-width="2.8" stroke-linejoin="round"/>' +
+      '<ellipse cx="45" cy="63" rx="17" ry="14" fill="#ffffff" stroke="#1c1917" stroke-width="2.8" transform="rotate(-18 45 63)"/>' +
+      // 3. الشريحة الأمامية المستلقية (The front slice)
+      '<path d="M 18 64 L 21 69 C 29 78, 40 78, 47 73 L 43 68" fill="#f1f5f9" stroke="#1c1917" stroke-width="2.8" stroke-linejoin="round"/>' +
+      '<ellipse cx="29" cy="66" rx="15" ry="10" fill="#ffffff" stroke="#1c1917" stroke-width="2.8" transform="rotate(-12 29 66)"/>' +
+    '</g>'
+  );
 }
 
 export function icoExtraCheese() {
-  const [gBase, dBase] = GR('#ffcf33', '#f59e0b', '#d97706');
-  let s = '<defs>' + dBase + '</defs>';
-  
-  // قاعدة كومة الجبن المبشور
-  s += '<path d="M 15 70 C 20 40, 40 25, 50 25 C 60 25, 80 40, 85 70 C 85 80, 15 80, 15 70 Z" fill="url(#' + gBase + ')" stroke="#b45309" stroke-width="1.5"/>';
-  
-  // خيوط الجبن المبشور المتداخلة (شيدر/بروفولون)
-  const shreds = [
-    'M 25 65 Q 35 45 45 60', 'M 35 70 Q 45 35 55 55', 'M 45 75 Q 55 40 65 65',
-    'M 55 70 Q 65 45 75 60', 'M 20 55 Q 30 30 40 45', 'M 60 55 Q 70 30 80 45',
-    'M 30 50 Q 40 25 50 40', 'M 40 60 Q 50 30 60 50', 'M 50 65 Q 60 35 70 55',
-    'M 28 72 Q 38 52 48 68', 'M 52 72 Q 62 52 72 68', 'M 45 45 Q 55 25 65 40'
-  ];
-  
-  shreds.forEach((d, i) => {
-    const color = i % 3 === 0 ? '#fde047' : (i % 3 === 1 ? '#fbbf24' : '#f59e0b');
-    const width = 2.5 + Math.random() * 1.5;
-    s += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + width.toFixed(1) + '" stroke-linecap="round"/>';
-    // ظل بسيط لكل خصلة ليعطي عمقاً ثلاثي الأبعاد
-    s += '<path d="' + d + '" fill="none" stroke="#b45309" stroke-width="' + width.toFixed(1) + '" stroke-linecap="round" opacity="0.3" transform="translate(0 1)"/>';
-  });
-  
-  // خيوط جبنة ساقطة على الأطراف
-  s += '<path d="M 18 75 Q 22 80 20 85" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>';
-  s += '<path d="M 82 75 Q 78 80 80 85" fill="none" stroke="#fde047" stroke-width="3" stroke-linecap="round"/>';
-  
-  return mkSVG(100, s);
+  return mkSVG(
+    100,
+    '<g transform="translate(50, 50) scale(1.18) translate(-50, -50)">' +
+      // 1. الوجه العلوي المائل للمثلث (السطح الفاتح)
+      '<path d="M 20 28 C 36 22, 60 17, 78 18 L 70 46 L 20 28 Z" fill="#fdd835"/>' +
+      // 2. الوجه الأمامي العمودي (الأصفر الأساسي)
+      '<polygon points="20,28 70,46 70,90 20,72" fill="#ffeb3b"/>' +
+      // ثقوب دائرية وبيضاوية على الوجه الأمامي (مطابقة للصورة 3)
+      '<ellipse cx="26" cy="40" rx="3.2" ry="4.8" fill="#f57f17" opacity="0.75"/>' +
+      '<ellipse cx="34" cy="53" rx="4.8" ry="6.2" fill="#f57f17" opacity="0.75"/>' +
+      '<ellipse cx="30" cy="65" rx="3" ry="4.2" fill="#f57f17" opacity="0.75"/>' +
+      '<ellipse cx="48" cy="47" rx="4.2" ry="5.8" fill="#f57f17" opacity="0.75"/>' +
+      '<ellipse cx="44" cy="59" rx="2.8" ry="3.8" fill="#f57f17" opacity="0.75"/>' +
+      '<ellipse cx="62" cy="54" rx="4.2" ry="5.2" fill="#f57f17" opacity="0.75"/>' +
+      '<ellipse cx="56" cy="71" rx="3.8" ry="5.8" fill="#f57f17" opacity="0.75"/>' +
+      '<ellipse cx="66" cy="72" rx="3.2" ry="4.8" fill="#f57f17" opacity="0.75"/>' +
+      // 3. الوجه الجانبي الأيمن الداكن
+      '<polygon points="78,18 78,62 70,90 70,46" fill="#f57f17"/>' +
+      // ثقوب على الوجه الجانبي
+      '<ellipse cx="74" cy="38" rx="2" ry="4.2" fill="#d84315"/>' +
+      '<ellipse cx="74" cy="52" rx="2" ry="4.8" fill="#d84315"/>' +
+      '<ellipse cx="74" cy="68" rx="1.8" ry="3.5" fill="#d84315"/>' +
+      '<ellipse cx="77" cy="46" rx="1" ry="2.5" fill="#d84315"/>' +
+      '<ellipse cx="77" cy="60" rx="1" ry="2.5" fill="#d84315"/>' +
+    '</g>'
+  );
 }
 
 export function icoFourCheese() {
-  let s = '<defs>';
-  const [gMoz, dMoz] = GR('#ffffff', '#f4f1e8', '#dcd5c5'); s += dMoz;
-  const [gGorg, dGorg] = GR('#fcf6e8', '#e8d8b8', '#d1bc94'); s += dGorg;
-  const [gFont, dFont] = GR('#fde047', '#eab308', '#ca8a04'); s += dFont;
-  const [gParm, dParm] = GR('#fef08a', '#facc15', '#eab308'); s += dParm;
-  s += '</defs>';
+  return mkSVG(
+    100,
+    '<g transform="translate(50, 50) scale(1.15) translate(-50, -50)">' +
+      // 1. أعلى اليسار: عجلة الجبن مع المقطع المقطوع (Top-Left: Cheese wheel with slice cut)
+      '<g transform="translate(10, 10)">' +
+        '<path d="M 4 12 C 4 6, 36 6, 36 12 L 36 20 C 36 26, 4 26, 4 20 Z" fill="#f59e0b"/>' +
+        '<ellipse cx="20" cy="12" rx="16" ry="7" fill="#fbbf24"/>' +
+        '<path d="M 20 12 L 28 15 L 28 23 L 20 20 Z" fill="#fef08a"/>' +
+        '<ellipse cx="25" cy="18" rx="1.8" ry="2.5" fill="#d97706"/>' +
+        '<circle cx="23" cy="15" r="1" fill="#d97706"/>' +
+      '</g>' +
 
-  // 1. الموتزاريلا (أعلى اليسار) - كرة بيضاء طازجة
-  s += '<circle cx="32" cy="32" r="16" fill="url(#' + gMoz + ')" stroke="#c4bcae" stroke-width="1.5"/>';
-  s += '<path d="M 22 26 C 28 22, 36 22, 40 26" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.9"/>';
+      // 2. أعلى اليمين: مثلث الجبن المسطح (Top-Right: Flat cheese wedge)
+      '<g transform="translate(54, 8)">' +
+        '<polygon points="6,24 34,16 18,8" fill="#fde047"/>' +
+        '<polygon points="6,24 34,16 34,26 6,34" fill="#fbbf24"/>' +
+        '<circle cx="12" cy="27" r="2.8" fill="#d97706"/>' +
+        '<circle cx="22" cy="24" r="3.5" fill="#d97706"/>' +
+        '<circle cx="28" cy="22" r="2" fill="#d97706"/>' +
+        '<ellipse cx="20" cy="14" rx="3" ry="1.5" fill="#d97706"/>' +
+      '</g>' +
 
-  // 2. الجورجونزولا (أعلى اليمين) - جبنة زرقاء بعروق
-  s += '<path d="M 60 20 C 75 18, 85 28, 82 42 C 78 52, 62 48, 55 38 C 50 28, 52 22, 60 20 Z" fill="url(#' + gGorg + ')" stroke="#b89e75" stroke-width="1.5"/>';
-  // العروق الزرقاء/الخضراء المميزة
-  s += '<path d="M 62 25 Q 68 30 65 38 M 72 24 Q 75 32 70 40 M 58 32 Q 65 35 62 42" fill="none" stroke="#4a6b8c" stroke-width="2" stroke-linecap="round" opacity="0.8"/>';
-  s += '<path d="M 68 28 Q 72 35 68 42" fill="none" stroke="#2d4a3e" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>';
+      // 3. أسفل اليسار: مكعب الجبن ذو الثقوب الكبيرة (Bottom-Left: 3D Swiss cube)
+      '<g transform="translate(10, 48)">' +
+        '<polygon points="6,12 18,4 34,6 22,14" fill="#fde047"/>' +
+        '<ellipse cx="22" cy="8" rx="3.5" ry="1.8" fill="#d97706"/>' +
+        '<polygon points="6,12 22,14 22,36 6,34" fill="#fbbf24"/>' +
+        '<circle cx="14" cy="26" r="6" fill="#f59e0b"/>' +
+        '<circle cx="12" cy="18" r="3" fill="#d97706"/>' +
+        '<polygon points="22,14 34,6 34,28 22,36" fill="#f59e0b"/>' +
+        '<circle cx="28" cy="18" r="3.8" fill="#d97706"/>' +
+        '<circle cx="30" cy="27" r="2" fill="#d97706"/>' +
+      '</g>' +
 
-  // 3. الفونتينا (أسفل اليسار) - إسفين جبنة صفراء ناعمة
-  s += '<polygon points="15,60 45,55 35,85" fill="url(#' + gFont + ')" stroke="#a16207" stroke-width="1.5" stroke-linejoin="round"/>';
-  // قشرة الجبنة (الحافة الداكنة)
-  s += '<line x1="15" y1="60" x2="45" y2="55" stroke="#854d0e" stroke-width="3" stroke-linecap="round"/>';
-  s += '<polygon points="18,62 40,58 32,78" fill="#fef08a" opacity="0.4"/>';
-
-  // 4. البارميجيانو (أسفل اليمين) - إسفين جبنة قاسية ومحبة
-  s += '<polygon points="55,60 85,55 80,85 50,80" fill="url(#' + gParm + ')" stroke="#a16207" stroke-width="1.5" stroke-linejoin="round"/>';
-  // قشرة الجبنة
-  s += '<line x1="55" y1="60" x2="85" y2="55" stroke="#713f12" stroke-width="3" stroke-linecap="round"/>';
-  // البلورات الملحية (النقاط البيضاء) التي تميز البارميجيانو القديم
-  s += '<circle cx="60" cy="65" r="1" fill="#ffffff" opacity="0.8"/>';
-  s += '<circle cx="65" cy="70" r="1.5" fill="#ffffff" opacity="0.9"/>';
-  s += '<circle cx="72" cy="62" r="1" fill="#ffffff" opacity="0.7"/>';
-  s += '<circle cx="75" cy="75" r="1.2" fill="#ffffff" opacity="0.8"/>';
-  s += '<circle cx="62" cy="78" r="1" fill="#ffffff" opacity="0.9"/>';
-  s += '<circle cx="78" cy="68" r="1.5" fill="#ffffff" opacity="0.8"/>';
-  s += '<circle cx="58" cy="72" r="0.8" fill="#ffffff" opacity="0.7"/>';
-  
-  return mkSVG(100, s);
+      // 4. أسفل اليمين: مثلث الجبن القائم بثقوب دائرية (Bottom-Right: Upright cheese slice)
+      '<g transform="translate(54, 48)">' +
+        '<polygon points="22,4 6,34 32,34" fill="#fbbf24"/>' +
+        '<ellipse cx="18" cy="14" rx="3.5" ry="5" fill="#d97706"/>' +
+        '<circle cx="22" cy="24" r="3.2" fill="#fde047"/>' +
+        '<circle cx="14" cy="28" r="3.8" fill="#fde047"/>' +
+        '<circle cx="26" cy="30" r="2.2" fill="#fde047"/>' +
+        '<polygon points="22,4 32,34 36,30 26,2" fill="#f59e0b"/>' +
+        '<ellipse cx="30" cy="16" rx="2" ry="4" fill="#d97706"/>' +
+        '<ellipse cx="33" cy="26" rx="1.5" ry="3" fill="#d97706"/>' +
+      '</g>' +
+    '</g>'
+  );
 }
 
 export function icoSmokedCheese() {
-  const [gRind, dRind] = GR('#c2410c', '#9a3412', '#7c2d12');
-  const [gInner, dInner] = GR('#fef08a', '#fde047', '#eab308');
-  let s = '<defs>' + dRind + dInner + '</defs>';
-
-  // خيوط دخان متصاعدة بنعومة
-  s += '<path d="M 45 15 C 40 8, 50 4, 48 0" fill="none" stroke="#d6d3d1" stroke-width="3" stroke-linecap="round" opacity="0.6"/>';
-  s += '<path d="M 55 18 C 62 10, 52 6, 58 2" fill="none" stroke="#e7e5e4" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>';
-  s += '<path d="M 38 20 C 32 12, 42 8, 35 4" fill="none" stroke="#d6d3d1" stroke-width="2" stroke-linecap="round" opacity="0.4"/>';
-
-  // الجزء السفلي من جبنة السكرمورتزا (الكمثرى)
-  s += '<path d="M 25 55 C 25 35, 75 35, 75 55 C 75 80, 65 90, 50 90 C 35 90, 25 80, 25 55 Z" fill="url(#' + gRind + ')" stroke="#431407" stroke-width="2"/>';
-  
-  // الجزء العلوي (العنق المربوط)
-  s += '<path d="M 38 35 C 38 22, 62 22, 62 35 C 62 45, 58 48, 50 48 C 42 48, 38 45, 38 35 Z" fill="url(#' + gRind + ')" stroke="#431407" stroke-width="2"/>';
-
-  // الحبل/الخيط التقليدي المربوط به الجبن
-  s += '<path d="M 36 44 C 45 48, 55 48, 64 44" fill="none" stroke="#e7e5e4" stroke-width="3" stroke-linecap="round"/>';
-  s += '<path d="M 36 46 C 45 50, 55 50, 64 46" fill="none" stroke="#d6d3d1" stroke-width="2" stroke-linecap="round"/>';
-  // العقدة والخيط المتدلي
-  s += '<circle cx="50" cy="47" r="2.5" fill="#e7e5e4" stroke="#a8a29e" stroke-width="1"/>';
-  s += '<path d="M 50 47 Q 55 55 52 62" fill="none" stroke="#e7e5e4" stroke-width="2" stroke-linecap="round"/>';
-
-  // مقطع جانبي يظهر لون الجبنة الداخلي الفاتح
-  s += '<path d="M 50 48 C 65 52, 72 65, 68 80 C 65 88, 55 90, 50 90 C 55 85, 58 70, 50 48 Z" fill="url(#' + gInner + ')" stroke="#a16207" stroke-width="1.5"/>';
-  s += '<path d="M 55 55 Q 62 65 58 78" fill="none" stroke="#fde047" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>';
-
-  // لمعان قشرة التدخين الغنية
-  s += '<path d="M 32 45 C 30 35, 40 28, 48 28" fill="none" stroke="#fb923c" stroke-width="3" stroke-linecap="round" opacity="0.7"/>';
-  s += '<path d="M 30 60 C 28 70, 35 82, 45 85" fill="none" stroke="#fb923c" stroke-width="4" stroke-linecap="round" opacity="0.5"/>';
-
-  return mkSVG(100, s);
+  return mkSVG(
+    100,
+    '<g transform="translate(50, 50) scale(1.18) translate(-50, -50)">' +
+      // 1. جسم القالب الأسطواني الخارجي (أحمر قرميدي)
+      '<path d="M 12 36 L 12 62 C 12 78, 46 82, 46 82 L 46 56 Z" fill="#b83838"/>' +
+      '<path d="M 80 48 L 80 72 C 86 68, 89 60, 89 52 L 89 36 Z" fill="#a02626"/>' +
+      // 2. السطح العلوي البيضاوي المقوس
+      '<path d="M 12 36 C 12 18, 89 18, 89 36 C 89 42, 85 46, 80 48 L 50 37 L 46 56 C 24 53, 12 44, 12 36 Z" fill="#c44848"/>' +
+      // 3. المقطع الداخلي المقطوع باللون الأصفر الغني
+      // الجدار الداخلي الأيسر
+      '<path d="M 50 37 L 46 56 L 46 82 L 50 63 Z" fill="#eab308"/>' +
+      '<ellipse cx="48" cy="60" rx="1.5" ry="3" fill="#ca8a04"/>' +
+      '<ellipse cx="48" cy="72" rx="1.5" ry="2.5" fill="#ca8a04"/>' +
+      // الجدار الداخلي الأيمن العريض المواجه للأمام
+      '<path d="M 50 37 L 80 48 L 80 72 L 46 82 Z" fill="#facc15"/>' +
+      // ثقوب الجبن الصفراء/البرتقالية على الوجه الداخلي (زي الصورة 1)
+      '<ellipse cx="56" cy="48" rx="2" ry="3.5" fill="#eab308"/>' +
+      '<ellipse cx="61" cy="46" rx="1.8" ry="3" fill="#eab308"/>' +
+      '<ellipse cx="56" cy="58" rx="2.2" ry="3.8" fill="#eab308"/>' +
+      '<ellipse cx="62" cy="55" rx="1.8" ry="2.2" fill="#eab308"/>' +
+      '<ellipse cx="67" cy="53" rx="2" ry="3.2" fill="#eab308"/>' +
+      '<ellipse cx="63" cy="64" rx="2.4" ry="4" fill="#eab308"/>' +
+      '<ellipse cx="70" cy="60" rx="1.8" ry="2.5" fill="#eab308"/>' +
+      '<ellipse cx="75" cy="59" rx="2" ry="3.5" fill="#eab308"/>' +
+      '<ellipse cx="70" cy="69" rx="2.2" ry="3.8" fill="#eab308"/>' +
+    '</g>'
+  );
 }
 export function icoShred(w) {
   return w ? icoExtraCheese() : icoMozzarella();
@@ -721,24 +703,23 @@ export function icoPep() {
 }
 
 export function icoBeef() {
-  const [g, d] = GR('#8c4822', '#5e2b12', '#361507');
+  const [gMeat, dMeat] = GR('#dc2626', '#b91c1c', '#7f1d1d');
+  const [gFat, dFat] = GR('#ffffff', '#fef2f2', '#fecaca');
+  const [gBone, dBone] = GR('#ffffff', '#f5f5f4', '#d6d3d1');
   return mkSVG(
     100,
-    '<defs>' +
-      d +
-    '</defs>' +
-    '<g>' +
-      '<circle cx="36" cy="45" r="14" fill="url(#' + g + ')"/>' +
-      '<circle cx="62" cy="44" r="15" fill="url(#' + g + ')"/>' +
-      '<circle cx="48" cy="62" r="16" fill="url(#' + g + ')"/>' +
-      '<circle cx="49" cy="46" r="17" fill="url(#' + g + ')"/>' +
-      '<circle cx="34" cy="58" r="11" fill="url(#' + g + ')"/>' +
-      '<circle cx="64" cy="59" r="12" fill="url(#' + g + ')"/>' +
-      '<circle cx="48" cy="32" r="11" fill="url(#' + g + ')"/>' +
-      '<path d="M 38 46 Q 48 52 56 44 M 42 58 Q 50 54 60 62 M 34 52 Q 42 62 48 68" fill="none" stroke="#220b03" stroke-width="2.5" stroke-linecap="round"/>' +
-      '<path d="M 44 40 Q 50 36 56 38 M 32 40 Q 38 36 42 42 M 58 40 Q 64 36 68 42" fill="none" stroke="rgba(255,190,130,0.4)" stroke-width="2.2" stroke-linecap="round"/>' +
-      speckles(49, 49, 25, 9, 1.2, 2.2, '#180702', 0.95) +
-    '</g>'
+    '<defs>' + dMeat + dFat + dBone + '</defs>' +
+    '<ellipse cx="50" cy="84" rx="35" ry="8" fill="rgba(0,0,0,0.35)"/>' +
+    '<path d="M 20 48 C 14 62, 26 78, 48 82 C 72 86, 88 72, 84 56 L 84 66 C 88 78, 72 92, 48 88 C 26 84, 14 70, 20 56 Z" fill="#450a0a" stroke="#2e0505" stroke-width="1.5"/>' +
+    '<path d="M 18 46 C 12 60, 24 76, 48 80 C 72 84, 88 70, 84 54 C 82 40, 72 32, 58 32 C 44 32, 42 22, 28 24 C 18 26, 16 38, 18 46 Z" fill="url(#' + gFat + ')" stroke="#b91c1c" stroke-width="1.5"/>' +
+    '<path d="M 22 46 C 18 58, 28 72, 48 76 C 68 80, 82 68, 78 54 C 76 42, 68 36, 56 36 C 44 36, 40 28, 30 28 C 22 28, 20 38, 22 46 Z" fill="url(#' + gMeat + ')"/>' +
+    '<circle cx="38" cy="46" r="8" fill="url(#' + dBone + ')" stroke="#e7e5e4" stroke-width="1.5"/>' +
+    '<circle cx="38" cy="46" r="4" fill="#a8a29e"/>' +
+    '<path d="M 48 42 Q 58 40 68 46" fill="none" stroke="#fecaca" stroke-width="2" stroke-linecap="round" opacity="0.85"/>' +
+    '<path d="M 46 54 Q 56 56 66 52" fill="none" stroke="#fecaca" stroke-width="2" stroke-linecap="round" opacity="0.85"/>' +
+    '<path d="M 40 64 Q 50 68 60 66" fill="none" stroke="#fecaca" stroke-width="1.8" stroke-linecap="round" opacity="0.75"/>' +
+    '<path d="M 28 58 Q 32 66 36 68" fill="none" stroke="#fecaca" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>' +
+    '<ellipse cx="64" cy="42" rx="6" ry="2.5" fill="#ffffff" opacity="0.35" transform="rotate(-15 64 42)"/>'
   );
 }
 
@@ -764,32 +745,21 @@ export function icoChick() {
 }
 
 export function icoSaus() {
-  const [gRim, dRim] = GR('#b52416', '#87160a', '#540b04');
-  const [gMeat, dMeat] = GR('#ea543f', '#d13824', '#a62111');
+  const [gSkin, dSkin] = GR('#ef4444', '#dc2626', '#991b1b');
+  const [gSide, dSide] = GR('#991b1b', '#7f1d1d', '#450a0a');
   return mkSVG(
     100,
-    '<defs>' +
-      dRim +
-      dMeat +
-    '</defs>' +
-    '<g transform="rotate(-12 38 52)">' +
-      '<ellipse cx="38" cy="52" rx="22" ry="19" fill="url(#' + gRim + ')"/>' +
-      '<ellipse cx="38" cy="52" rx="22" ry="19" fill="none" stroke="#480802" stroke-width="2"/>' +
-      '<ellipse cx="38" cy="52" rx="18" ry="15" fill="url(#' + gMeat + ')"/>' +
-      '<ellipse cx="38" cy="52" rx="18" ry="15" fill="none" stroke="rgba(255,180,165,0.4)" stroke-width="1.2"/>' +
-      '<line x1="28" y1="46" x2="38" y2="58" stroke="#661006" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<line x1="36" y1="42" x2="48" y2="56" stroke="#661006" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<ellipse cx="33" cy="46" rx="8" ry="4" fill="rgba(255,255,255,0.25)"/>' +
-    '</g>' +
-    '<g transform="rotate(16 64 48)">' +
-      '<ellipse cx="64" cy="48" rx="22" ry="19" fill="url(#' + gRim + ')"/>' +
-      '<ellipse cx="64" cy="48" rx="22" ry="19" fill="none" stroke="#480802" stroke-width="2"/>' +
-      '<ellipse cx="64" cy="48" rx="18" ry="15" fill="url(#' + gMeat + ')"/>' +
-      '<ellipse cx="64" cy="48" rx="18" ry="15" fill="none" stroke="rgba(255,180,165,0.4)" stroke-width="1.2"/>' +
-      '<line x1="54" y1="42" x2="64" y2="54" stroke="#661006" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<line x1="62" y1="38" x2="74" y2="52" stroke="#661006" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<ellipse cx="59" cy="42" rx="8" ry="4" fill="rgba(255,255,255,0.28)"/>' +
-    '</g>'
+    '<defs>' + dSkin + dSide + '</defs>' +
+    '<ellipse cx="50" cy="80" rx="35" ry="7" fill="rgba(0,0,0,0.3)"/>' +
+    '<path d="M 20 38 C 12 50, 16 68, 32 74 C 52 82, 74 76, 84 56 C 88 48, 86 38, 78 36 C 72 34, 68 40, 64 48 C 56 60, 42 62, 34 52 C 28 44, 30 36, 24 34 C 21 34, 20 36, 20 38 Z" fill="url(#' + gSide + ')" stroke="#450a0a" stroke-width="1.5"/>' +
+    '<path d="M 20 36 C 14 46, 18 64, 34 70 C 52 78, 72 72, 82 54 C 86 46, 84 38, 78 36 C 72 34, 68 40, 62 48 C 54 58, 42 60, 34 50 C 28 42, 30 34, 24 33 C 21 33, 20 34, 20 36 Z" fill="url(#' + gSkin + ')"/>' +
+    '<circle cx="21" cy="35" r="3.5" fill="#7f1d1d" stroke="#450a0a" stroke-width="1"/>' +
+    '<circle cx="80" cy="37" r="3.5" fill="#7f1d1d" stroke="#450a0a" stroke-width="1"/>' +
+    '<path d="M 30 46 L 36 56" stroke="#450a0a" stroke-width="2.8" stroke-linecap="round"/>' +
+    '<path d="M 40 50 L 46 62" stroke="#450a0a" stroke-width="2.8" stroke-linecap="round"/>' +
+    '<path d="M 52 50 L 58 62" stroke="#450a0a" stroke-width="2.8" stroke-linecap="round"/>' +
+    '<path d="M 64 46 L 70 56" stroke="#450a0a" stroke-width="2.8" stroke-linecap="round"/>' +
+    '<path d="M 28 40 C 38 48, 58 48, 72 40" fill="none" stroke="#fca5a5" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>'
   );
 }
 
