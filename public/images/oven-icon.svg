@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Chimney -->
+  <path d="M153.6 15.6h204.8v163.8H153.6z" fill="#d77a38" stroke="#292320" stroke-width="16" stroke-linejoin="round"/>
+  <!-- Chimney bricks -->
+  <path d="M153.6 60.5h204.8M153.6 112.6h204.8" stroke="#292320" stroke-width="16"/>
+  <path d="M256 15.6v44.9M204.8 60.5v52.1M307.2 60.5v52.1M256 112.6v66.8" stroke="#292320" stroke-width="16"/>
+
+  <!-- Outer Oven Arch & Body -->
+  <path d="M30 496.4h452V380c0-124.8-101.2-226-226-226S30 255.2 30 380v116.4z" fill="#d77a38" stroke="#292320" stroke-width="16" stroke-linejoin="round"/>
+
+  <!-- Outer Arch Bricks border -->
+  <path d="M85 496.4V380c0-94.4 76.6-171 171-171s171 76.6 171 171v116.4" fill="#ee8b43" stroke="#292320" stroke-width="16" stroke-linejoin="round"/>
+  <!-- Arch Brick separators -->
+  <path d="M30 405h55M427 405h55M55 315l48 24M409 339l48-24M102 240l42 35M368 275l42-35M172 186l28 47M312 233l28-47M256 154v55" stroke="#292320" stroke-width="16"/>
+
+  <!-- Oven Mouth / Chamber -->
+  <path d="M106 496.4h300v-98c0-82.8-67.2-150-150-150s-150 67.2-150 150v98z" fill="#c36224" stroke="#292320" stroke-width="16" stroke-linejoin="round"/>
+
+  <!-- Fire Floor / Hearth -->
+  <rect x="120" y="454" width="272" height="42" rx="8" fill="#a44b1c" stroke="#292320" stroke-width="14"/>
+
+  <!-- Flame (Outer Red) -->
+  <path d="M256 242c16 38 6 70 28 88 18 15 36 2 46 28 14 36-12 78-52 86-42 8-82-20-88-62-5-38 20-64 26-92 4-20-4-32 4-58 10 24 16 38 36 10z" fill="#e03348" stroke="#292320" stroke-width="14" stroke-linejoin="round"/>
+
+  <!-- Flame (Inner Yellow) -->
+  <path d="M256 385c-16 0-30-14-30-31 0-20 18-36 24-52 6 12 14 20 20 28 10 14 16 26 12 40-4 9-14 15-26 15z" fill="#fbb034" stroke="#292320" stroke-width="10" stroke-linejoin="round"/>
+</svg>
